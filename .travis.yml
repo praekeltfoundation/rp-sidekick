@@ -1,29 +1,32 @@
 language: python
-python:
-  - '3.6'
-addons:
-  postgresql: '9.4'
-services:
-  - postgresql
-install:
-  - pip install -r requirements.txt --use-wheel
-  - pip install -r requirements-dev.txt --use-wheel
-script:
-  - flake8
-  - py.test
-  - python manage.py makemigrations rp_redcap --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
+
+env:
+  global:
+    - REGISTRY_USER=rapidproautomation
+      - IMAGE_NAME=praekeltfoundation/rp-sidekick:develop
+    - secure: c9DJdn3wQFeDkcqpFC/UXpxqgoj413uLExVwGQSLGtWAIlNVLqnf9J7v3Wx9nDIwpew5rFbwK7ol5g+vFCvptiXMcGVLoHkeRx6fH91sxmRgnvk+jzJqlTQwn35R/bMrsroa821NGbz5QaN6cYi8a7Oc/GmAP62UmEJgdlH73M/FeZBJ4gwujfzUN2JvTIDPo5PO591nA66VvL+n5xGL8RdQNfkIub88sbUoOnJT0UYkIfYAKd73dJnTzIZ/+5YxeAkTVCvSdHOraIkvKt0bEEE7lBbryI4KOhQOSnBKjHRxpzR144X8V7qYNFRu+XIaskLtWMbBKB8SsY6/s4pwkqemb+AAtLn0jVXWiIz25LL19w3OH15MVN+LFuGr3+NieQ4s5Oi20g9cpuncfnXia5+n/LyDxUkRariZ2x4OE1UwdFI5KBJ162MeX+cUcWyyyh/ys/4FchQWveLSztyf2H46yHFmhiqIdOcZKmAYVgr7csho5Pl6Y93/llmFTuBkqdqY+oytHkGKeIdJwvwJenq9rCoKDy1naVxFtjDivmE7s9yd8P+b008ZXCaxLF5OOOSTrFVxTWNZkXQuaE/BJW6ZKnuX5S/ewk4mD5aoXrgg05RT+GOSYKB3194tdv60m9DOLTg05PjhwaX6FUx2Imva9w3NnVlKgeVVftQ5ngI=
+
+
 matrix:
   include:
+    - python: '3.6'
+      addons:
+        postgresql: '9.4'
+      services:
+        - postgresql
+      install:
+        - pip install -r requirements.txt --use-wheel
+        - pip install -r requirements-dev.txt --use-wheel
+      script:
+        - flake8
+        - py.test
+        - python manage.py makemigrations rp_redcap --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
+
     - python: '2.7'
       sudo: required
       dist: trusty
       services:
         - docker
-      env:
-        - IMAGE_NAME=praekeltfoundation/rp-sidekick:develop
-        - REGISTRY_USER=rapidproautomation
-        # REGISTRY_PASS
-        - secure: "c9DJdn3wQFeDkcqpFC/UXpxqgoj413uLExVwGQSLGtWAIlNVLqnf9J7v3Wx9nDIwpew5rFbwK7ol5g+vFCvptiXMcGVLoHkeRx6fH91sxmRgnvk+jzJqlTQwn35R/bMrsroa821NGbz5QaN6cYi8a7Oc/GmAP62UmEJgdlH73M/FeZBJ4gwujfzUN2JvTIDPo5PO591nA66VvL+n5xGL8RdQNfkIub88sbUoOnJT0UYkIfYAKd73dJnTzIZ/+5YxeAkTVCvSdHOraIkvKt0bEEE7lBbryI4KOhQOSnBKjHRxpzR144X8V7qYNFRu+XIaskLtWMbBKB8SsY6/s4pwkqemb+AAtLn0jVXWiIz25LL19w3OH15MVN+LFuGr3+NieQ4s5Oi20g9cpuncfnXia5+n/LyDxUkRariZ2x4OE1UwdFI5KBJ162MeX+cUcWyyyh/ys/4FchQWveLSztyf2H46yHFmhiqIdOcZKmAYVgr7csho5Pl6Y93/llmFTuBkqdqY+oytHkGKeIdJwvwJenq9rCoKDy1naVxFtjDivmE7s9yd8P+b008ZXCaxLF5OOOSTrFVxTWNZkXQuaE/BJW6ZKnuX5S/ewk4mD5aoXrgg05RT+GOSYKB3194tdv60m9DOLTg05PjhwaX6FUx2Imva9w3NnVlKgeVVftQ5ngI="
       before_script:
         - docker pull "$IMAGE_NAME" || true
       script:
@@ -43,11 +46,6 @@ matrix:
       dist: trusty
       services:
         - docker
-      env:
-        - IMAGE_NAME=praekeltfoundation/rp-sidekick
-        - REGISTRY_USER=rapidproautomation
-        # REGISTRY_PASS
-        - secure: "c9DJdn3wQFeDkcqpFC/UXpxqgoj413uLExVwGQSLGtWAIlNVLqnf9J7v3Wx9nDIwpew5rFbwK7ol5g+vFCvptiXMcGVLoHkeRx6fH91sxmRgnvk+jzJqlTQwn35R/bMrsroa821NGbz5QaN6cYi8a7Oc/GmAP62UmEJgdlH73M/FeZBJ4gwujfzUN2JvTIDPo5PO591nA66VvL+n5xGL8RdQNfkIub88sbUoOnJT0UYkIfYAKd73dJnTzIZ/+5YxeAkTVCvSdHOraIkvKt0bEEE7lBbryI4KOhQOSnBKjHRxpzR144X8V7qYNFRu+XIaskLtWMbBKB8SsY6/s4pwkqemb+AAtLn0jVXWiIz25LL19w3OH15MVN+LFuGr3+NieQ4s5Oi20g9cpuncfnXia5+n/LyDxUkRariZ2x4OE1UwdFI5KBJ162MeX+cUcWyyyh/ys/4FchQWveLSztyf2H46yHFmhiqIdOcZKmAYVgr7csho5Pl6Y93/llmFTuBkqdqY+oytHkGKeIdJwvwJenq9rCoKDy1naVxFtjDivmE7s9yd8P+b008ZXCaxLF5OOOSTrFVxTWNZkXQuaE/BJW6ZKnuX5S/ewk4mD5aoXrgg05RT+GOSYKB3194tdv60m9DOLTg05PjhwaX6FUx2Imva9w3NnVlKgeVVftQ5ngI="
       before_script:
         - docker pull "$IMAGE_NAME" || true
       script:
