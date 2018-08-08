@@ -1,0 +1,71 @@
+language: python
+python:
+  - "3.6"
+addons:
+  postgresql: "9.4"
+services:
+  - postgresql
+install:
+  - "pip install -r requirements.txt --use-wheel"
+  - "pip install -r requirements-dev.txt --use-wheel"
+script:
+  - flake8
+  - py.test
+  - python manage.py makemigrations rp_redcap --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
+
+matrix:
+  include:
+    # Create docker image on merge to develop
+    - python: "2.7"
+      sudo: required
+      dist: trusty
+      services: [docker]
+      env:
+        - IMAGE_NAME=praekeltfoundation/rp-sidekick:develop
+        - REGISTRY_USER=praekeltorgdeploy
+        # REGISTRY_PASS
+
+      before_script:
+        - docker pull "$IMAGE_NAME" || true
+      script:
+        - docker build --tag "$IMAGE_NAME" --cache-from "$IMAGE_NAME" .
+
+      before_deploy:
+        - pip install docker-ci-deploy==0.3.0
+        - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+      deploy:
+        provider: script
+        script: dcd --version "$(git rev-parse --short HEAD)" --version-latest "$IMAGE_NAME"
+        on:
+          branch: develop
+
+        # Inherited build steps that we don't want
+      install: []
+      addons: {}
+
+    - python: "2.7"
+      sudo: required
+      dist: trusty
+      services: [docker]
+      env:
+        - IMAGE_NAME=praekeltfoundation/rp-sidekick
+        - REGISTRY_USER=praekeltorgdeploy
+        # REGISTRY_PASS
+
+      before_script:
+        - docker pull "$IMAGE_NAME" || true
+      script:
+        - docker build --tag "$IMAGE_NAME" --cache-from "$IMAGE_NAME" .
+
+      before_deploy:
+        - pip install docker-ci-deploy==0.3.0
+        - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+      deploy:
+        provider: script
+        script: dcd --version "$(git tag -l --points-at HEAD)" --version-semver --version-latest "$IMAGE_NAME"
+        on:
+          tags: true
+
+        # Inherited build steps that we don't want
+      install: []
+      addons: {}
