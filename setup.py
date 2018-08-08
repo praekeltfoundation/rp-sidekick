@@ -21,6 +21,7 @@ setup(
         'redis==2.10.6',
         'django-getenv==1.3.2',
         'whitenoise==3.3.1',
+        'raven==6.9.0',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

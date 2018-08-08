@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'djcelery',
+    'raven.contrib.django.raven_compat',
     'rp_redcap',
 ]
 
@@ -137,6 +138,9 @@ TEMPLATES = [
     },
 ]
 
+RAVEN_CONFIG = {
+    'dsn': os.environ.get('SENTRY_DSN', None),
+}
 
 REST_FRAMEWORK = {
     'PAGE_SIZE': 1000,
