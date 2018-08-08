@@ -4,8 +4,7 @@ env:
   global:
     - REGISTRY_USER=rapidproautomation
       - IMAGE_NAME=praekeltfoundation/rp-sidekick:develop
-    - secure: c9DJdn3wQFeDkcqpFC/UXpxqgoj413uLExVwGQSLGtWAIlNVLqnf9J7v3Wx9nDIwpew5rFbwK7ol5g+vFCvptiXMcGVLoHkeRx6fH91sxmRgnvk+jzJqlTQwn35R/bMrsroa821NGbz5QaN6cYi8a7Oc/GmAP62UmEJgdlH73M/FeZBJ4gwujfzUN2JvTIDPo5PO591nA66VvL+n5xGL8RdQNfkIub88sbUoOnJT0UYkIfYAKd73dJnTzIZ/+5YxeAkTVCvSdHOraIkvKt0bEEE7lBbryI4KOhQOSnBKjHRxpzR144X8V7qYNFRu+XIaskLtWMbBKB8SsY6/s4pwkqemb+AAtLn0jVXWiIz25LL19w3OH15MVN+LFuGr3+NieQ4s5Oi20g9cpuncfnXia5+n/LyDxUkRariZ2x4OE1UwdFI5KBJ162MeX+cUcWyyyh/ys/4FchQWveLSztyf2H46yHFmhiqIdOcZKmAYVgr7csho5Pl6Y93/llmFTuBkqdqY+oytHkGKeIdJwvwJenq9rCoKDy1naVxFtjDivmE7s9yd8P+b008ZXCaxLF5OOOSTrFVxTWNZkXQuaE/BJW6ZKnuX5S/ewk4mD5aoXrgg05RT+GOSYKB3194tdv60m9DOLTg05PjhwaX6FUx2Imva9w3NnVlKgeVVftQ5ngI=
-
+    - secure: "cZaJBMtaQx5KsliS/RjDjwG/Vvx8tRPBSYsYPCNFa+Mp9PhZk0Ao9F2QnYUjZQYNo73OazGouwQyH+E3zS4x2avfyvxlkatOb8IX6sr9AX/6N28DEW1Cy7QeSWt4KrKFuWmWjBY25W66EeoFY4cA36cy8Rk5Ekf7fNGgEAnUd4P+XVBlcpqetzNJ6IeBJuoIT+UElPiI+tU07AIgdWz6ITefRmFJAvIGbrYYEvpyVPNtcSTaIYOMyo7neQeWVHCVgJ43XqFgE1L+MUfH2VHn0c6gpMkBoFgwjarsjAofc/OopVL8fOt3hY3PlPW/SF4bDCcCwz75aRMST0Yigq6gHzmPupuTh/bHINbffuOxTHjOu2rP9RuiycXQhPtVwzAfdjFixxvMKG0cpGIIMku/WEzNAIosdNAYcuhsQnGdDiMsttjggvtp7oxyq2k2ufYyhMMsd9ZWj7LYpl8BH8O8+9pGL3KJMoOcXlqlU0iW09D27n95JN6Al4Q0mNQrrijuZZ+NA+H4kqqkE6Rgc4zxmn+YZs+adw35AShWSlObR4U5QOaNsi1/xHAOeGAx2IN1A0plwAPGnGqiC4HlMBH8USToId47ZmO2lee/W5mdG9rM6VXryamN8VGHPR6DYU2gi7r+Z0lyCHUK36foqFBXidCbeEQLisPazL4pRq1VmOY="
 
 matrix:
   include:
@@ -35,6 +34,7 @@ matrix:
         - docker build --tag "$IMAGE_NAME" --cache-from "$IMAGE_NAME" .
       before_deploy:
         - pip install docker-ci-deploy==0.3.0
+        - echo $REGISTRY_PASS
         - echo -n $REGISTRY_PASS | docker login -u "$REGISTRY_USER" --password-stdin
       deploy:
         provider: script
