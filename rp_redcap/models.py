@@ -5,7 +5,7 @@ class Survey(models.Model):
     name = models.CharField(max_length=200, unique=True, blank=False)
     rapidpro_flow = models.CharField(max_length=200)
     urn_field = models.CharField(max_length=200)
-    active = models.BooleanField()
+    check_fields = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
