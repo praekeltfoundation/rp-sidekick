@@ -34,8 +34,8 @@ class SurveyCheck(Task):
             if field.get('required_field') == 'y':
                 condition = 'True'
                 if field['branching_logic']:
-                    condition = field['branching_logic'].replace('[', 'row[\'')
-                    condition = condition.replace(']', '\']')
+                    condition = field['branching_logic'].replace('[', 'row["')
+                    condition = condition.replace(']', '"]')
                     condition = condition.replace(' = ', ' == ')
                     condition = condition.replace('(', '___').replace(')', '')
 
