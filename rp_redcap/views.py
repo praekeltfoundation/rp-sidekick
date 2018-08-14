@@ -6,7 +6,6 @@ from .tasks import survey_check
 
 
 class StartSurveyCheckView(APIView):
-
     def post(self, request, survey_name, *args, **kwargs):
         survey_check.delay(survey_name)
         return HttpResponse(status=status.HTTP_202_ACCEPTED)
