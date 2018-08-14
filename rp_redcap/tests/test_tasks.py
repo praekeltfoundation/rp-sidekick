@@ -3,8 +3,8 @@ from mock import patch
 import responses
 import json
 
-from rp_redcap.models import Survey, Contact
-from rp_redcap.tasks import survey_check
+from rp_redcap.models import Survey, Contact, Project
+from rp_redcap.tasks import project_check
 
 
 class MockRedCap(object):
@@ -14,6 +14,68 @@ class MockRedCap(object):
             {'field_name': 'name', 'required_field': 'y', 'branching_logic': ''},  # noqa
             {'field_name': 'email', 'required_field': 'y', 'branching_logic': "[role(1)] = '1'"},  # noqa
             {'field_name': 'surname', 'required_field': 'y', 'branching_logic': "[role(0)] = '1' or [role(1)] = '1'"},  # noqa
+            {'field_name': 'follow_up', 'required_field': 'y', 'branching_logic': "[role(1)] = '1'"},  # noqa
+        ]
+
+    def export_records(
+            self, forms=[], export_survey_fields=True,
+            export_data_access_groups=False):
+        if "survey_1" in forms:
+            return [
+                {
+                    "record_id": "1",
+                    "mobile": "+27123",
+                    "name": "",
+                    "role___0": "1",
+                    "role___1": "1",
+                    "email": "",
+                    "surname": "",
+                    "survey_1_complete": "0"
+                }, {
+                    "record_id": "2",
+                    "mobile": "+27234",
+                    "name": "",
+                    "role___0": "1",
+                    "role___1": "0",
+                    "email": "",
+                    "surname": "",
+                    "survey_1_complete": "0"
+                }
+            ]
+
+        if "survey_2" in forms:
+            return [
+                {
+                    "record_id": "1",
+                    "follow_up": "",
+                    "survey_2_complete": "2"
+                }, {
+                    "record_id": "2",
+                    "follow_up": "",
+                    "survey_2_complete": "2"
+                }
+            ]
+
+        return [
+            {
+                "record_id": "1",
+                "mobile": "+27123",
+                "name": "",
+                "role___0": "1",
+                "role___1": "1",
+                "email": "",
+                "surname": "",
+                "survey_A_complete": "2"
+            }, {
+                "record_id": "2",
+                "mobile": "+27234",
+                "name": "",
+                "role___0": "1",
+                "role___1": "0",
+                "email": "",
+                "surname": "",
+                "survey_A_complete": "2"
+            }
         ]
 
 
@@ -39,10 +101,16 @@ class SurveyCheckTaskTests(TestCase):
                 "modified_on": "2013-08-19T19:11:21.082Z"
             }, status=200, match_querystring=True)
 
+    def create_project(self):
+        return Project.objects.create(
+            name="Test Project", url="http://localhost:8001/",
+            token="REPLACEME")
+
     @responses.activate
-    @patch('rp_redcap.tasks.survey_check.get_records')
-    @patch('rp_redcap.tasks.survey_check.get_redcap_client')
-    def test_survey_check(self, mock_get_redcap_client, mock_get_records):
+    @patch('rp_redcap.tasks.project_check.get_records')
+    @patch('rp_redcap.tasks.project_check.get_redcap_client')
+    def test_project_check(
+            self, mock_get_redcap_client, mock_get_records):
         """
         Survey task test.
 
@@ -67,30 +135,35 @@ class SurveyCheckTaskTests(TestCase):
             }
         ]
 
-        Survey.objects.create(
-            name="survey_1", rapidpro_flow="f5901b62", urn_field="mobile")
+        project = self.create_project()
 
-        survey_check("survey_1")
+        Survey.objects.create(
+            name="survey_1", rapidpro_flow="f5901b62", urn_field="mobile",
+            project=project)
+
+        project_check(str(project.id))
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(json.loads(responses.calls[0].request.body), {
             'flow': 'f5901b62',
             'restart_participants': 1,
             'urns': ['tel:+27123'],
-            'extra': {'missing_fields': ''}
+            'extra': {
+                'project_name': 'Test Project',
+                'survey_name': 'survey_1'
+            }
         })
 
         self.assertEqual(Contact.objects.count(), 3)
         contact = Contact.objects.get(record_id=1)
         self.assertEqual(contact.urn, 'tel:+27123')
+        self.assertEqual(contact.project, project)
 
     @responses.activate
-    @patch('rp_redcap.tasks.survey_check.get_records')
-    @patch('rp_redcap.tasks.survey_check.get_redcap_client')
-    def test_survey_check_with_fields(
-            self, mock_get_redcap_client, mock_get_records):
+    @patch('rp_redcap.tasks.project_check.get_redcap_client')
+    def test_project_check_with_fields(self, mock_get_redcap_client):
         """
-        Survey task test.
+        Project task test.
 
         The task should check for incomplete surveys and start a rapidpro flow
         for all the urns. The missing fields should be determined based on the
@@ -98,46 +171,82 @@ class SurveyCheckTaskTests(TestCase):
         """
         self.mock_start_flow()
 
-        mock_get_records.return_value = [
-            {
-                "record_id": "1",
-                "mobile": "+27123",
-                "name": "",
-                "role___0": "1",
-                "role___1": "1",
-                "email": "",
-                "surname": "",
-                "survey_1_complete": "2"
-            }, {
-                "record_id": "2",
-                "mobile": "+27234",
-                "name": "",
-                "role___0": "1",
-                "role___1": "0",
-                "email": "",
-                "surname": "",
-                "survey_1_complete": "2"
-            }
-        ]
-
         mock_get_redcap_client.return_value = MockRedCap()
 
-        Survey.objects.create(
-            name="survey_1", rapidpro_flow="f5901b62", urn_field="mobile",
-            check_fields=True)
+        project = self.create_project()
 
-        survey_check("survey_1")
+        Survey.objects.create(
+            name="survey_A", rapidpro_flow="f5901b62", urn_field="mobile",
+            project=project, check_fields=True)
+
+        project_check(str(project.id))
 
         self.assertEqual(len(responses.calls), 2)
         self.assertEqual(json.loads(responses.calls[0].request.body), {
             'flow': 'f5901b62',
             'restart_participants': 1,
             'urns': ['tel:+27123'],
-            'extra': {'missing_fields': 'name, email, surname'}
+            'extra': {
+                'missing_fields': 'name, email, surname',
+                'project_name': 'Test Project',
+                'survey_name': 'survey_A'
+            }
         })
         self.assertEqual(json.loads(responses.calls[1].request.body), {
             'flow': 'f5901b62',
             'restart_participants': 1,
             'urns': ['tel:+27234'],
-            'extra': {'missing_fields': 'name, surname'}
+            'extra': {
+                'missing_fields': 'name, surname',
+                'project_name': 'Test Project',
+                'survey_name': 'survey_A'
+            }
+        })
+
+    @responses.activate
+    @patch('rp_redcap.tasks.project_check.get_redcap_client')
+    def test_project_check_multiple_surveys(self, mock_get_redcap_client):
+        """
+        Project task test.
+
+        The task should check for incomplete surveys and start a rapidpro flow
+        for all the urns. The missing fields should be determined based on the
+        metadata, this could be based on values in previous surveys.
+        """
+        self.mock_start_flow()
+
+        mock_get_redcap_client.return_value = MockRedCap()
+
+        project = self.create_project()
+
+        Survey.objects.create(
+            name="survey_1", rapidpro_flow="f5901b62", urn_field="mobile",
+            project=project, check_fields=True, sequence=1)
+
+        Survey.objects.create(
+            name="survey_2", rapidpro_flow="f5901b62", urn_field="mobile",
+            project=project, check_fields=True, sequence=2)
+
+        project_check(str(project.id))
+
+        self.assertEqual(len(responses.calls), 2)
+        self.assertEqual(json.loads(responses.calls[0].request.body), {
+            'flow': 'f5901b62',
+            'restart_participants': 1,
+            'urns': ['tel:+27123'],
+            'extra': {
+                'missing_fields': 'follow_up',
+                'project_name': 'Test Project',
+                'survey_name': 'survey_2'
+            }
+        })
+        self.assertEqual(json.loads(responses.calls[1].request.body), {
+            'flow': 'f5901b62',
+            'restart_participants': 1,
+            'urns': ['tel:+27234'],
+            'extra': {
+                'missing_fields': '',
+                'project_name': 'Test Project',
+                'survey_name': 'survey_2'
+            }
         })
