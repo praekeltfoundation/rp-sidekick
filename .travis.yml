@@ -19,6 +19,7 @@ matrix:
       before_script:
         - psql -U postgres -c "CREATE DATABASE rp_sidekick;"
       script:
+        - black --check .
         - flake8
         - py.test
         - python manage.py makemigrations rp_redcap --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
