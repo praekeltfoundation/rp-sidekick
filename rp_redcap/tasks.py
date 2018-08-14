@@ -14,44 +14,76 @@ class SurveyCheck(Task):
     name = "rp_sidekick.rp_redcap.tasks.survey_check"
     log = get_task_logger(__name__)
 
-    def get_records(self, survey_name):
-        project = redcap.Project(settings.REDCAP_API_URL,
-                                 settings.REDCAP_API_TOKEN)
+    def get_redcap_client(self):
+        return redcap.Project(settings.REDCAP_API_URL,
+                              settings.REDCAP_API_TOKEN)
 
-        return project.export_records(
+    def get_records(self, survey_name, redcap_client):
+        return redcap_client.export_records(
             forms=[survey_name],
             export_survey_fields=True,
             export_data_access_groups=False
         )
 
-    def start_flows(self, flow, urns):
+    def get_required_fields(self, survey_name, redcap_client):
+        metadata = redcap_client.export_metadata(forms=[survey_name])
+
+        required_fields = {}
+
+        for field in metadata:
+            if field.get('required_field') == 'y':
+                condition = 'True'
+                if field['branching_logic']:
+                    condition = field['branching_logic'].replace('[', 'row["')
+                    condition = condition.replace(']', '"]')
+                    condition = condition.replace(' = ', ' == ')
+                    condition = condition.replace('(', '___').replace(')', '')
+
+                required_fields[field['field_name']] = condition
+
+        return required_fields
+
+    def start_flows(self, flow, contacts):
         rp_client = TembaClient(settings.RAPIDPRO_API_URL,
                                 settings.RAPIDPRO_API_TOKEN)
 
-        if urns:
-            rp_client.create_flow_start(flow, urns, restart_participants=True)
+        for urn, missing_fields in contacts.items():
+            rp_client.create_flow_start(
+                flow, [urn], restart_participants=True,
+                extra={'missing_fields': missing_fields})
 
     def run(self, survey_name, **kwargs):
 
         survey = Survey.objects.get(name=survey_name)
 
-        records = self.get_records(survey_name)
+        redcap_client = self.get_redcap_client()
 
-        urns = []
-        for record in records:
+        records = self.get_records(survey_name, redcap_client)
+        required_fields = self.get_required_fields(survey_name, redcap_client)
+
+        contacts = {}
+        for row in records:
             contact, created = Contact.objects.get_or_create(
-                record_id=record['record_id'])
+                record_id=row['record_id'])
 
-            if survey.urn_field in record and record[survey.urn_field]:
-                contact.urn = 'tel:{}'.format(record[survey.urn_field])
+            if survey.urn_field in row and row[survey.urn_field]:
+                contact.urn = 'tel:{}'.format(row[survey.urn_field])
                 contact.save()
 
-            if(record['{}_complete'.format(survey_name)] == '2'):
-                # TODO: check which fields are outstanding
-                if contact.urn:
-                    urns.append(contact.urn)
+            if(row['{}_complete'.format(survey_name)] == '2'):
 
-        self.start_flows(survey.rapidpro_flow, urns)
+                missing_fields = []
+                if survey.check_fields:
+                    for field, value in row.items():
+                        if (value == '' and
+                                field in required_fields and
+                                eval(required_fields[field])):
+                            missing_fields.append(field)
+
+                if contact.urn:
+                    contacts[contact.urn] = ', '.join(missing_fields)
+
+        self.start_flows(survey.rapidpro_flow, contacts)
 
 
 survey_check = SurveyCheck()
