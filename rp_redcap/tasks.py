@@ -2,22 +2,21 @@ import redcap
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
+from collections import defaultdict
 from django.conf import settings
 from temba_client.v2 import TembaClient
 
-from .models import Survey, Contact
+from .models import Contact, Project
 
 
-class SurveyCheck(Task):
-    """Task to look for incomplete surveys."""
+class ProjectCheck(Task):
+    """Task to look for incomplete surveys in a Project."""
 
-    name = "rp_sidekick.rp_redcap.tasks.survey_check"
+    name = "rp_sidekick.rp_redcap.tasks.project_check"
     log = get_task_logger(__name__)
 
-    def get_redcap_client(self):
-        return redcap.Project(
-            settings.REDCAP_API_URL, settings.REDCAP_API_TOKEN
-        )
+    def get_redcap_client(self, project):
+        return redcap.Project(project.url, project.token)
 
     def get_records(self, survey_name, redcap_client):
         return redcap_client.export_records(
@@ -35,8 +34,10 @@ class SurveyCheck(Task):
             if field.get("required_field") == "y":
                 condition = "True"
                 if field["branching_logic"]:
-                    condition = field["branching_logic"].replace("[", 'row["')
-                    condition = condition.replace("]", '"]')
+                    condition = field["branching_logic"].replace("]", '"]')
+                    condition = condition.replace(
+                        "[", 'data[row["record_id"]]["'
+                    )
                     condition = condition.replace(" = ", " == ")
                     condition = condition.replace("(", "___").replace(")", "")
 
@@ -44,54 +45,68 @@ class SurveyCheck(Task):
 
         return required_fields
 
-    def start_flows(self, flow, contacts):
+    def start_flows(self, flow, reminders):
         rp_client = TembaClient(
             settings.RAPIDPRO_API_URL, settings.RAPIDPRO_API_TOKEN
         )
 
-        for urn, missing_fields in contacts.items():
+        for urn, extra_info in reminders.items():
             rp_client.create_flow_start(
-                flow,
-                [urn],
-                restart_participants=True,
-                extra={"missing_fields": missing_fields},
+                flow, [urn], restart_participants=True, extra=extra_info
             )
 
-    def run(self, survey_name, **kwargs):
+    def run(self, project_id, **kwargs):
 
-        survey = Survey.objects.get(name=survey_name)
+        project = Project.objects.prefetch_related("surveys").get(id=project_id)
 
-        redcap_client = self.get_redcap_client()
+        redcap_client = self.get_redcap_client(project)
 
-        records = self.get_records(survey_name, redcap_client)
-        required_fields = self.get_required_fields(survey_name, redcap_client)
+        data = defaultdict(dict)
 
-        contacts = {}
-        for row in records:
-            contact, created = Contact.objects.get_or_create(
-                record_id=row["record_id"]
+        for survey in project.surveys.all().order_by("sequence"):
+
+            records = self.get_records(survey.name, redcap_client)
+            required_fields = self.get_required_fields(
+                survey.name, redcap_client
             )
 
-            if survey.urn_field in row and row[survey.urn_field]:
-                contact.urn = "tel:{}".format(row[survey.urn_field])
-                contact.save()
+            reminders = {}
+            for row in records:
+                data[row["record_id"]].update(row)
 
-            if row["{}_complete".format(survey_name)] == "2":
+                contact, created = Contact.objects.get_or_create(
+                    record_id=row["record_id"], project=project
+                )
 
-                missing_fields = []
-                if survey.check_fields:
-                    for field, value in row.items():
-                        if (
-                            value == ""
-                            and field in required_fields
-                            and eval(required_fields[field])
-                        ):
-                            missing_fields.append(field)
+                if survey.urn_field in row and row[survey.urn_field]:
+                    contact.urn = "tel:{}".format(row[survey.urn_field])
+                    contact.save()
 
                 if contact.urn:
-                    contacts[contact.urn] = ", ".join(missing_fields)
+                    if row["{}_complete".format(survey.name)] == "2":
 
-        self.start_flows(survey.rapidpro_flow, contacts)
+                        extra_info = {
+                            "project_name": project.name,
+                            "survey_name": survey.name,
+                        }
+
+                        if survey.check_fields:
+                            missing_fields = []
+                            for field, value in row.items():
+                                if (
+                                    value == ""
+                                    and field in required_fields
+                                    and eval(required_fields[field])
+                                ):
+                                    missing_fields.append(field)
+
+                            extra_info["missing_fields"] = ", ".join(
+                                missing_fields
+                            )
+
+                        reminders[contact.urn] = extra_info
+
+            self.start_flows(survey.rapidpro_flow, reminders)
 
 
-survey_check = SurveyCheck()
+project_check = ProjectCheck()

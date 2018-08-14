@@ -1,19 +1,39 @@
 from django.db import models
 
 
+class Project(models.Model):
+    name = models.CharField(max_length=200, null=False, blank=False)
+    url = models.CharField(max_length=200, null=False, blank=False)
+    token = models.CharField(max_length=200, null=False, blank=False)
+
+    def __str__(self):
+        return self.name
+
+
 class Survey(models.Model):
-    name = models.CharField(max_length=200, unique=True, blank=False)
+    sequence = models.IntegerField(default=1, null=False)
+    name = models.CharField(max_length=200, blank=False)
+    project = models.ForeignKey(
+        Project, related_name="surveys", null=False, on_delete=models.CASCADE
+    )
     rapidpro_flow = models.CharField(max_length=200)
     urn_field = models.CharField(max_length=200)
     check_fields = models.BooleanField(default=False)
+
+    unique_together = (("name", "project_id"),)
 
     def __str__(self):
         return self.name
 
 
 class Contact(models.Model):
-    record_id = models.IntegerField(unique=True)
+    project = models.ForeignKey(
+        Project, related_name="contacts", null=False, on_delete=models.CASCADE
+    )
+    record_id = models.IntegerField()
     urn = models.CharField(max_length=200)
+
+    unique_together = (("record_id", "project_id"),)
 
     def __str__(self):
         return "{}: {}".format(self.record_id, self.urn)
