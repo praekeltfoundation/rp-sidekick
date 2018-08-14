@@ -13,8 +13,9 @@ class Project(models.Model):
 class Survey(models.Model):
     sequence = models.IntegerField(default=1, null=False)
     name = models.CharField(max_length=200, blank=False)
-    project = models.ForeignKey(Project, related_name='surveys', null=False,
-                                on_delete=models.CASCADE)
+    project = models.ForeignKey(
+        Project, related_name="surveys", null=False, on_delete=models.CASCADE
+    )
     rapidpro_flow = models.CharField(max_length=200)
     urn_field = models.CharField(max_length=200)
     check_fields = models.BooleanField(default=False)
@@ -26,8 +27,9 @@ class Survey(models.Model):
 
 
 class Contact(models.Model):
-    project = models.ForeignKey(Project, related_name='contacts', null=False,
-                                on_delete=models.CASCADE)
+    project = models.ForeignKey(
+        Project, related_name="contacts", null=False, on_delete=models.CASCADE
+    )
     record_id = models.IntegerField()
     urn = models.CharField(max_length=200)
 

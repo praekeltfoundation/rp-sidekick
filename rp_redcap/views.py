@@ -6,7 +6,6 @@ from .tasks import project_check
 
 
 class StartProjectCheckView(APIView):
-
     def post(self, request, project_id, *args, **kwargs):
         project_check.delay(project_id)
         return HttpResponse(status=status.HTTP_202_ACCEPTED)
