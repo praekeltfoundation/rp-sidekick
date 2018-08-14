@@ -1,0 +1,21 @@
+# Example configuration for Black.
+
+# see https://raw.githubusercontent.com/ambv/black/master/pyproject.toml
+
+[tool.black]
+line-length = 80
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
