@@ -11,19 +11,14 @@ This app is used to extend the functionality of Rapidpro.
 ------------------
 Local installation
 ------------------
+To set up and run ``rp-sidekick`` locally, do the following::
 
     $ git clone git@github.com:praekeltfoundation/rp-sidekick.git
-
     $ cd rp-sidekick
-
     $ virtualenv ve
-
     $ source ve/bin/activate
-
     $ pip install -e .
-
     $ pip install -r requirements-dev.txt
-
     $ pre-commit install
 
 -----
