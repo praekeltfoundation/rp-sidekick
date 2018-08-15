@@ -1,0 +1,1 @@
+seaworthy[pytest] >= 0.3.0

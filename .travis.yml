@@ -35,8 +35,10 @@ matrix:
         - docker
       before_script:
         - docker pull "$IMAGE_NAME" || true
+        - pip install -r seaworthy/requirements.txt
       script:
         - docker build --tag "$IMAGE_NAME" --cache-from "$IMAGE_NAME" .
+        - (cd seaworthy; py.test -v --rp-sidekick-image "$IMAGE_NAME" test.py)
       before_deploy:
         - pip install docker-ci-deploy==0.3.0
         - echo -n $REGISTRY_PASS | docker login -u "$REGISTRY_USER" --password-stdin   # yamllint disable-line
