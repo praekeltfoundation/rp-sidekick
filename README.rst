@@ -4,6 +4,11 @@ Rapidpro Sidekick
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
 
+
+.. image:: https://codecov.io/gh/praekeltfoundation/rp-sidekick/branch/develop/graph/badge.svg
+  :target: https://codecov.io/gh/praekeltfoundation/rp-sidekick
+
+
 Sidekick app for Rapidpro.
 
 This app is used to extend the functionality of Rapidpro.
