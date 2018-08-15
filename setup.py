@@ -14,6 +14,7 @@ setup(
         "dj-database-url==0.5.0",
         "Django==2.1",
         "django-celery==3.2.2",
+        "django-extensions==2.1.0",
         "djangorestframework==3.8.2",
         "psycopg2==2.7.1",
         "PyCap",
