@@ -48,13 +48,15 @@ class ProjectCheck(Task):
         return required_fields
 
     def get_choices(self, metadata, field_name):
-        choices = []
+        choices = {}
         for field in metadata:
             if field["field_name"] == field_name:
-                choices = dict(
-                    item.split(", ")
-                    for item in field["select_choices_or_calculations"].split(
-                        " | "
+                choices.update(
+                    dict(
+                        item.split(", ")
+                        for item in field[
+                            "select_choices_or_calculations"
+                        ].split(" | ")
                     )
                 )
         return choices
