@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "djcelery",
     "raven.contrib.django.raven_compat",
+    "sidekick",
     "rp_redcap",
 ]
 
