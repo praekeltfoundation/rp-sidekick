@@ -1,0 +1,21 @@
+---
+exclude: ^(ve/|venv/)
+repos:
+  - repo: https://github.com/ambv/black
+    rev: stable
+    hooks:
+      - id: black
+        language_version: python3.6
+        types: [python]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v1.2.3
+    hooks:
+      - id: flake8
+        types: [python]
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: master
+    hooks:
+      - id: yamllint
+        files: ^.*\.(yml|yaml)$

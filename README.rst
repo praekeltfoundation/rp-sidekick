@@ -22,10 +22,16 @@ Local installation
 
     $ pip install -e .
 
+    $ pip install -r requirements-dev.txt
+
+    $ pre-commit install
+
 -----
 Tools
 -----
 
 - `black`_ - this repository uses an opinionated python code formatter. See ``pyproject.toml`` for config.
+- `pre-commit`_ - lints staged code as a git pre-commit check. Will prevent commits if linting fails. Currently runs black, flake8 and yamllint.
 
+.. _pre-commit: https://pre-commit.com
 .. _black: https://github.com/ambv/black
