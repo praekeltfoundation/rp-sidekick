@@ -25,8 +25,10 @@ class ProjectCheck(Task):
             export_data_access_groups=False,
         )
 
-    def get_required_fields(self, survey_name, redcap_client):
-        metadata = redcap_client.export_metadata(forms=[survey_name])
+    def get_metadata(self, survey_name, redcap_client):
+        return redcap_client.export_metadata(forms=[survey_name])
+
+    def get_required_fields(self, metadata):
 
         required_fields = {}
 
@@ -44,6 +46,18 @@ class ProjectCheck(Task):
                 required_fields[field["field_name"]] = condition
 
         return required_fields
+
+    def get_choices(self, metadata, field_name):
+        choices = []
+        for field in metadata:
+            if field["field_name"] == field_name:
+                choices = dict(
+                    item.split(", ")
+                    for item in field["select_choices_or_calculations"].split(
+                        " | "
+                    )
+                )
+        return choices
 
     def start_flows(self, flow, reminders):
         rp_client = TembaClient(
@@ -66,9 +80,11 @@ class ProjectCheck(Task):
         for survey in project.surveys.all().order_by("sequence"):
 
             records = self.get_records(survey.name, redcap_client)
-            required_fields = self.get_required_fields(
-                survey.name, redcap_client
-            )
+            metadata = self.get_metadata(survey.name, redcap_client)
+
+            required_fields = self.get_required_fields(metadata)
+            roles = self.get_choices(metadata, "role")
+            titles = self.get_choices(metadata, "title")
 
             reminders = {}
             for row in records:
@@ -78,9 +94,29 @@ class ProjectCheck(Task):
                     record_id=row["record_id"], project=project
                 )
 
+                contact_update = {}
+
                 if survey.urn_field in row and row[survey.urn_field]:
-                    contact.urn = "tel:{}".format(row[survey.urn_field])
-                    contact.save()
+                    contact_update["urn"] = "tel:{}".format(
+                        row[survey.urn_field]
+                    )
+
+                if roles:
+                    for role_id, role in roles.items():
+                        if row.get("role___{}".format(role_id)) == "1":
+                            contact_update["role"] = role
+
+                if row.get("name"):
+                    contact_update["name"] = row.get("name")
+
+                if row.get("title"):
+                    contact_update["title"] = titles.get(row["title"])
+
+                if contact_update:
+                    Contact.objects.filter(id=contact.id).update(
+                        **contact_update
+                    )
+                    contact.refresh_from_db()
 
                 if contact.urn:
                     if row["{}_complete".format(survey.name)] == "2":
@@ -88,6 +124,9 @@ class ProjectCheck(Task):
                         extra_info = {
                             "project_name": project.name,
                             "survey_name": survey.name,
+                            "role": contact.role,
+                            "name": contact.name,
+                            "title": contact.title,
                         }
 
                         if survey.check_fields:

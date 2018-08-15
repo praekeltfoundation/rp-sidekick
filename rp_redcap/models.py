@@ -32,6 +32,9 @@ class Contact(models.Model):
     )
     record_id = models.IntegerField()
     urn = models.CharField(max_length=200)
+    role = models.CharField(max_length=200, null=True)
+    name = models.CharField(max_length=200, null=True)
+    title = models.CharField(max_length=200, null=True)
 
     unique_together = (("record_id", "project_id"),)
 
