@@ -9,28 +9,46 @@ from rp_redcap.tasks import project_check
 
 class MockRedCap(object):
     def export_metadata(self, forms=None):
-        return [
+        metadata = [
             {
                 "field_name": "name",
                 "required_field": "y",
                 "branching_logic": "",
-            },  # noqa
+            },
             {
                 "field_name": "email",
                 "required_field": "y",
                 "branching_logic": "[role(1)] = '1'",
-            },  # noqa
+            },
             {
                 "field_name": "surname",
                 "required_field": "y",
                 "branching_logic": "[role(0)] = '1' or [role(1)] = '1'",
-            },  # noqa
+            },
             {
                 "field_name": "follow_up",
                 "required_field": "y",
                 "branching_logic": "[role(1)] = '1'",
-            },  # noqa
+            },
+            {
+                "field_name": "title",
+                "required_field": "",
+                "branching_logic": "",
+                "select_choices_or_calculations": "1, Ms | 2, Mr | 3, Dr | 4, Prof",  # noqa
+            },
         ]
+
+        if "survey_1" in forms:
+            metadata.append(
+                {
+                    "field_name": "role",
+                    "required_field": "y",
+                    "branching_logic": "",
+                    "select_choices_or_calculations": "0, Lead Investigator | 1, Investigator",  # noqa
+                }
+            )
+
+        return metadata
 
     def export_records(
         self,
@@ -72,7 +90,8 @@ class MockRedCap(object):
             {
                 "record_id": "1",
                 "mobile": "+27123",
-                "name": "",
+                "name": "Peter",
+                "title": "1",
                 "role___0": "1",
                 "role___1": "1",
                 "email": "",
@@ -156,6 +175,9 @@ class SurveyCheckTaskTests(TestCase):
                 "extra": {
                     "project_name": "Test Project",
                     "survey_name": "survey_1",
+                    "name": None,
+                    "title": None,
+                    "role": None,
                 },
             },
         )
@@ -199,9 +221,12 @@ class SurveyCheckTaskTests(TestCase):
                 "restart_participants": 1,
                 "urns": ["tel:+27123"],
                 "extra": {
-                    "missing_fields": "name, email, surname",
+                    "missing_fields": "email, surname",
                     "project_name": "Test Project",
                     "survey_name": "survey_A",
+                    "name": "Peter",
+                    "title": "Ms",
+                    "role": None,
                 },
             },
         )
@@ -215,6 +240,9 @@ class SurveyCheckTaskTests(TestCase):
                     "missing_fields": "name, surname",
                     "project_name": "Test Project",
                     "survey_name": "survey_A",
+                    "name": None,
+                    "title": None,
+                    "role": None,
                 },
             },
         )
@@ -266,6 +294,9 @@ class SurveyCheckTaskTests(TestCase):
                     "missing_fields": "follow_up",
                     "project_name": "Test Project",
                     "survey_name": "survey_2",
+                    "role": "Investigator",
+                    "name": None,
+                    "title": None,
                 },
             },
         )
@@ -279,6 +310,12 @@ class SurveyCheckTaskTests(TestCase):
                     "missing_fields": "",
                     "project_name": "Test Project",
                     "survey_name": "survey_2",
+                    "role": "Lead Investigator",
+                    "name": None,
+                    "title": None,
                 },
             },
         )
+
+        contact = Contact.objects.get(record_id=1)
+        self.assertEqual(contact.role, "Investigator")
