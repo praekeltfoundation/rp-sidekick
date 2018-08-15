@@ -3,7 +3,9 @@ branch = True
 omit = *migrations*,
        *urls*,
        *test*,
+       *apps*,
        ./manage.py,
+       ./setup.py,
        ./rp_sidekick/*,
        *__init__*
 
