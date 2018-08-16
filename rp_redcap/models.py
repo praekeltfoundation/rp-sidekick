@@ -1,10 +1,17 @@
 from django.db import models
+from sidekick.models import Organization
 
 
 class Project(models.Model):
     name = models.CharField(max_length=200, null=False, blank=False)
     url = models.CharField(max_length=200, null=False, blank=False)
     token = models.CharField(max_length=200, null=False, blank=False)
+    org = models.ForeignKey(
+        Organization,
+        related_name="projects",
+        null=False,
+        on_delete=models.CASCADE,
+    )
 
     def __str__(self):
         return self.name

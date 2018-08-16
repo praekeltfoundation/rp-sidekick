@@ -5,6 +5,7 @@ import json
 
 from rp_redcap.models import Survey, Contact, Project
 from rp_redcap.tasks import project_check
+from sidekick.models import Organization
 
 
 class MockRedCap(object):
@@ -112,6 +113,10 @@ class MockRedCap(object):
 
 
 class SurveyCheckTaskTests(TestCase):
+    def setUp(self):
+        self.org = self.create_org()
+        self.project = self.create_project(self.org)
+
     def mock_start_flow(self):
         responses.add(
             responses.POST,
@@ -131,9 +136,19 @@ class SurveyCheckTaskTests(TestCase):
             match_querystring=True,
         )
 
-    def create_project(self):
+    def create_project(self, org):
         return Project.objects.create(
-            name="Test Project", url="http://localhost:8001/", token="REPLACEME"
+            name="Test Project",
+            url="http://localhost:8001/",
+            token="REPLACEME",
+            org=org,
+        )
+
+    def create_org(self):
+        return Organization.objects.create(
+            name="Test Organization",
+            url="http://localhost:8002/",
+            token="REPLACEME",
         )
 
     @responses.activate
@@ -154,16 +169,14 @@ class SurveyCheckTaskTests(TestCase):
             {"record_id": "3", "mobile": "", "survey_1_complete": "2"},
         ]
 
-        project = self.create_project()
-
         Survey.objects.create(
             name="survey_1",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
-            project=project,
+            project=self.project,
         )
 
-        project_check(str(project.id))
+        project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -185,7 +198,7 @@ class SurveyCheckTaskTests(TestCase):
         self.assertEqual(Contact.objects.count(), 3)
         contact = Contact.objects.get(record_id=1)
         self.assertEqual(contact.urn, "tel:+27123")
-        self.assertEqual(contact.project, project)
+        self.assertEqual(contact.project, self.project)
 
     @responses.activate
     @patch("rp_redcap.tasks.project_check.get_redcap_client")
@@ -201,17 +214,15 @@ class SurveyCheckTaskTests(TestCase):
 
         mock_get_redcap_client.return_value = MockRedCap()
 
-        project = self.create_project()
-
         Survey.objects.create(
             name="survey_A",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
-            project=project,
+            project=self.project,
             check_fields=True,
         )
 
-        project_check(str(project.id))
+        project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 2)
         self.assertEqual(
@@ -261,13 +272,11 @@ class SurveyCheckTaskTests(TestCase):
 
         mock_get_redcap_client.return_value = MockRedCap()
 
-        project = self.create_project()
-
         Survey.objects.create(
             name="survey_1",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
-            project=project,
+            project=self.project,
             check_fields=True,
             sequence=1,
         )
@@ -276,12 +285,12 @@ class SurveyCheckTaskTests(TestCase):
             name="survey_2",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
-            project=project,
+            project=self.project,
             check_fields=True,
             sequence=2,
         )
 
-        project_check(str(project.id))
+        project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 2)
         self.assertEqual(
