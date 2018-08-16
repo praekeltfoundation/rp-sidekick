@@ -3,9 +3,9 @@ from mock import patch
 import responses
 import json
 
-from rp_redcap.models import Survey, Contact, Project
+from rp_redcap.models import Survey, Contact
 from rp_redcap.tasks import project_check
-from sidekick.models import Organization
+from base import RedcapBaseTestCase
 
 
 class MockRedCap(object):
@@ -112,7 +112,7 @@ class MockRedCap(object):
         ]
 
 
-class SurveyCheckTaskTests(TestCase):
+class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
     def setUp(self):
         self.org = self.create_org()
         self.project = self.create_project(self.org)
@@ -134,21 +134,6 @@ class SurveyCheckTaskTests(TestCase):
             },
             status=200,
             match_querystring=True,
-        )
-
-    def create_project(self, org):
-        return Project.objects.create(
-            name="Test Project",
-            url="http://localhost:8001/",
-            token="REPLACEME",
-            org=org,
-        )
-
-    def create_org(self):
-        return Organization.objects.create(
-            name="Test Organization",
-            url="http://localhost:8002/",
-            token="REPLACEME",
         )
 
     @responses.activate
