@@ -56,7 +56,7 @@ class SurveyCheckViewTests(RedcapBaseTestCase, APITestCase):
             "rp_redcap.start_project_check", args=[self.project.id]
         )
 
-        response = self.client_noauth.post(
+        response = self.client.post(
             survey_url, {}, content_type="application/json"
         )
 
