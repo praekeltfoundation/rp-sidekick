@@ -180,6 +180,3 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 
 djcelery.setup_loader()
-
-RAPIDPRO_API_URL = env("RAPIDPRO_API_URL", "http://localhost:8002/")
-RAPIDPRO_API_TOKEN = env("RAPIDPRO_API_TOKEN", "REPLACEME")

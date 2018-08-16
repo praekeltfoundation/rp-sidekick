@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+from temba_client.v2 import TembaClient
+
 
 class Organization(models.Model):
     name = models.CharField(max_length=200, null=False, blank=False)
@@ -10,3 +12,6 @@ class Organization(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_rapidpro_client(self):
+        return TembaClient(self.url, self.token)

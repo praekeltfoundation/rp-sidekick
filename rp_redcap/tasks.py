@@ -1,10 +1,6 @@
-import redcap
-
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from collections import defaultdict
-from django.conf import settings
-from temba_client.v2 import TembaClient
 
 from .models import Contact, Project
 
@@ -14,9 +10,6 @@ class ProjectCheck(Task):
 
     name = "rp_sidekick.rp_redcap.tasks.project_check"
     log = get_task_logger(__name__)
-
-    def get_redcap_client(self, project):
-        return redcap.Project(project.url, project.token)
 
     def get_records(self, survey_name, redcap_client):
         return redcap_client.export_records(
@@ -61,13 +54,9 @@ class ProjectCheck(Task):
                 )
         return choices
 
-    def start_flows(self, flow, reminders):
-        rp_client = TembaClient(
-            settings.RAPIDPRO_API_URL, settings.RAPIDPRO_API_TOKEN
-        )
-
+    def start_flows(self, rapidpro_client, flow, reminders):
         for urn, extra_info in reminders.items():
-            rp_client.create_flow_start(
+            rapidpro_client.create_flow_start(
                 flow, [urn], restart_participants=True, extra=extra_info
             )
 
@@ -75,7 +64,8 @@ class ProjectCheck(Task):
 
         project = Project.objects.prefetch_related("surveys").get(id=project_id)
 
-        redcap_client = self.get_redcap_client(project)
+        redcap_client = project.get_redcap_client(project)
+        rapidpro_client = project.org.get_rapidpro_client()
 
         data = defaultdict(dict)
 
@@ -147,7 +137,7 @@ class ProjectCheck(Task):
 
                         reminders[contact.urn] = extra_info
 
-            self.start_flows(survey.rapidpro_flow, reminders)
+            self.start_flows(rapidpro_client, survey.rapidpro_flow, reminders)
 
 
 project_check = ProjectCheck()

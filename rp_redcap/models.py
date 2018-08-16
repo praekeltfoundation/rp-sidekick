@@ -1,3 +1,5 @@
+import redcap
+
 from django.db import models
 from sidekick.models import Organization
 
@@ -15,6 +17,9 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_redcap_client(self):
+        return redcap.Project(self.url, self.token)
 
 
 class Survey(models.Model):

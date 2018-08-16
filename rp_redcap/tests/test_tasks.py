@@ -138,7 +138,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
     @responses.activate
     @patch("rp_redcap.tasks.project_check.get_records")
-    @patch("rp_redcap.tasks.project_check.get_redcap_client")
+    @patch("rp_redcap.models.Project.get_redcap_client")
     def test_project_check(self, mock_get_redcap_client, mock_get_records):
         """
         Survey task test.
@@ -186,7 +186,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         self.assertEqual(contact.project, self.project)
 
     @responses.activate
-    @patch("rp_redcap.tasks.project_check.get_redcap_client")
+    @patch("rp_redcap.models.Project.get_redcap_client")
     def test_project_check_with_fields(self, mock_get_redcap_client):
         """
         Project task test.
@@ -244,7 +244,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         )
 
     @responses.activate
-    @patch("rp_redcap.tasks.project_check.get_redcap_client")
+    @patch("rp_redcap.models.Project.get_redcap_client")
     def test_project_check_multiple_surveys(self, mock_get_redcap_client):
         """
         Project task test.
