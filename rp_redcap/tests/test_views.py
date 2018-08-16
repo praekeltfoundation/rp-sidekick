@@ -5,11 +5,10 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase, APIClient
 
-from rp_redcap.models import Project
-from sidekick.models import Organization
+from base import RedcapBaseTestCase
 
 
-class SurveyCheckViewTests(APITestCase):
+class SurveyCheckViewTests(RedcapBaseTestCase, APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.client_noauth = APIClient()
@@ -25,21 +24,6 @@ class SurveyCheckViewTests(APITestCase):
 
         self.org = self.create_org()
         self.project = self.create_project(self.org)
-
-    def create_project(self, org):
-        return Project.objects.create(
-            name="Test Project",
-            url="http://localhost:8001/",
-            token="REPLACEME",
-            org=org,
-        )
-
-    def create_org(self):
-        return Organization.objects.create(
-            name="Test Organization",
-            url="http://localhost:8002/",
-            token="REPLACEME",
-        )
 
     @patch("rp_redcap.tasks.project_check.delay")
     def test_no_auth(self, mock_project_check):
