@@ -64,7 +64,7 @@ class ProjectCheck(Task):
 
         project = Project.objects.prefetch_related("surveys").get(id=project_id)
 
-        redcap_client = project.get_redcap_client(project)
+        redcap_client = project.get_redcap_client()
         rapidpro_client = project.org.get_rapidpro_client()
 
         data = defaultdict(dict)
