@@ -3,9 +3,15 @@ from rest_framework import status
 from rest_framework.views import APIView
 
 from .tasks import project_check
+from .models import Project
 
 
 class StartProjectCheckView(APIView):
     def post(self, request, project_id, *args, **kwargs):
-        project_check.delay(project_id)
+        project = Project.objects.get(id=project_id)
+
+        if not project.org.users.filter(id=request.user.id).exists():
+            return HttpResponse(status=status.HTTP_401_UNAUTHORIZED)
+
+        project_check.delay(project.id)
         return HttpResponse(status=status.HTTP_202_ACCEPTED)
