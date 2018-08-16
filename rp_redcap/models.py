@@ -19,7 +19,7 @@ class Project(models.Model):
         return self.name
 
     def get_redcap_client(self):
-        return redcap.Project(self.url, self.token)
+        return redcap.Project(self.url, self.token)  # pragma: no cover
 
 
 class Survey(models.Model):
