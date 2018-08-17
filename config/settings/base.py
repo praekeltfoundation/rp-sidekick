@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "sidekick",
     "rp_redcap",
+    "rp_transferto",
 ]
 
 MIDDLEWARE = [
@@ -62,7 +63,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": env.db(
         "RP_SIDEKICK_DATABASE",
-        default="postgres://postgres:@localhost/rp_sidekick",
+        default="postgres://postgres@localhost:5432/rp_sidekick",
     )
 }
 
