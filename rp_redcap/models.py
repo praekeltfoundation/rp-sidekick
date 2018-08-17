@@ -31,11 +31,17 @@ class Survey(models.Model):
     rapidpro_flow = models.CharField(max_length=200)
     urn_field = models.CharField(max_length=200)
     check_fields = models.BooleanField(default=False)
+    ignore_fields = models.TextField(null=True)
 
     unique_together = (("name", "project_id"),)
 
     def __str__(self):
         return self.name
+
+    def get_ignore_fields(self):
+        if self.ignore_fields:
+            return [x.strip() for x in self.ignore_fields.split(",")]
+        return []
 
 
 class Contact(models.Model):

@@ -313,3 +313,63 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         contact = Contact.objects.get(record_id=1)
         self.assertEqual(contact.role, "Investigator")
+
+    @responses.activate
+    @patch("rp_redcap.models.Project.get_redcap_client")
+    def test_project_check_with_ignore_fields(self, mock_get_redcap_client):
+        """
+        Project task test with ignore_fields.
+
+        The task should check for incomplete surveys and start a rapidpro flow
+        for all the urns. The missing fields should be determined based on the
+        metadata. Any required fields should be ignored if they are in the
+        ignore_fields list.
+        """
+        self.mock_start_flow()
+
+        mock_get_redcap_client.return_value = MockRedCap()
+
+        Survey.objects.create(
+            name="survey_A",
+            rapidpro_flow="f5901b62",
+            urn_field="mobile",
+            project=self.project,
+            check_fields=True,
+            ignore_fields="surname, test_field",
+        )
+
+        project_check(str(self.project.id))
+
+        self.assertEqual(len(responses.calls), 2)
+        self.assertEqual(
+            json.loads(responses.calls[0].request.body),
+            {
+                "flow": "f5901b62",
+                "restart_participants": 1,
+                "urns": ["tel:+27123"],
+                "extra": {
+                    "missing_fields": "email",
+                    "project_name": "Test Project",
+                    "survey_name": "survey_A",
+                    "name": "Peter",
+                    "title": "Ms",
+                    "role": None,
+                },
+            },
+        )
+        self.assertEqual(
+            json.loads(responses.calls[1].request.body),
+            {
+                "flow": "f5901b62",
+                "restart_participants": 1,
+                "urns": ["tel:+27234"],
+                "extra": {
+                    "missing_fields": "name",
+                    "project_name": "Test Project",
+                    "survey_name": "survey_A",
+                    "name": None,
+                    "title": None,
+                    "role": None,
+                },
+            },
+        )

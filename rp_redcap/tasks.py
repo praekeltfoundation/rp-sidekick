@@ -75,6 +75,7 @@ class ProjectCheck(Task):
             metadata = self.get_metadata(survey.name, redcap_client)
 
             required_fields = self.get_required_fields(metadata)
+            ignore_fields = survey.get_ignore_fields()
             roles = self.get_choices(metadata, "role")
             titles = self.get_choices(metadata, "title")
 
@@ -127,6 +128,7 @@ class ProjectCheck(Task):
                                 if (
                                     value == ""
                                     and field in required_fields
+                                    and field not in ignore_fields
                                     and eval(required_fields[field])
                                 ):
                                     missing_fields.append(field)
