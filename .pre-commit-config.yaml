@@ -2,7 +2,7 @@
 exclude: ^(ve/|venv/)
 repos:
   - repo: https://github.com/ambv/black
-    rev: stable
+    rev: master
     hooks:
       - id: black
         language_version: python3.6

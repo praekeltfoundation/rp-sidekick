@@ -18,5 +18,6 @@ exclude = '''
   | build
   | dist
   | migrations
+  | config/settings.py
 )/
 '''
