@@ -6,7 +6,7 @@ omit = *migrations*,
        *apps*,
        ./manage.py,
        ./setup.py,
-       ./rp_sidekick/*,
+       ./config/*,
        *__init__*
 
 [report]
