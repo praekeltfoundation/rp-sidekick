@@ -9,29 +9,20 @@ https://docs.djangoproject.com/en/2.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.1/ref/settings/
 """
+import environ
 
 from kombu import Exchange, Queue
-from getenv import env
 
-import os
-import dj_database_url
+from os.path import join
 import djcelery
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+root = environ.Path(__file__) - 3
+env = environ.Env(DEBUG=(bool, False))
 
+ROOT_DIR = root()
+environ.Env.read_env(join(ROOT_DIR, ".env"))
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY", "REPLACEME")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env("DEBUG", False)
-
-ALLOWED_HOSTS = ["*"]
-
+ALLOWED_HOSTS = []
 
 # Application definition
 
@@ -45,7 +36,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "djcelery",
-    "raven.contrib.django.raven_compat",
     "django_extensions",
     "sidekick",
     "rp_redcap",
@@ -62,19 +52,17 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "rp_sidekick.urls"
+ROOT_URLCONF = "config.urls"
 
-WSGI_APPLICATION = "rp_sidekick.wsgi.application"
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
 DATABASES = {
-    "default": dj_database_url.config(
-        default=env(
-            "RP_SIDEKICK_DATABASE", "postgres://postgres:@localhost/rp_sidekick"
-        )
+    "default": env.db(
+        "RP_SIDEKICK_DATABASE",
+        default="postgres://postgres:@localhost/rp_sidekick",
     )
 }
 
@@ -84,16 +72,12 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"  # noqa
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"
-    },  # noqa
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"
-    },  # noqa
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"  # noqa
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
     },
 ]
 
@@ -120,9 +104,14 @@ STATICFILES_FINDERS = (
     "django.contrib.staticfiles.finders.FileSystemFinder",
 )
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_ROOT = join(ROOT_DIR, "staticfiles")
 STATIC_URL = "/static/"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+COMPRESS_ENABLED = True
+
+MEDIA_ROOT = join(ROOT_DIR, "media")
+MEDIA_URL = "/media/"
+
 
 TEMPLATES = [
     {
@@ -130,7 +119,7 @@ TEMPLATES = [
         "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
-            "debug": DEBUG,
+            "debug": env.bool("DEBUG", False),
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
@@ -140,8 +129,6 @@ TEMPLATES = [
         },
     }
 ]
-
-RAVEN_CONFIG = {"dsn": os.environ.get("SENTRY_DSN", None)}
 
 REST_FRAMEWORK = {
     "PAGE_SIZE": 1000,
@@ -161,7 +148,7 @@ REST_FRAMEWORK = {
 CELERY_RESULT_BACKEND = "djcelery.backends.database:DatabaseBackend"
 CELERYBEAT_SCHEDULER = "djcelery.schedulers.DatabaseScheduler"
 
-BROKER_URL = env("BROKER_URL", "redis://localhost:6379/0")
+BROKER_URL = env.str("BROKER_URL", "redis://localhost:6379/0")
 
 CELERY_DEFAULT_QUEUE = "rp_sidekick"
 CELERY_QUEUES = (

@@ -1,4 +1,4 @@
-from rp_sidekick.settings import *  # flake8: noqa
+from .base import *  # flake8: noqa
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "TESTSEKRET"
@@ -14,3 +14,6 @@ BROKER_BACKEND = "memory"
 CELERY_RESULT_BACKEND = "djcelery.backends.database:DatabaseBackend"
 
 PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
+
+ENV_HOSTS = [host for host in env.str("ALLOWED_HOSTS", "").split(",") if host]
+ALLOWED_HOSTS = ENV_HOSTS + ["localhost", ".localhost", "127.0.0.1", "0.0.0.0"]
