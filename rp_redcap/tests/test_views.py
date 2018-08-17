@@ -45,6 +45,23 @@ class SurveyCheckViewTests(RedcapBaseTestCase, APITestCase):
         mock_project_check.assert_not_called()
 
     @patch("rp_redcap.tasks.project_check.delay")
+    def test_project_not_found(self, mock_project_check):
+        """
+        Project not found test.
+
+        If the project id in the url doesn't exist we should respond with an
+        appropriate message.
+        """
+        survey_url = reverse("rp_redcap.start_project_check", args=[-1])
+
+        response = self.client.post(
+            survey_url, {}, content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_project_check.assert_not_called()
+
+    @patch("rp_redcap.tasks.project_check.delay")
     def test_not_in_org(self, mock_project_check):
         """
         Not in organization test.
