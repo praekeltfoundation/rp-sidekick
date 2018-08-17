@@ -8,7 +8,10 @@ from .models import Project
 
 class StartProjectCheckView(APIView):
     def post(self, request, project_id, *args, **kwargs):
-        project = Project.objects.get(id=project_id)
+        try:
+            project = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
 
         if not project.org.users.filter(id=request.user.id).exists():
             return HttpResponse(status=status.HTTP_401_UNAUTHORIZED)
