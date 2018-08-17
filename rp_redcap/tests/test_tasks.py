@@ -5,7 +5,8 @@ import json
 
 from rp_redcap.models import Survey, Contact
 from rp_redcap.tasks import project_check
-from base import RedcapBaseTestCase
+
+from .base import RedcapBaseTestCase
 
 
 class MockRedCap(object):

@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase, APIClient
 
-from base import RedcapBaseTestCase
+from .base import RedcapBaseTestCase
 
 
 class SurveyCheckViewTests(RedcapBaseTestCase, APITestCase):
