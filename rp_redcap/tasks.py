@@ -8,7 +8,7 @@ from .models import Contact, Project, SurveyAnswer
 class ProjectCheck(Task):
     """Task to look for incomplete surveys in a Project."""
 
-    name = "rp_sidekick.rp_redcap.tasks.project_check"
+    name = "rp_redcap.tasks.project_check"
     log = get_task_logger(__name__)
 
     def get_records(self, survey_name, redcap_client):
