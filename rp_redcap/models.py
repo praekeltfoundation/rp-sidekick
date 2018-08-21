@@ -31,7 +31,7 @@ class Survey(models.Model):
     rapidpro_flow = models.CharField(max_length=200)
     urn_field = models.CharField(max_length=200)
     check_fields = models.BooleanField(default=False)
-    ignore_fields = models.TextField(null=True)
+    ignore_fields = models.TextField(null=True, blank=True)
 
     unique_together = (("name", "project_id"),)
 
@@ -58,3 +58,18 @@ class Contact(models.Model):
 
     def __str__(self):
         return "{}: {}".format(self.record_id, self.urn)
+
+
+class SurveyAnswer(models.Model):
+    survey = models.ForeignKey(
+        Survey, related_name="answers", null=False, on_delete=models.CASCADE
+    )
+    contact = models.ForeignKey(
+        Contact, related_name="answers", null=False, on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=200, blank=False)
+    value = models.TextField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    unique_together = (("survey", "contact", "name"),)

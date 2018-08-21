@@ -3,7 +3,7 @@ from mock import patch
 import responses
 import json
 
-from rp_redcap.models import Survey, Contact
+from rp_redcap.models import Survey, Contact, SurveyAnswer
 from rp_redcap.tasks import project_check
 
 from .base import RedcapBaseTestCase
@@ -185,6 +185,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         contact = Contact.objects.get(record_id=1)
         self.assertEqual(contact.urn, "tel:+27123")
         self.assertEqual(contact.project, self.project)
+
+        self.assertEqual(SurveyAnswer.objects.count(), 2)
 
     @responses.activate
     @patch("rp_redcap.models.Project.get_redcap_client")
