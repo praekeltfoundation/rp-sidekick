@@ -2,7 +2,7 @@ from celery.task import Task
 from celery.utils.log import get_task_logger
 from collections import defaultdict
 
-from .models import Contact, Project
+from .models import Contact, Project, SurveyAnswer
 
 
 class ProjectCheck(Task):
@@ -53,6 +53,24 @@ class ProjectCheck(Task):
                     )
                 )
         return choices
+
+    def save_answers(self, row, survey, contact):
+        for field, value in row.items():
+            if (
+                field
+                not in [
+                    "record_id",
+                    "{}_complete".format(survey.name),
+                    "{}_timestamp".format(survey.name),
+                ]
+                and value != ""
+            ):
+                obj, created = SurveyAnswer.objects.update_or_create(
+                    survey=survey,
+                    contact=contact,
+                    name=field,
+                    defaults={"value": value},
+                )
 
     def start_flows(self, rapidpro_client, flow, reminders):
         for urn, extra_info in reminders.items():
@@ -110,6 +128,8 @@ class ProjectCheck(Task):
                         **contact_update
                     )
                     contact.refresh_from_db()
+
+                self.save_answers(row, survey, contact)
 
                 if contact.urn:
                     if row["{}_complete".format(survey.name)] == "2":
