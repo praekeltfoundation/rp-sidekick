@@ -169,3 +169,6 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 
 djcelery.setup_loader()
+
+TRANSFERTO_LOGIN = env.str("TRANSFERTO_LOGIN", "")
+TRANSFERTO_TOKEN = env.str("TRANSFERTO_TOKEN", "")
