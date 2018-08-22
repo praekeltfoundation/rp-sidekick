@@ -134,12 +134,6 @@ class ProjectCheck(Task):
 
                 self.save_answers(row, survey, contact)
 
-                print("----")
-                print(row["record_id"])
-                print(survey.name)
-                print(project.reminder_limit)
-                print(data[row["record_id"]]["redcap_reminder_count"])
-
                 if (
                     contact.urn
                     and row["{}_complete".format(survey.name)] == "0"
@@ -169,8 +163,6 @@ class ProjectCheck(Task):
 
                     reminders[contact.urn] = extra_info
                     data[row["record_id"]]["redcap_reminder_count"] += 1
-                    print("increase:")
-                    print(data[row["record_id"]]["redcap_reminder_count"])
 
             self.start_flows(rapidpro_client, survey.rapidpro_flow, reminders)
 
