@@ -132,7 +132,7 @@ class ProjectCheck(Task):
                 self.save_answers(row, survey, contact)
 
                 if contact.urn:
-                    if row["{}_complete".format(survey.name)] == "2":
+                    if row["{}_complete".format(survey.name)] == "0":
 
                         extra_info = {
                             "project_name": project.name,

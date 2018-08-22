@@ -68,7 +68,7 @@ class MockRedCap(object):
                     "role___1": "1",
                     "email": "",
                     "surname": "",
-                    "survey_1_complete": "0",
+                    "survey_1_complete": "2",
                 },
                 {
                     "record_id": "2",
@@ -78,14 +78,14 @@ class MockRedCap(object):
                     "role___1": "0",
                     "email": "",
                     "surname": "",
-                    "survey_1_complete": "0",
+                    "survey_1_complete": "2",
                 },
             ]
 
         if "survey_2" in forms:
             return [
-                {"record_id": "1", "follow_up": "", "survey_2_complete": "2"},
-                {"record_id": "2", "follow_up": "", "survey_2_complete": "2"},
+                {"record_id": "1", "follow_up": "", "survey_2_complete": "0"},
+                {"record_id": "2", "follow_up": "", "survey_2_complete": "0"},
             ]
 
         return [
@@ -98,7 +98,7 @@ class MockRedCap(object):
                 "role___1": "1",
                 "email": "",
                 "surname": "",
-                "survey_A_complete": "2",
+                "survey_A_complete": "0",
             },
             {
                 "record_id": "2",
@@ -108,7 +108,7 @@ class MockRedCap(object):
                 "role___1": "0",
                 "email": "",
                 "surname": "",
-                "survey_A_complete": "2",
+                "survey_A_complete": "0",
             },
         ]
 
@@ -150,9 +150,9 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         self.mock_start_flow()
 
         mock_get_records.return_value = [
-            {"record_id": "1", "mobile": "+27123", "survey_1_complete": "2"},
-            {"record_id": "2", "mobile": "+27234", "survey_1_complete": "0"},
-            {"record_id": "3", "mobile": "", "survey_1_complete": "2"},
+            {"record_id": "1", "mobile": "+27123", "survey_1_complete": "0"},
+            {"record_id": "2", "mobile": "+27234", "survey_1_complete": "2"},
+            {"record_id": "3", "mobile": "", "survey_1_complete": "0"},
         ]
 
         Survey.objects.create(
