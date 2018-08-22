@@ -101,6 +101,9 @@ class ProjectCheck(Task):
             for row in records:
                 data[row["record_id"]].update(row)
 
+                if "redcap_reminder_count" not in data[row["record_id"]]:
+                    data[row["record_id"]]["redcap_reminder_count"] = 0
+
                 contact, created = Contact.objects.get_or_create(
                     record_id=row["record_id"], project=project
                 )
@@ -131,33 +134,43 @@ class ProjectCheck(Task):
 
                 self.save_answers(row, survey, contact)
 
-                if contact.urn:
-                    if row["{}_complete".format(survey.name)] == "0":
+                print("----")
+                print(row["record_id"])
+                print(survey.name)
+                print(project.reminder_limit)
+                print(data[row["record_id"]]["redcap_reminder_count"])
 
-                        extra_info = {
-                            "project_name": project.name,
-                            "survey_name": survey.name,
-                            "role": contact.role,
-                            "name": contact.name,
-                            "title": contact.title,
-                        }
+                if (
+                    contact.urn
+                    and row["{}_complete".format(survey.name)] == "0"
+                    and data[row["record_id"]]["redcap_reminder_count"]
+                    < project.reminder_limit
+                ):
+                    extra_info = {
+                        "project_name": project.name,
+                        "survey_name": survey.name,
+                        "role": contact.role,
+                        "name": contact.name,
+                        "title": contact.title,
+                    }
 
-                        if survey.check_fields:
-                            missing_fields = []
-                            for field, value in row.items():
-                                if (
-                                    value == ""
-                                    and field in required_fields
-                                    and field not in ignore_fields
-                                    and eval(required_fields[field])
-                                ):
-                                    missing_fields.append(field)
+                    if survey.check_fields:
+                        missing_fields = []
+                        for field, value in row.items():
+                            if (
+                                value == ""
+                                and field in required_fields
+                                and field not in ignore_fields
+                                and eval(required_fields[field])
+                            ):
+                                missing_fields.append(field)
 
-                            extra_info["missing_fields"] = ", ".join(
-                                missing_fields
-                            )
+                        extra_info["missing_fields"] = ", ".join(missing_fields)
 
-                        reminders[contact.urn] = extra_info
+                    reminders[contact.urn] = extra_info
+                    data[row["record_id"]]["redcap_reminder_count"] += 1
+                    print("increase:")
+                    print(data[row["record_id"]]["redcap_reminder_count"])
 
             self.start_flows(rapidpro_client, survey.rapidpro_flow, reminders)
 

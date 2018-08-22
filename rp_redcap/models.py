@@ -14,6 +14,7 @@ class Project(models.Model):
         null=False,
         on_delete=models.CASCADE,
     )
+    reminder_limit = models.IntegerField(default=2, null=False)
 
     def __str__(self):
         return self.name

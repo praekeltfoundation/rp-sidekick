@@ -88,6 +88,21 @@ class MockRedCap(object):
                 {"record_id": "2", "follow_up": "", "survey_2_complete": "0"},
             ]
 
+        if "survey_ONE" in forms:
+            return [
+                {
+                    "record_id": "1",
+                    "survey_ONE_complete": "0",
+                    "mobile": "+27123",
+                    "role___0": "0",
+                    "role___1": "0",
+                }
+            ]
+        if "survey_TWO" in forms:
+            return [
+                {"record_id": "1", "follow_up": "", "survey_TWO_complete": "0"}
+            ]
+
         return [
             {
                 "record_id": "1",
@@ -373,6 +388,59 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "name": None,
                     "title": None,
                     "role": None,
+                },
+            },
+        )
+
+    @responses.activate
+    @patch("rp_redcap.models.Project.get_redcap_client")
+    def test_project_check_reminder_limit(self, mock_get_redcap_client):
+        """
+        Project task reminder limit test.
+
+        The task should not try and send more reminders than specified in the
+        limit on the project.
+        """
+        self.mock_start_flow()
+
+        mock_get_redcap_client.return_value = MockRedCap()
+        self.project.reminder_limit = 1
+        self.project.save()
+
+        Survey.objects.create(
+            name="survey_ONE",
+            rapidpro_flow="f5901b62",
+            urn_field="mobile",
+            project=self.project,
+            check_fields=True,
+            sequence=1,
+        )
+
+        Survey.objects.create(
+            name="survey_TWO",
+            rapidpro_flow="f5901b62",
+            urn_field="mobile",
+            project=self.project,
+            check_fields=True,
+            sequence=2,
+        )
+
+        project_check(str(self.project.id))
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(
+            json.loads(responses.calls[0].request.body),
+            {
+                "flow": "f5901b62",
+                "restart_participants": 1,
+                "urns": ["tel:+27123"],
+                "extra": {
+                    "missing_fields": "",
+                    "project_name": "Test Project",
+                    "survey_name": "survey_ONE",
+                    "role": None,
+                    "name": None,
+                    "title": None,
                 },
             },
         )
