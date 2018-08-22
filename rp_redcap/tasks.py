@@ -137,8 +137,10 @@ class ProjectCheck(Task):
                 if (
                     contact.urn
                     and row["{}_complete".format(survey.name)] == "0"
-                    and data[row["record_id"]]["redcap_reminder_count"]
-                    < project.reminder_limit
+                    and (
+                        data[row["record_id"]]["redcap_reminder_count"]
+                        < project.reminder_limit
+                    )
                 ):
                     extra_info = {
                         "project_name": project.name,
