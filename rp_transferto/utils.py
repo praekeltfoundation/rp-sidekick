@@ -88,3 +88,32 @@ class TransferToClient:
             return self._make_transferto_request(
                 action="pricelist", info_type="operator", content=operator_id
             )
+
+    def make_topup(
+        self,
+        msisdn,
+        product,
+        source_msisdn=None,
+        source_name=None,
+        reserve_id=None,
+    ):
+        """
+        Returns the list of denomination including wholesale and retail prices offered to your account,
+        for a specific operator
+        """
+        if source_msisdn is None and source_name is None:
+            raise Exception("source_msisdn and source_name cannot both be None")
+        if type(product) != int:
+            raise TypeError("product arg must be an int")
+
+        keyword_args = {
+            "action": "topup",
+            "destination_msisdn": msisdn,
+            "msisdn": source_msisdn or source_name,
+            "product": product,
+        }
+
+        if reserve_id:
+            keyword_args["reserve_id"] = reserve_id
+
+        return self._make_transferto_request(**keyword_args)
