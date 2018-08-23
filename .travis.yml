@@ -33,7 +33,7 @@ matrix:
       services:
         - docker
       env:
-        - IMAGE_NAME=praekeltfoundation/ndoh-hub:develop
+        - IMAGE_NAME=praekeltfoundation/rp-sidekick:develop
       before_script:
         - docker pull "$IMAGE_NAME" || true
       script:
@@ -54,7 +54,7 @@ matrix:
       services:
         - docker
       env:
-        - IMAGE_NAME=praekeltfoundation/ndoh-hub
+        - IMAGE_NAME=praekeltfoundation/rp-sidekick
       before_script:
         - docker pull "$IMAGE_NAME" || true
       script:
