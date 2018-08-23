@@ -40,21 +40,21 @@ class TransferToClient:
         """
         Check API status
         """
-        return self._make_transferto_request("ping")
+        return self._make_transferto_request(action="ping")
 
     def get_misisdn_info(self, msisdn):
         """
         Returns dict with information for a given MSISDN
         """
-        action = "msisdn_info"
-        return self._make_transferto_request(action, destination_msisdn=msisdn)
+        return self._make_transferto_request(
+            action="msisdn_info", destination_msisdn=msisdn
+        )
 
     def reserve_id(self):
         """
-        Returns dict with information for a given MSISDN
+        Returns dict with id for future transaction
         """
-        action = "reserve_id"
-        return self._make_transferto_request(action)
+        return self._make_transferto_request(action="reserve_id")
 
     def get_countries(self):
         """

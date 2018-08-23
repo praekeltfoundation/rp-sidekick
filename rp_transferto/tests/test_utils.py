@@ -45,14 +45,23 @@ class TestTransferToClient(TestCase):
         with patch.object(client, "_make_transferto_request") as mock:
             client.ping()
 
-        mock.assert_called_once_with("ping")
+        mock.assert_called_once_with(action="ping")
+
+    def test_get_misisdn_info(self):
+        client = TransferToClient("fake_login", "fake_token")
+        with patch.object(client, "_make_transferto_request") as mock:
+            client.get_misisdn_info("+27820000001")
+
+        mock.assert_called_once_with(
+            action="msisdn_info", destination_msisdn="+27820000001"
+        )
 
     def test_reserve_id(self):
         client = TransferToClient("fake_login", "fake_token")
         with patch.object(client, "_make_transferto_request") as mock:
             client.reserve_id()
 
-        mock.assert_called_once_with("reserve_id")
+        mock.assert_called_once_with(action="reserve_id")
 
     def test_get_countries(self):
         client = TransferToClient("fake_login", "fake_token")
