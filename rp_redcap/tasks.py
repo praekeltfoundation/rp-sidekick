@@ -144,7 +144,7 @@ class ProjectCheck(Task):
                 ):
                     extra_info = {
                         "project_name": project.name,
-                        "survey_name": survey.name,
+                        "survey_name": survey.description,
                         "role": contact.role,
                         "name": contact.name,
                         "title": contact.title,

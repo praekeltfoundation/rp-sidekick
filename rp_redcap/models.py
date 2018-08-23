@@ -26,6 +26,7 @@ class Project(models.Model):
 class Survey(models.Model):
     sequence = models.IntegerField(default=1, null=False)
     name = models.CharField(max_length=200, blank=False)
+    description = models.CharField(max_length=200, blank=False)
     project = models.ForeignKey(
         Project, related_name="surveys", null=False, on_delete=models.CASCADE
     )
@@ -37,7 +38,7 @@ class Survey(models.Model):
     unique_together = (("name", "project_id"),)
 
     def __str__(self):
-        return self.name
+        return self.description
 
     def get_ignore_fields(self):
         if self.ignore_fields:
