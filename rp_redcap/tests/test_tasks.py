@@ -172,6 +172,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         Survey.objects.create(
             name="survey_1",
+            description="Survey 1",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
@@ -188,7 +189,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27123"],
                 "extra": {
                     "project_name": "Test Project",
-                    "survey_name": "survey_1",
+                    "survey_name": "Survey 1",
                     "name": None,
                     "title": None,
                     "role": None,
@@ -219,6 +220,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         Survey.objects.create(
             name="survey_A",
+            description="Survey of the Month",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
@@ -237,7 +239,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "missing_fields": "email, surname",
                     "project_name": "Test Project",
-                    "survey_name": "survey_A",
+                    "survey_name": "Survey of the Month",
                     "name": "Peter",
                     "title": "Ms",
                     "role": None,
@@ -253,7 +255,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "missing_fields": "name, surname",
                     "project_name": "Test Project",
-                    "survey_name": "survey_A",
+                    "survey_name": "Survey of the Month",
                     "name": None,
                     "title": None,
                     "role": None,
@@ -277,6 +279,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         Survey.objects.create(
             name="survey_1",
+            description="Survey One",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
@@ -286,6 +289,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         Survey.objects.create(
             name="survey_2",
+            description="Survey Two",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
@@ -305,7 +309,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "missing_fields": "follow_up",
                     "project_name": "Test Project",
-                    "survey_name": "survey_2",
+                    "survey_name": "Survey Two",
                     "role": "Investigator",
                     "name": None,
                     "title": None,
@@ -321,7 +325,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "missing_fields": "",
                     "project_name": "Test Project",
-                    "survey_name": "survey_2",
+                    "survey_name": "Survey Two",
                     "role": "Lead Investigator",
                     "name": None,
                     "title": None,
@@ -349,6 +353,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         Survey.objects.create(
             name="survey_A",
+            description="Best Survey",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
@@ -368,7 +373,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "missing_fields": "email",
                     "project_name": "Test Project",
-                    "survey_name": "survey_A",
+                    "survey_name": "Best Survey",
                     "name": "Peter",
                     "title": "Ms",
                     "role": None,
@@ -384,7 +389,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "missing_fields": "name",
                     "project_name": "Test Project",
-                    "survey_name": "survey_A",
+                    "survey_name": "Best Survey",
                     "name": None,
                     "title": None,
                     "role": None,
@@ -409,6 +414,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         Survey.objects.create(
             name="survey_ONE",
+            description="First Survey",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
@@ -418,6 +424,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         Survey.objects.create(
             name="survey_TWO",
+            description="Second Survey",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
@@ -437,7 +444,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "missing_fields": "",
                     "project_name": "Test Project",
-                    "survey_name": "survey_ONE",
+                    "survey_name": "First Survey",
                     "role": None,
                     "name": None,
                     "title": None,
