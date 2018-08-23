@@ -20,7 +20,7 @@ class TransferToClient:
             data[key] = value
         return data
 
-    def _make_transferto_request(self, action, url=None, **kwargs):
+    def _make_transferto_request(self, action, **kwargs):
         """
         Returns a dict with response from the TransferTo API
 
@@ -31,9 +31,7 @@ class TransferToClient:
             (self.login + self.token + key).encode("UTF-8")
         ).hexdigest()
         data = dict(login=self.login, key=key, md5=md5, action=action, **kwargs)
-        if url is None:
-            url = self.url
-        response = requests.post(url, data=data)
+        response = requests.post(self.url, data=data)
         return self._convert_response_body(response.content)
 
     def ping(self):
