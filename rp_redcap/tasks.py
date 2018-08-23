@@ -163,8 +163,12 @@ class ProjectCheck(Task):
 
                         extra_info["missing_fields"] = ", ".join(missing_fields)
 
-                    reminders[contact.urn] = extra_info
-                    data[row["record_id"]]["redcap_reminder_count"] += 1
+                    if (
+                        extra_info.get("missing_fields")
+                        or not survey.check_fields
+                    ):
+                        reminders[contact.urn] = extra_info
+                        data[row["record_id"]]["redcap_reminder_count"] += 1
 
             self.start_flows(rapidpro_client, survey.rapidpro_flow, reminders)
 
