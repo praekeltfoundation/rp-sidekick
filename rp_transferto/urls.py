@@ -7,7 +7,7 @@ urlpatterns = [
     path(
         "msisdn_info/<str:msisdn>/",
         views.MsisdnInfo.as_view(),
-        name="misisdn_info",
+        name="msisdn_info",
     ),
     path("reserve_id/", views.ReserveId.as_view(), name="reserve_id"),
     path("get_countries/", views.GetCountries.as_view(), name="get_countries"),
@@ -19,6 +19,6 @@ urlpatterns = [
     path(
         "get_products/<int:operator_id>/",
         views.GetProducts.as_view(),
-        name="get_products",
+        name="get_operator_products",
     ),
 ]
