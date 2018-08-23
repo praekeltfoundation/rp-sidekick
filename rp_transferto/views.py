@@ -22,6 +22,14 @@ class MsisdnInfo(APIView):
         return JsonResponse(client.get_misisdn_info(msisdn))
 
 
+class ReserveId(APIView):
+    def get(self, request):
+        client = TransferToClient(
+            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+        )
+        return JsonResponse(client.reserve_id())
+
+
 class GetCountries(APIView):
     def get(self, request):
         client = TransferToClient(

@@ -49,6 +49,13 @@ class TransferToClient:
         action = "msisdn_info"
         return self._make_transferto_request(action, destination_msisdn=msisdn)
 
+    def reserve_id(self):
+        """
+        Returns dict with information for a given MSISDN
+        """
+        action = "reserve_id"
+        return self._make_transferto_request(action)
+
     def get_countries(self):
         """
         Returns list of countries offered to your TransferTo account
