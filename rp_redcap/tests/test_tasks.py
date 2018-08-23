@@ -87,6 +87,20 @@ class MockRedCap(object):
                 },
             ]
 
+        if "survey_3" in forms:
+            return [
+                {
+                    "record_id": "1",
+                    "mobile": "+27123",
+                    "name": "Tony",
+                    "role___0": "1",
+                    "role___1": "1",
+                    "email": "tony@test.com",
+                    "surname": "Test",
+                    "survey_3_complete": "0",
+                }
+            ]
+
         if "survey_2" in forms:
             return [
                 {
@@ -488,8 +502,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         self.project.save()
 
         Survey.objects.create(
-            name="survey_1",
-            description="First Survey",
+            name="survey_3",
+            description="Another Survey",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
