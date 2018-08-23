@@ -4,7 +4,6 @@ language: python
 env:
   global:
     - REGISTRY_USER=rapidproautomation
-    - IMAGE_NAME=praekeltfoundation/rp-sidekick:develop
     - secure: "t8wSKscPM83UejJc0sxlGzC2ieKilwfeTY3aaSrW52O+O/B3Sl2RGWtWQ6zwvu8o87/9yCF2daMxVc5OQe9T7dMbykL+lo7h1GjPW6qFEqSs0L3yHJOJAzMbNwSraADYiWl0ExGP7v44Q0hJli1CRgK9DIyWPATmw9tgMa7qtc//4uSvl4kppejVb5H3IuvPnLhu/cXSrKF/1ms7mmx9c4/slDI/5c65A2tACMK+3nit8Sz3z33NzfJtjnIO6C0FnEgmljdJ+Hf9O3fYqkNaB03jEmmFmNm5rgMA6hrOhqN1Dh8SfZws2LgJW5aWBLejpTlXIp145uAWr0FOZkfMRQUVX5qYnmwZ5WxzmhhgrKQNLr56S6St2k//6077dEIw2neLrT1oLj4HaG/9ewrm5qaQON3QF/RCZ2vEbzUxthQPfPKKxOAgJrBV5p64UM4gzS87sS6jMUMMCvcltppK21iLLinRE3FwqyBFCnrA03TyVXWGnib/eR0b8kFul5fOtga/qKAeeoW+IHVBWhy7O4f16GdxA3VuV1WY+w2v+CzH94Yrvged3msWbvsQXlePf4W2op86Xu8Bqoxl2ghlahOqgnUEKY4OU20Xpwy13tr5aZIM4qDvFoHw7NQ6/fWcyykfSIfb4YeS1+CpBAxCZZUUpGtMt3WPYzjP2FbPlaY="   # yamllint disable-line
 
 matrix:
@@ -33,6 +32,8 @@ matrix:
       dist: trusty
       services:
         - docker
+      env:
+        - IMAGE_NAME=praekeltfoundation/ndoh-hub:develop
       before_script:
         - docker pull "$IMAGE_NAME" || true
       script:
@@ -52,6 +53,8 @@ matrix:
       dist: trusty
       services:
         - docker
+      env:
+        - IMAGE_NAME=praekeltfoundation/ndoh-hub
       before_script:
         - docker pull "$IMAGE_NAME" || true
       script:
