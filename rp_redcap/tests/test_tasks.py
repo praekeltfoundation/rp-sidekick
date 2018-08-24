@@ -14,31 +14,37 @@ class MockRedCap(object):
         metadata = [
             {
                 "field_name": "name",
+                "field_label": "Name",
                 "required_field": "y",
                 "branching_logic": "",
             },
             {
                 "field_name": "email",
+                "field_label": "Email",
                 "required_field": "y",
                 "branching_logic": "[role(1)] = '1'",
             },
             {
                 "field_name": "surname",
+                "field_label": "Surname",
                 "required_field": "y",
                 "branching_logic": "[role(0)] = '1' or [role(1)] = '1'",
             },
             {
                 "field_name": "follow_up",
+                "field_label": "Follow Up",
                 "required_field": "y",
                 "branching_logic": "[role(1)] = '1'",
             },
             {
                 "field_name": "consent",
+                "field_label": "Consent?",
                 "required_field": "y",
                 "branching_logic": "",
             },
             {
                 "field_name": "title",
+                "field_label": "Title",
                 "required_field": "",
                 "branching_logic": "",
                 "select_choices_or_calculations": "1, Ms | 2, Mr | 3, Dr | 4, Prof",  # noqa
@@ -49,6 +55,7 @@ class MockRedCap(object):
             metadata.append(
                 {
                     "field_name": "role",
+                    "field_label": "Role",
                     "required_field": "y",
                     "branching_logic": "",
                     "select_choices_or_calculations": "0, Lead Investigator | 1, Investigator",  # noqa
@@ -273,6 +280,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27123"],
                 "extra": {
                     "missing_fields": "email, surname",
+                    "missing_field_labels": "Email\nSurname",
                     "project_name": "Test Project",
                     "survey_name": "Survey of the Month",
                     "name": "Peter",
@@ -289,6 +297,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27234"],
                 "extra": {
                     "missing_fields": "name, surname",
+                    "missing_field_labels": "Name\nSurname",
                     "project_name": "Test Project",
                     "survey_name": "Survey of the Month",
                     "name": None,
@@ -343,6 +352,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27123"],
                 "extra": {
                     "missing_fields": "follow_up",
+                    "missing_field_labels": "Follow Up",
                     "project_name": "Test Project",
                     "survey_name": "Survey Two",
                     "role": "Investigator",
@@ -359,6 +369,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27234"],
                 "extra": {
                     "missing_fields": "consent",
+                    "missing_field_labels": "Consent?",
                     "project_name": "Test Project",
                     "survey_name": "Survey Two",
                     "role": "Lead Investigator",
@@ -407,6 +418,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27123"],
                 "extra": {
                     "missing_fields": "email",
+                    "missing_field_labels": "Email",
                     "project_name": "Test Project",
                     "survey_name": "Best Survey",
                     "name": "Peter",
@@ -423,6 +435,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27234"],
                 "extra": {
                     "missing_fields": "name",
+                    "missing_field_labels": "Name",
                     "project_name": "Test Project",
                     "survey_name": "Best Survey",
                     "name": None,
@@ -478,6 +491,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27123"],
                 "extra": {
                     "missing_fields": "name",
+                    "missing_field_labels": "Name",
                     "project_name": "Test Project",
                     "survey_name": "First Survey",
                     "role": None,

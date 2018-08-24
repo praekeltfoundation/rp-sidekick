@@ -36,7 +36,10 @@ class ProjectCheck(Task):
                     condition = condition.replace(" = ", " == ")
                     condition = condition.replace("(", "___").replace(")", "")
 
-                required_fields[field["field_name"]] = condition
+                required_fields[field["field_name"]] = {
+                    "condition": condition,
+                    "label": field["field_label"],
+                }
 
         return required_fields
 
@@ -152,16 +155,23 @@ class ProjectCheck(Task):
 
                     if survey.check_fields:
                         missing_fields = []
+                        missing_field_labels = []
                         for field, value in row.items():
                             if (
                                 value == ""
                                 and field in required_fields
                                 and field not in ignore_fields
-                                and eval(required_fields[field])
+                                and eval(required_fields[field]["condition"])
                             ):
                                 missing_fields.append(field)
+                                missing_field_labels.append(
+                                    required_fields[field]["label"]
+                                )
 
                         extra_info["missing_fields"] = ", ".join(missing_fields)
+                        extra_info["missing_field_labels"] = "\n".join(
+                            missing_field_labels
+                        )
 
                     if (
                         extra_info.get("missing_fields")
