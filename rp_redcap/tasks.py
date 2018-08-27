@@ -126,6 +126,9 @@ class ProjectCheck(Task):
                 if row.get("name"):
                     contact_update["name"] = row.get("name")
 
+                if row.get("surname"):
+                    contact_update["surname"] = row.get("surname")
+
                 if row.get("title"):
                     contact_update["title"] = titles.get(row["title"])
 
@@ -150,6 +153,7 @@ class ProjectCheck(Task):
                         "survey_name": survey.description,
                         "role": contact.role,
                         "name": contact.name,
+                        "surname": contact.surname,
                         "title": contact.title,
                     }
 
@@ -172,6 +176,7 @@ class ProjectCheck(Task):
                         extra_info["missing_field_labels"] = "\n".join(
                             missing_field_labels
                         )
+                        extra_info["missing_field_count"] = len(missing_fields)
 
                     if (
                         extra_info.get("missing_fields")
