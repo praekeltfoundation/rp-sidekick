@@ -54,6 +54,7 @@ class Contact(models.Model):
     urn = models.CharField(max_length=200)
     role = models.CharField(max_length=200, null=True)
     name = models.CharField(max_length=200, null=True)
+    surname = models.CharField(max_length=200, null=True)
     title = models.CharField(max_length=200, null=True)
 
     unique_together = (("record_id", "project_id"),)
