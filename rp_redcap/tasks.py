@@ -49,7 +49,7 @@ class ProjectCheck(Task):
             if field["field_name"] == field_name:
                 choices.update(
                     dict(
-                        item.split(", ")
+                        item.split(", ", 1)
                         for item in field[
                             "select_choices_or_calculations"
                         ].split(" | ")

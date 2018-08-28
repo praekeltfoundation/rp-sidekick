@@ -543,3 +543,20 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 0)
+
+    def test_get_choices(self):
+
+        metadata = [
+            {
+                "field_name": "role",
+                "field_label": "Role",
+                "required_field": "y",
+                "branching_logic": "",
+                "select_choices_or_calculations": "0, Lead (Investigator, Detective) | 1, Investigator",  # noqa
+            }
+        ]
+
+        roles = project_check.get_choices(metadata, "role")
+
+        self.assertEqual(roles["0"], "Lead (Investigator, Detective)")
+        self.assertEqual(roles["1"], "Investigator")
