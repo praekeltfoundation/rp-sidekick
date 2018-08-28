@@ -151,10 +151,10 @@ class ProjectCheck(Task):
                     extra_info = {
                         "project_name": project.name,
                         "survey_name": survey.description,
-                        "role": contact.role,
-                        "name": contact.name,
-                        "surname": contact.surname,
-                        "title": contact.title,
+                        "role": contact.role or "",
+                        "name": contact.name or "",
+                        "surname": contact.surname or "",
+                        "title": contact.title or "",
                     }
 
                     if survey.check_fields:

@@ -38,7 +38,7 @@ class Survey(models.Model):
     unique_together = (("name", "project_id"),)
 
     def __str__(self):
-        return self.description
+        return "{} - {}".format(self.project.name, self.description)
 
     def get_ignore_fields(self):
         if self.ignore_fields:
