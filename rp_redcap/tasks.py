@@ -1,6 +1,7 @@
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from collections import defaultdict
+from sidekick import utils
 
 from .models import Contact, Project, SurveyAnswer
 
@@ -155,6 +156,7 @@ class ProjectCheck(Task):
                         "name": contact.name or "",
                         "surname": contact.surname or "",
                         "title": contact.title or "",
+                        "week": utils.get_current_week_number(),
                     }
 
                     if survey.check_fields:
