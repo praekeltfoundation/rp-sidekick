@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "sidekick",
     "rp_redcap",
+    "rp_transferto",
 ]
 
 MIDDLEWARE = [
@@ -62,7 +63,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": env.db(
         "RP_SIDEKICK_DATABASE",
-        default="postgres://postgres:@localhost/rp_sidekick",
+        default="postgres://postgres@localhost:5432/rp_sidekick",
     )
 }
 
@@ -168,3 +169,6 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 
 djcelery.setup_loader()
+
+TRANSFERTO_LOGIN = env.str("TRANSFERTO_LOGIN", "")
+TRANSFERTO_TOKEN = env.str("TRANSFERTO_TOKEN", "")
