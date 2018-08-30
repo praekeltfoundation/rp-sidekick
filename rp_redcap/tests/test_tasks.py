@@ -1,5 +1,6 @@
 from django.test import TestCase
 from mock import patch
+import datetime
 import responses
 import json
 
@@ -7,6 +8,10 @@ from rp_redcap.models import Survey, Contact, SurveyAnswer
 from rp_redcap.tasks import project_check
 
 from .base import RedcapBaseTestCase
+
+
+def override_get_today():
+    return datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
 
 
 class MockRedCap(object):
@@ -220,7 +225,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             project=self.project,
         )
 
-        project_check(str(self.project.id))
+        with patch("sidekick.utils.get_today", override_get_today):
+            project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -236,6 +242,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "surname": "",
                     "title": "",
                     "role": "",
+                    "week": 23,
                 },
             },
         )
@@ -270,7 +277,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             check_fields=True,
         )
 
-        project_check(str(self.project.id))
+        with patch("sidekick.utils.get_today", override_get_today):
+            project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 2)
         self.assertEqual(
@@ -289,6 +297,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "surname": "",
                     "title": "Ms",
                     "role": "",
+                    "week": 23,
                 },
             },
         )
@@ -308,6 +317,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "surname": "",
                     "title": "",
                     "role": "",
+                    "week": 23,
                 },
             },
         )
@@ -346,7 +356,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             sequence=2,
         )
 
-        project_check(str(self.project.id))
+        with patch("sidekick.utils.get_today", override_get_today):
+            project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 2)
         self.assertEqual(
@@ -365,6 +376,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "name": "",
                     "surname": "",
                     "title": "",
+                    "week": 23,
                 },
             },
         )
@@ -384,6 +396,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "name": "",
                     "surname": "",
                     "title": "",
+                    "week": 23,
                 },
             },
         )
@@ -416,7 +429,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             ignore_fields="surname, test_field",
         )
 
-        project_check(str(self.project.id))
+        with patch("sidekick.utils.get_today", override_get_today):
+            project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 2)
         self.assertEqual(
@@ -435,6 +449,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "surname": "",
                     "title": "Ms",
                     "role": "",
+                    "week": 23,
                 },
             },
         )
@@ -454,6 +469,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "surname": "",
                     "title": "",
                     "role": "",
+                    "week": 23,
                 },
             },
         )
@@ -493,7 +509,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             sequence=2,
         )
 
-        project_check(str(self.project.id))
+        with patch("sidekick.utils.get_today", override_get_today):
+            project_check(str(self.project.id))
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -512,6 +529,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                     "name": "",
                     "surname": "",
                     "title": "",
+                    "week": 23,
                 },
             },
         )
