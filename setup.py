@@ -11,6 +11,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "celery==3.1.26post2",
+        "coreapi==2.3.3",
         "Django==2.1",
         "django-celery==3.2.2",
         "django-environ==0.4.5",
