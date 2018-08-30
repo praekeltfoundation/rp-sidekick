@@ -1,8 +1,8 @@
-import datetime
+from django.utils import timezone
 
 
 def get_today():
-    return datetime.date.today()
+    return timezone.now().date()
 
 
 def get_current_week_number():
