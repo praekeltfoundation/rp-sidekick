@@ -156,7 +156,7 @@ class ProjectCheck(Task):
                         "name": contact.name or "",
                         "surname": contact.surname or "",
                         "title": contact.title or "",
-                        "week": int(utils.get_today().strftime("%W")),
+                        "week": utils.get_current_week_number(),
                     }
 
                     if survey.check_fields:
