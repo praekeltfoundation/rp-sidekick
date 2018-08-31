@@ -441,7 +441,12 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_redcap_client.return_value = MockRedCap()
 
         mock_get_records.return_value = [
-            {"record_id": "1", "mobile": "", "survey_3_complete": "0"}
+            {
+                "record_id": "1",
+                "mobile": "",
+                "survey_3_complete": "0",
+                "name": "",
+            }
         ]
 
         Survey.objects.create(
