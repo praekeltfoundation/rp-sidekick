@@ -14,7 +14,6 @@ class Project(models.Model):
         null=False,
         on_delete=models.CASCADE,
     )
-    reminder_limit = models.IntegerField(default=2, null=False)
 
     def __str__(self):
         return self.name
@@ -32,7 +31,6 @@ class Survey(models.Model):
     )
     rapidpro_flow = models.CharField(max_length=200)
     urn_field = models.CharField(max_length=200)
-    check_fields = models.BooleanField(default=False)
     ignore_fields = models.TextField(null=True, blank=True)
 
     unique_together = (("name", "project_id"),)
