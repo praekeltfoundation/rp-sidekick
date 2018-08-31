@@ -425,6 +425,38 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         self.assertEqual(len(responses.calls), 0)
 
+    @responses.activate
+    @patch("rp_redcap.tasks.project_check.get_records")
+    @patch("rp_redcap.models.Project.get_redcap_client")
+    def test_project_check_no_urn(
+        self, mock_get_redcap_client, mock_get_records
+    ):
+        """
+        Project task no missing fields test.
+
+        The task should not send a reminder if the record/contact has no urn.
+        """
+        self.mock_start_flow()
+
+        mock_get_redcap_client.return_value = MockRedCap()
+
+        mock_get_records.return_value = [
+            {"record_id": "1", "mobile": "", "survey_3_complete": "0"}
+        ]
+
+        Survey.objects.create(
+            name="survey_3",
+            description="Another Survey",
+            rapidpro_flow="f5901b62",
+            urn_field="mobile",
+            project=self.project,
+            sequence=1,
+        )
+
+        project_check(str(self.project.id))
+
+        self.assertEqual(len(responses.calls), 0)
+
     def test_get_choices(self):
 
         metadata = [
