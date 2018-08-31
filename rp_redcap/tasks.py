@@ -76,11 +76,36 @@ class ProjectCheck(Task):
                     defaults={"value": value},
                 )
 
-    def start_flows(self, rapidpro_client, flow, reminders):
-        for urn, extra_info in reminders.items():
-            rapidpro_client.create_flow_start(
-                flow, [urn], restart_participants=True, extra=extra_info
-            )
+    def start_flows(self, rapidpro_client, flow, project_name, reminders):
+        for contact_id, missing_fields in reminders.items():
+            contact = Contact.objects.get(id=contact_id)
+
+            if contact.urn:
+                missing_fields_count = []
+                for survey, count in missing_fields.items():
+                    missing_fields_count.append(
+                        "{}: {} missing field{}".format(
+                            survey, count, "" if count == 1 else "s"
+                        )
+                    )
+
+                extra_info = {
+                    "project_name": project_name,
+                    "role": contact.role or "",
+                    "name": contact.name or "",
+                    "surname": contact.surname or "",
+                    "title": contact.title or "",
+                    "week": utils.get_current_week_number(),
+                    "missing_fields_count": "\n".join(missing_fields_count),
+                    "missing_fields": "\n".join(missing_fields.keys()),
+                }
+
+                rapidpro_client.create_flow_start(
+                    flow,
+                    [contact.urn],
+                    restart_participants=True,
+                    extra=extra_info,
+                )
 
     def run(self, project_id, **kwargs):
 
@@ -90,6 +115,8 @@ class ProjectCheck(Task):
         rapidpro_client = project.org.get_rapidpro_client()
 
         data = defaultdict(dict)
+
+        reminders = defaultdict(dict)
 
         for survey in project.surveys.all().order_by("sequence"):
 
@@ -101,12 +128,8 @@ class ProjectCheck(Task):
             roles = self.get_choices(metadata, "role")
             titles = self.get_choices(metadata, "title")
 
-            reminders = {}
             for row in records:
                 data[row["record_id"]].update(row)
-
-                if "redcap_reminder_count" not in data[row["record_id"]]:
-                    data[row["record_id"]]["redcap_reminder_count"] = 0
 
                 contact, created = Contact.objects.get_or_create(
                     record_id=row["record_id"], project=project
@@ -137,57 +160,29 @@ class ProjectCheck(Task):
                     Contact.objects.filter(id=contact.id).update(
                         **contact_update
                     )
-                    contact.refresh_from_db()
 
                 self.save_answers(row, survey, contact)
 
-                if (
-                    contact.urn
-                    and row["{}_complete".format(survey.name)] == "0"
-                    and (
-                        data[row["record_id"]]["redcap_reminder_count"]
-                        < project.reminder_limit
-                    )
-                ):
-                    extra_info = {
-                        "project_name": project.name,
-                        "survey_name": survey.description,
-                        "role": contact.role or "",
-                        "name": contact.name or "",
-                        "surname": contact.surname or "",
-                        "title": contact.title or "",
-                        "week": utils.get_current_week_number(),
-                    }
+                if row["{}_complete".format(survey.name)] == "0":
+                    missing_fields = []
 
-                    if survey.check_fields:
-                        missing_fields = []
-                        missing_field_labels = []
-                        for field, value in row.items():
-                            if (
-                                value == ""
-                                and field in required_fields
-                                and field not in ignore_fields
-                                and eval(required_fields[field]["condition"])
-                            ):
-                                missing_fields.append(field)
-                                missing_field_labels.append(
-                                    required_fields[field]["label"]
-                                )
+                    for field, value in row.items():
+                        if (
+                            value == ""
+                            and field in required_fields
+                            and field not in ignore_fields
+                            and eval(required_fields[field]["condition"])
+                        ):
+                            missing_fields.append(field)
 
-                        extra_info["missing_fields"] = ", ".join(missing_fields)
-                        extra_info["missing_field_labels"] = "\n".join(
-                            missing_field_labels
+                    if missing_fields:
+                        reminders[contact.id][survey.description] = len(
+                            missing_fields
                         )
-                        extra_info["missing_field_count"] = len(missing_fields)
 
-                    if (
-                        extra_info.get("missing_fields")
-                        or not survey.check_fields
-                    ):
-                        reminders[contact.urn] = extra_info
-                        data[row["record_id"]]["redcap_reminder_count"] += 1
-
-            self.start_flows(rapidpro_client, survey.rapidpro_flow, reminders)
+        self.start_flows(
+            rapidpro_client, survey.rapidpro_flow, project.name, reminders
+        )
 
 
 project_check = ProjectCheck()

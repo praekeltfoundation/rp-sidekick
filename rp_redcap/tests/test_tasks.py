@@ -200,9 +200,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         )
 
     @responses.activate
-    @patch("rp_redcap.tasks.project_check.get_records")
     @patch("rp_redcap.models.Project.get_redcap_client")
-    def test_project_check(self, mock_get_redcap_client, mock_get_records):
+    def test_project_check_multiple_incomplete(self, mock_get_redcap_client):
         """
         Survey task test.
 
@@ -210,19 +209,24 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         for all the urns.
         """
         self.mock_start_flow()
-
-        mock_get_records.return_value = [
-            {"record_id": "1", "mobile": "+27123", "survey_1_complete": "0"},
-            {"record_id": "2", "mobile": "+27234", "survey_1_complete": "2"},
-            {"record_id": "3", "mobile": "", "survey_1_complete": "0"},
-        ]
+        mock_get_redcap_client.return_value = MockRedCap()
 
         Survey.objects.create(
-            name="survey_1",
-            description="Survey 1",
+            name="survey_ONE",
+            description="Survey One",
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
+            sequence=1,
+        )
+
+        Survey.objects.create(
+            name="survey_TWO",
+            description="Survey Two",
+            rapidpro_flow="f5901b62",
+            urn_field="mobile",
+            project=self.project,
+            sequence=2,
         )
 
         with patch("sidekick.utils.get_today", override_get_today):
@@ -237,7 +241,8 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27123"],
                 "extra": {
                     "project_name": "Test Project",
-                    "survey_name": "Survey 1",
+                    "missing_fields": "Survey One\nSurvey Two",
+                    "missing_fields_count": "Survey One: 1 missing field\nSurvey Two: 1 missing field",  # noqa
                     "name": "",
                     "surname": "",
                     "title": "",
@@ -247,80 +252,12 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             },
         )
 
-        self.assertEqual(Contact.objects.count(), 3)
+        self.assertEqual(Contact.objects.count(), 1)
         contact = Contact.objects.get(record_id=1)
         self.assertEqual(contact.urn, "tel:+27123")
         self.assertEqual(contact.project, self.project)
 
-        self.assertEqual(SurveyAnswer.objects.count(), 2)
-
-    @responses.activate
-    @patch("rp_redcap.models.Project.get_redcap_client")
-    def test_project_check_with_fields(self, mock_get_redcap_client):
-        """
-        Project task test.
-
-        The task should check for incomplete surveys and start a rapidpro flow
-        for all the urns. The missing fields should be determined based on the
-        metadata.
-        """
-        self.mock_start_flow()
-
-        mock_get_redcap_client.return_value = MockRedCap()
-
-        Survey.objects.create(
-            name="survey_A",
-            description="Survey of the Month",
-            rapidpro_flow="f5901b62",
-            urn_field="mobile",
-            project=self.project,
-            check_fields=True,
-        )
-
-        with patch("sidekick.utils.get_today", override_get_today):
-            project_check(str(self.project.id))
-
-        self.assertEqual(len(responses.calls), 2)
-        self.assertEqual(
-            json.loads(responses.calls[0].request.body),
-            {
-                "flow": "f5901b62",
-                "restart_participants": 1,
-                "urns": ["tel:+27123"],
-                "extra": {
-                    "missing_fields": "email, surname",
-                    "missing_field_labels": "Email\nSurname",
-                    "missing_field_count": 2,
-                    "project_name": "Test Project",
-                    "survey_name": "Survey of the Month",
-                    "name": "Peter",
-                    "surname": "",
-                    "title": "Ms",
-                    "role": "",
-                    "week": 23,
-                },
-            },
-        )
-        self.assertEqual(
-            json.loads(responses.calls[1].request.body),
-            {
-                "flow": "f5901b62",
-                "restart_participants": 1,
-                "urns": ["tel:+27234"],
-                "extra": {
-                    "missing_fields": "name, surname",
-                    "missing_field_labels": "Name\nSurname",
-                    "missing_field_count": 2,
-                    "project_name": "Test Project",
-                    "survey_name": "Survey of the Month",
-                    "name": "",
-                    "surname": "",
-                    "title": "",
-                    "role": "",
-                    "week": 23,
-                },
-            },
-        )
+        self.assertEqual(SurveyAnswer.objects.count(), 3)
 
     @responses.activate
     @patch("rp_redcap.models.Project.get_redcap_client")
@@ -342,7 +279,6 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
-            check_fields=True,
             sequence=1,
         )
 
@@ -352,7 +288,6 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
-            check_fields=True,
             sequence=2,
         )
 
@@ -367,11 +302,9 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "restart_participants": 1,
                 "urns": ["tel:+27123"],
                 "extra": {
-                    "missing_fields": "follow_up",
-                    "missing_field_labels": "Follow Up",
-                    "missing_field_count": 1,
+                    "missing_fields_count": "Survey Two: 1 missing field",
+                    "missing_fields": "Survey Two",
                     "project_name": "Test Project",
-                    "survey_name": "Survey Two",
                     "role": "Investigator",
                     "name": "",
                     "surname": "",
@@ -387,11 +320,9 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "restart_participants": 1,
                 "urns": ["tel:+27234"],
                 "extra": {
-                    "missing_fields": "consent",
-                    "missing_field_labels": "Consent?",
-                    "missing_field_count": 1,
+                    "missing_fields_count": "Survey Two: 1 missing field",
+                    "missing_fields": "Survey Two",
                     "project_name": "Test Project",
-                    "survey_name": "Survey Two",
                     "role": "Lead Investigator",
                     "name": "",
                     "surname": "",
@@ -425,7 +356,6 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
-            check_fields=True,
             ignore_fields="surname, test_field",
         )
 
@@ -440,11 +370,9 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "restart_participants": 1,
                 "urns": ["tel:+27123"],
                 "extra": {
-                    "missing_fields": "email",
-                    "missing_field_labels": "Email",
-                    "missing_field_count": 1,
+                    "missing_fields_count": "Best Survey: 1 missing field",
+                    "missing_fields": "Best Survey",
                     "project_name": "Test Project",
-                    "survey_name": "Best Survey",
                     "name": "Peter",
                     "surname": "",
                     "title": "Ms",
@@ -460,75 +388,13 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 "restart_participants": 1,
                 "urns": ["tel:+27234"],
                 "extra": {
-                    "missing_fields": "name",
-                    "missing_field_labels": "Name",
-                    "missing_field_count": 1,
+                    "missing_fields_count": "Best Survey: 1 missing field",
+                    "missing_fields": "Best Survey",
                     "project_name": "Test Project",
-                    "survey_name": "Best Survey",
                     "name": "",
                     "surname": "",
                     "title": "",
                     "role": "",
-                    "week": 23,
-                },
-            },
-        )
-
-    @responses.activate
-    @patch("rp_redcap.models.Project.get_redcap_client")
-    def test_project_check_reminder_limit(self, mock_get_redcap_client):
-        """
-        Project task reminder limit test.
-
-        The task should not try and send more reminders than specified in the
-        limit on the project.
-        """
-        self.mock_start_flow()
-
-        mock_get_redcap_client.return_value = MockRedCap()
-        self.project.reminder_limit = 1
-        self.project.save()
-
-        Survey.objects.create(
-            name="survey_ONE",
-            description="First Survey",
-            rapidpro_flow="f5901b62",
-            urn_field="mobile",
-            project=self.project,
-            check_fields=True,
-            sequence=1,
-        )
-
-        Survey.objects.create(
-            name="survey_TWO",
-            description="Second Survey",
-            rapidpro_flow="f5901b62",
-            urn_field="mobile",
-            project=self.project,
-            check_fields=True,
-            sequence=2,
-        )
-
-        with patch("sidekick.utils.get_today", override_get_today):
-            project_check(str(self.project.id))
-
-        self.assertEqual(len(responses.calls), 1)
-        self.assertEqual(
-            json.loads(responses.calls[0].request.body),
-            {
-                "flow": "f5901b62",
-                "restart_participants": 1,
-                "urns": ["tel:+27123"],
-                "extra": {
-                    "missing_fields": "name",
-                    "missing_field_labels": "Name",
-                    "missing_field_count": 1,
-                    "project_name": "Test Project",
-                    "survey_name": "First Survey",
-                    "role": "",
-                    "name": "",
-                    "surname": "",
-                    "title": "",
                     "week": 23,
                 },
             },
@@ -545,8 +411,6 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         self.mock_start_flow()
 
         mock_get_redcap_client.return_value = MockRedCap()
-        self.project.reminder_limit = 1
-        self.project.save()
 
         Survey.objects.create(
             name="survey_3",
@@ -554,7 +418,6 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             rapidpro_flow="f5901b62",
             urn_field="mobile",
             project=self.project,
-            check_fields=True,
             sequence=1,
         )
 
