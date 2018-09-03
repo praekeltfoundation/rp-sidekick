@@ -24,7 +24,7 @@ fake_msisdn_info = MagicMock(return_value=MSISDN_INFO_RESPONSE_DICT)
 fake_reserve_id = MagicMock(return_value=RESERVE_ID_RESPONSE_DICT)
 fake_get_countries = MagicMock(return_value=GET_COUNTRIES_RESPONSE_DICT)
 fake_get_operators = MagicMock(return_value=GET_OPERATORS_RESPONSE_DICT)
-fake_get_operator_products = MagicMock(
+fake_get_operator_airtime_products = MagicMock(
     return_value=GET_OPERATOR_PRODUCTS_RESPONSE_DICT
 )
 
@@ -91,15 +91,19 @@ class TestTransferToViews(APITestCase):
         self.assertTrue(fake_get_operators.called)
 
     @patch.object(
-        TransferToClient, "get_operator_products", fake_get_operator_products
+        TransferToClient,
+        "get_operator_airtime_products",
+        fake_get_operator_airtime_products,
     )
     def test_get_operator_products_view(self):
-        self.assertFalse(fake_get_operator_products.called)
+        self.assertFalse(fake_get_operator_airtime_products.called)
         response = self.api_client.get(
-            reverse("get_operator_products", kwargs={"operator_id": 222})
+            reverse(
+                "get_operator_airtime_products", kwargs={"operator_id": 222}
+            )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             json.loads(response.content), GET_OPERATOR_PRODUCTS_RESPONSE_DICT
         )
-        self.assertTrue(fake_get_operator_products.called)
+        self.assertTrue(fake_get_operator_airtime_products.called)

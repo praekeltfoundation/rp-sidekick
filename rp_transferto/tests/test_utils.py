@@ -79,10 +79,10 @@ class TestTransferToClient(TestCase):
             action="pricelist", info_type="country", content=111
         )
 
-    def test_get_operator_products(self):
+    def test_get_operator_airtime_products(self):
         client = TransferToClient("fake_login", "fake_token")
         with patch.object(client, "_make_transferto_request") as mock:
-            client.get_operator_products(111)
+            client.get_operator_airtime_products(111)
 
         mock.assert_called_once_with(
             action="pricelist", info_type="operator", content=111
@@ -93,9 +93,9 @@ class TestTransferToClient(TestCase):
             self.client.get_operators("not an int")
         self.assertEqual(exception_info.value.__str__(), "arg must be an int")
 
-    def test_get_operator_products_throws_exception(self):
+    def test_get_operator_airtime_products_throws_exception(self):
         with raises(TypeError) as exception_info:
-            self.client.get_operator_products("not an int")
+            self.client.get_operator_airtime_products("not an int")
         self.assertEqual(exception_info.value.__str__(), "arg must be an int")
 
     def test_make_topup_throws_exception_source_variables(self):
