@@ -10,8 +10,14 @@ from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.views import APIView
 
+from django.http import JsonResponse, HttpResponse
+from django.views import View
+from django.shortcuts import redirect
+from django.contrib.auth.mixins import LoginRequiredMixin
+
 from .models import Organization
 from .utils import clean_message, get_whatsapp_contacts
+from .auth_utils import get_authorization_url, save_credentials, get_flow
 
 
 def health(request):
@@ -171,3 +177,47 @@ class CheckContactView(APIView):
             json.loads(turn_response.content)["contacts"][0],
             status=status.HTTP_200_OK,
         )
+
+
+class GoogleAuthorizeView(LoginRequiredMixin, View):
+    def get(self, request):
+        redirect_url = None
+        if "next" in request.GET and "scope" in request.GET:
+            redirect_url = request.GET["next"]
+            request.session["google_auth_redirect"] = redirect_url
+
+            scopes = request.GET.getlist("scope")
+            request.session["scopes"] = scopes
+        else:
+            HttpResponse(
+                "Configuration Error: please pass in a 'next' and 'scope' query params"
+            )
+
+        authorization_url, state = get_authorization_url(request, scopes=scopes)
+        request.session["state"] = state
+        return redirect(to=authorization_url)
+
+
+class OAuth2Callback(LoginRequiredMixin, View):
+    def get(self, request):
+        if "scopes" in request.session and request.session["scopes"] != []:
+            flow = get_flow(
+                request,
+                scopes=request.session["scopes"],
+                state=request.session["state"],
+            )
+            del request.session["scopes"]
+        else:
+            return HttpResponse(
+                "You have not declared a scope for authentication"
+            )
+
+        # Note: to test this locally, set OAUTHLIB_INSECURE_TRANSPORT=1 in your .env file
+        flow.fetch_token(authorization_response=request.get_raw_uri())
+
+        save_credentials(user=request.user, credentials=flow.credentials)
+        if "google_auth_redirect" in request.session:
+            url = request.session["google_auth_redirect"]
+            del request.session["google_auth_redirect"]
+            return redirect(to=url)
+        return redirect(to="/health/")

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Spreadsheet MVP</title>
+</head>
+<body>
+    <h1>Sheet View</h1>
+    {% if has_google_auth %}
+        Get data from Google Sheet
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ form.as_table }}
+            <input type="submit" value="Submit">
+        </form>
+    {% else %}
+        You're not authenticated.
+        <a href="{{ auth_redirect_url }}" >Authenticate me please</a>
+    {% endif %}
+</body>
+</html>

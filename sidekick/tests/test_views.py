@@ -25,7 +25,7 @@ class HealthViewTest(APITestCase):
         self.api_client = APIClient()
 
     def test_health_endpoint(self):
-        response = self.api_client.get(reverse("health"))
+        response = self.client.get(reverse("sidekick:health"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         result = json.loads(response.content)
 
@@ -39,7 +39,7 @@ class HealthViewTest(APITestCase):
         environ["MARATHON_APP_ID"] = "marathon-app-id"
         environ["MARATHON_APP_VERSION"] = "marathon-app-version"
 
-        response = self.api_client.get(reverse("health"))
+        response = self.client.get(reverse("sidekick:health"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         result = json.loads(response.content)
 
@@ -183,7 +183,9 @@ class TestSendTemplateView(SidekickAPITestCase):
             "0": "Ola",
         }
 
-        url = "{}?{}".format(reverse("send_template"), urlencode(params))
+        url = "{}?{}".format(
+            reverse("sidekick:send_template"), urlencode(params)
+        )
 
         response = self.api_client.get(url)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -215,7 +217,9 @@ class TestSendTemplateView(SidekickAPITestCase):
             "0": "hey!",
         }
 
-        url = "{}?{}".format(reverse("send_template"), urlencode(params))
+        url = "{}?{}".format(
+            reverse("sidekick:send_template"), urlencode(params)
+        )
 
         response = self.api_client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -253,7 +257,9 @@ class TestSendTemplateView(SidekickAPITestCase):
             #  "element_name": "el",
         }
 
-        url = "{}?{}".format(reverse("send_template"), urlencode(params))
+        url = "{}?{}".format(
+            reverse("sidekick:send_template"), urlencode(params)
+        )
 
         response = self.api_client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "rp_asos",
     "rp_redcap",
     "rp_transferto",
+    "rp_lookup",
 ]
 
 MIDDLEWARE = [
@@ -188,3 +189,18 @@ EMAIL_PORT = env.int("EMAIL_PORT", 25)
 EMAIL_SUBJECT_PREFIX = env.str("EMAIL_SUBJECT_PREFIX", "[Django]")
 
 RABBITMQ_MANAGEMENT_INTERFACE = env.str("RABBITMQ_MANAGEMENT_INTERFACE", "")
+# Set up Google Client ID
+GOOGLE_CLIENT_CONFIG = {
+    "web": {
+        "client_id": env.str("GOOGLE_CLIENT_ID", ""),
+        "project_id": env.str("GOOGLE_PROJECT_ID", ""),
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://www.googleapis.com/oauth2/v3/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_secret": env.str("GOOGLE_CLIENT_SECRET", ""),
+        "redirect_uris": env.str("GOOGLE_REDIRECT_URIS", ""),
+        "javascript_origins": env.str("GOOGLE_JAVASCRIPT_ORIGINS", ""),
+    }
+}
+
+LOGIN_URL = "/admin/login/"

@@ -17,5 +17,7 @@
    apps/transferto.md
 
    ways-of-working.md
+   google_auth
+
 
    changelog
