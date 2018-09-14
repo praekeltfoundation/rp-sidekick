@@ -124,8 +124,8 @@ class TransferToClient2:
         self.apikey = apikey
         self.apisecret = apisecret
 
-    def _make_transferto_api_request(self, url):
-        nonce = int(time.time())
+    def _make_transferto_api_request(self, url, body=None):
+        nonce = int(time.time() * 1000000)
         message = bytes((self.apikey + str(nonce)).encode("utf-8"))
         secret = bytes(self.apisecret.encode("utf-8"))
         transferto_hmac = base64.b64encode(
@@ -137,7 +137,10 @@ class TransferToClient2:
         headers["X-TransferTo-nonce"] = str(nonce)
         headers["x-transferto-hmac"] = transferto_hmac
 
-        response = requests.get(url, headers=headers)
+        if not body:
+            response = requests.get(url, headers=headers)
+        else:
+            response = requests.post(url, headers=headers, json=body)
         return response.json()
 
     def get_operator_products(self, operator_id):
@@ -154,7 +157,7 @@ class TransferToClient2:
         return self._make_transferto_api_request(service_url)
 
     def topup_data(self, msisdn, product_id, simulate=False):
-        external_id = str(int(1000 * time.time()))
+        external_id = str(int(time.time() * 1000000))
         # now create the json object that will be used
         simulation = "1" if simulate else "0"
         mobile_number = msisdn.replace("+", "")
@@ -183,19 +186,7 @@ class TransferToClient2:
             },
         }
 
-        nonce = int(time.time())
-        message = bytes((self.apikey + str(nonce)).encode("utf-8"))
-        secret = bytes(self.apisecret.encode("utf-8"))
-        transferto_hmac = base64.b64encode(
-            hmac.new(secret, message, digestmod=hashlib.sha256).digest()
+        url = (
+            "https://api.transferto.com/v1.1/transactions/fixed_value_recharges"
         )
-        headers = {}
-        headers["X-TransferTo-apikey"] = self.apikey
-        headers["X-TransferTo-nonce"] = str(nonce)
-        headers["x-transferto-hmac"] = transferto_hmac
-        response = requests.post(
-            "https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
-            headers=headers,
-            json=fixed_recharge,
-        )
-        return response.json()
+        return self._make_transferto_api_request(url, body=fixed_recharge)
