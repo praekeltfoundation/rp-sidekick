@@ -90,7 +90,7 @@ GET_OPERATORS_RESPONSE_DICT = {
 }
 
 
-GET_OPERATOR_PRODUCTS_RESPONSE_DICT = {
+GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT = {
     "country": "Indonesia",
     "countryid": "767",
     "operator": "Indosat IM3 Indonesia",
@@ -102,4 +102,56 @@ GET_OPERATOR_PRODUCTS_RESPONSE_DICT = {
     "authentication_key": "1337662386",
     "error_code": "0",
     "error_txt": "Transaction successful",
+}
+
+GET_COUNTRY_SERVICES_RESPONSE_DICT = {
+    "services": [{"service_id": 7, "service": "bundles"}]
+}
+
+GET_PRODUCTS_RESPONSE_DICT = {
+    "fixed_value_vouchers": [],
+    "fixed_value_recharges": [
+        {
+            "product_id": 1234,
+            "product_name": "Gig 1 - ZAR 100",
+            "product_short_desc": "1GB / 30 Days",
+            "operator_id": 888888,
+            "operator": "MNO South Africa",
+            "country_id": 99999,
+            "country": "South Africa",
+            "service_id": 111111,
+            "service": "bundles",
+            "account_currency": "ZAR",
+            "wholesale_price": 99.99,
+            "retail_price": 222.22,
+            "fee": 0,
+            "product_currency": "ZAR",
+            "product_value": 111,
+            "local_currency": "ZAR",
+            "local_value": 111,
+        },
+        {
+            "product_id": 1235,
+            "product_name": "MyGig 2 - ZAR 555",
+            "product_short_desc": "2GB / 30 Days",
+            "operator_id": 888889,
+            "operator": "MNO South Africa",
+            "country_id": 999998,
+            "country": "South Africa",
+            "service_id": 0,
+            "service": "bundles",
+            "account_currency": "ZAR",
+            "wholesale_price": 277.77,
+            "retail_price": 333.33,
+            "fee": 0,
+            "product_currency": "ZAR",
+            "product_value": 333,
+            "local_currency": "ZAR",
+            "local_value": 333,
+        },
+    ],
+    "variable_value_payments": [],
+    "fixed_value_payments": [],
+    "variable_value_vouchers": [],
+    "variable_value_recharges": [],
 }
