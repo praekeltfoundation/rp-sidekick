@@ -1,9 +1,15 @@
+import time
+import hashlib
+import hmac
+import base64
+import json
 import responses
 from mock import patch
+from freezegun import freeze_time
 from pytest import raises
 from unittest import TestCase
 
-from rp_transferto.utils import TransferToClient
+from rp_transferto.utils import TransferToClient, TransferToClient2
 
 
 class TestTransferToClient(TestCase):
@@ -79,10 +85,10 @@ class TestTransferToClient(TestCase):
             action="pricelist", info_type="country", content=111
         )
 
-    def test_get_operator_products(self):
+    def test_get_operator_airtime_products(self):
         client = TransferToClient("fake_login", "fake_token")
         with patch.object(client, "_make_transferto_request") as mock:
-            client.get_operator_products(111)
+            client.get_operator_airtime_products(111)
 
         mock.assert_called_once_with(
             action="pricelist", info_type="operator", content=111
@@ -93,9 +99,9 @@ class TestTransferToClient(TestCase):
             self.client.get_operators("not an int")
         self.assertEqual(exception_info.value.__str__(), "arg must be an int")
 
-    def test_get_operator_products_throws_exception(self):
+    def test_get_operator_airtime_products_throws_exception(self):
         with raises(TypeError) as exception_info:
-            self.client.get_operator_products("not an int")
+            self.client.get_operator_airtime_products("not an int")
         self.assertEqual(exception_info.value.__str__(), "arg must be an int")
 
     def test_make_topup_throws_exception_source_variables(self):
@@ -153,4 +159,174 @@ class TestTransferToClient(TestCase):
             product=10,
             msisdn="+27820000002",
             reserve_id=1234,
+        )
+
+
+class TestTransferToClient2(TestCase):
+    def setUp(self):
+        self.client = TransferToClient2("fake_apikey", "fake_apisecret")
+
+    def _check_headers(self, headers, time):
+        """
+        headers is a dict
+        time is unix timestamp expected when the function was called
+        """
+        expected_nonce = str(int(time * 1000000))
+        self.assertEqual(headers["X-TransferTo-apikey"], "fake_apikey")
+        self.assertEqual(headers["X-TransferTo-nonce"], expected_nonce)
+        self.assertEqual(
+            headers["x-transferto-hmac"],
+            base64.b64encode(
+                hmac.new(
+                    bytes("fake_apisecret".encode("utf-8")),
+                    bytes(("fake_apikey" + expected_nonce).encode("utf-8")),
+                    digestmod=hashlib.sha256,
+                ).digest()
+            ),
+        )
+
+    @freeze_time("2000-01-01")  # set time to 946684800000000
+    @responses.activate
+    def test_make_transferto_request_get(self):
+        fake_country_id = 99
+        responses.add(
+            responses.GET,
+            "https://api.transferto.com/v1.1/operators/{}/products".format(
+                fake_country_id
+            ),
+            json={"fake": "payload"},
+            status=200,
+        )
+
+        output = self.client._make_transferto_api_request(
+            url="https://api.transferto.com/v1.1/operators/{}/products".format(
+                fake_country_id
+            )
+        )
+        expected_output = {"fake": "payload"}
+        self.assertDictEqual(output, expected_output)
+        test_request_headers = responses.calls[0].request.headers
+        self._check_headers(test_request_headers, time.time())
+
+    @freeze_time("2000-01-01")
+    @responses.activate
+    def test_make_transferto_request_post(self):
+        FAKE_REQUEST_BODY = {"fake": "request body"}
+        responses.add(
+            responses.POST,
+            "https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
+            json={"fake": "payload"},
+            status=200,
+        )
+        self.client._make_transferto_api_request(
+            url="https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
+            body=FAKE_REQUEST_BODY,
+        )
+
+        self.assertDictEqual(
+            json.loads(responses.calls[0].request.body), FAKE_REQUEST_BODY
+        )
+        test_request_headers = responses.calls[0].request.headers
+        self._check_headers(test_request_headers, time.time())
+
+    def test_get_operator_products(self):
+        fake_operator_id = 99
+        client = TransferToClient2("fake_apikey", "fake_apisecret")
+        with patch.object(client, "_make_transferto_api_request") as mock:
+            client.get_operator_products(fake_operator_id)
+
+        mock.assert_called_once_with(
+            "https://api.transferto.com/v1.1/operators/{}/products".format(
+                fake_operator_id
+            )
+        )
+
+    def test_get_country_services(self):
+        fake_country_id = 99
+        client = TransferToClient2("fake_apikey", "fake_apisecret")
+        with patch.object(client, "_make_transferto_api_request") as mock:
+            client.get_country_services(fake_country_id)
+
+        mock.assert_called_once_with(
+            "https://api.transferto.com/v1.1/countries/{}/services".format(
+                fake_country_id
+            )
+        )
+
+    @freeze_time("2000-01-01")
+    def test_topup_data(self):
+        test_msisdn = "+27820000000"
+        formatted_test_msisdn = "27820000000"
+        test_product_id = "123456"
+        external_id_frozen_time = "946684800000000"
+
+        client = TransferToClient2("fake_apikey", "fake_apisecret")
+        with patch.object(client, "_make_transferto_api_request") as mock:
+            client.topup_data(test_msisdn, test_product_id)
+
+        mock.assert_called_once_with(
+            "https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
+            body={
+                "account_number": formatted_test_msisdn,
+                "product_id": test_product_id,
+                "external_id": external_id_frozen_time,
+                "simulation": "0",
+                "sender_sms_notification": "1",
+                "sender_sms_text": "Sender message",
+                "recipient_sms_notification": "1",
+                "recipient_sms_text": "MomConnect",
+                "sender": {
+                    "last_name": "",
+                    "middle_name": " ",
+                    "first_name": "",
+                    "email": "",
+                    "mobile": "08443011",
+                },
+                "recipient": {
+                    "last_name": "",
+                    "middle_name": "",
+                    "first_name": "",
+                    "email": "",
+                    "mobile": formatted_test_msisdn,
+                },
+            },
+        )
+
+    @freeze_time("2000-01-01")
+    def test_topup_data_simulate_true(self):
+        test_msisdn = "+27820000000"
+        formatted_test_msisdn = "27820000000"
+        test_product_id = "123456"
+        external_id_frozen_time = "946684800000000"
+
+        client = TransferToClient2("fake_apikey", "fake_apisecret")
+        with patch.object(client, "_make_transferto_api_request") as mock:
+            client.topup_data(test_msisdn, test_product_id, simulate=True)
+
+        mock.assert_called_once_with(
+            "https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
+            body={
+                "account_number": formatted_test_msisdn,
+                "product_id": test_product_id,
+                "external_id": external_id_frozen_time,
+                "simulation": "1",
+                "sender_sms_notification": "1",
+                "sender_sms_text": "Sender message",
+                "recipient_sms_notification": "1",
+                "recipient_sms_text": "MomConnect",
+                "sender": {
+                    "last_name": "",
+                    "middle_name": " ",
+                    "first_name": "",
+                    "email": "",
+                    "mobile": "08443011",
+                },
+                "recipient": {
+                    "last_name": "",
+                    "middle_name": "",
+                    "first_name": "",
+                    "email": "",
+                    "mobile": formatted_test_msisdn,
+                },
+            },
         )

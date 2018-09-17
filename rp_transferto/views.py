@@ -2,7 +2,8 @@ from django.conf import settings
 from django.http import JsonResponse
 from rest_framework.views import APIView
 
-from .utils import TransferToClient
+from .utils import TransferToClient, TransferToClient2
+from .tasks import topup_data
 
 
 class Ping(APIView):
@@ -46,9 +47,41 @@ class GetOperators(APIView):
         return JsonResponse(client.get_operators(country_id))
 
 
-class GetProducts(APIView):
+class GetOperatorAirtimeProducts(APIView):
     def get(self, request, operator_id):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        return JsonResponse(client.get_operator_products(operator_id))
+        return JsonResponse(client.get_operator_airtime_products(operator_id))
+
+
+class GetOperatorProducts(APIView):
+    def get(self, request, operator_id):
+        client = TransferToClient2(
+            settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
+        )
+        resp = client.get_operator_products(operator_id)
+        return JsonResponse(resp)
+
+
+class GetCountryServices(APIView):
+    def get(self, request, country_id):
+        client = TransferToClient2(
+            settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
+        )
+        resp = client.get_country_services(country_id)
+        return JsonResponse(resp)
+
+
+class TopUpData(APIView):
+    def get(self, request):
+        data = request.GET.dict()
+        msisdn = data["msisdn"]
+        user_uuid = data["user_uuid"]
+        data_amount = data["data_amount"]
+
+        # msisdn, user_uuid, amount
+        # e.g. "+27827620000", "4a1b8cc8-905c-4c44-8bd2-dee3c4a3e2d1", "100MB"
+        topup_data.delay(msisdn, user_uuid, data_amount)
+
+        return JsonResponse({"info_txt": "top_up_data"})

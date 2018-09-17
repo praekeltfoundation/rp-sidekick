@@ -186,3 +186,4 @@ __pycache__
 local.py
 /static/
 /media/
+client_id.json

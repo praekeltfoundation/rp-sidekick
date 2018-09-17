@@ -9,14 +9,17 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase, APIClient
 
-from rp_transferto.utils import TransferToClient
+from rp_transferto.tasks import topup_data
+from rp_transferto.utils import TransferToClient, TransferToClient2
 from .constants import (
     PING_RESPONSE_DICT,
     MSISDN_INFO_RESPONSE_DICT,
     RESERVE_ID_RESPONSE_DICT,
     GET_COUNTRIES_RESPONSE_DICT,
     GET_OPERATORS_RESPONSE_DICT,
-    GET_OPERATOR_PRODUCTS_RESPONSE_DICT,
+    GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT,
+    GET_PRODUCTS_RESPONSE_DICT,
+    GET_COUNTRY_SERVICES_RESPONSE_DICT,
 )
 
 fake_ping = MagicMock(return_value=PING_RESPONSE_DICT)
@@ -24,9 +27,14 @@ fake_msisdn_info = MagicMock(return_value=MSISDN_INFO_RESPONSE_DICT)
 fake_reserve_id = MagicMock(return_value=RESERVE_ID_RESPONSE_DICT)
 fake_get_countries = MagicMock(return_value=GET_COUNTRIES_RESPONSE_DICT)
 fake_get_operators = MagicMock(return_value=GET_OPERATORS_RESPONSE_DICT)
-fake_get_operator_products = MagicMock(
-    return_value=GET_OPERATOR_PRODUCTS_RESPONSE_DICT
+fake_get_operator_airtime_products = MagicMock(
+    return_value=GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT
 )
+fake_get_operator_products = MagicMock(return_value=GET_PRODUCTS_RESPONSE_DICT)
+fake_get_country_services = MagicMock(
+    return_value=GET_COUNTRY_SERVICES_RESPONSE_DICT
+)
+fake_delay = MagicMock({"info_txt": "top_up_data"})
 
 
 class TestTransferToViews(APITestCase):
@@ -91,7 +99,26 @@ class TestTransferToViews(APITestCase):
         self.assertTrue(fake_get_operators.called)
 
     @patch.object(
-        TransferToClient, "get_operator_products", fake_get_operator_products
+        TransferToClient,
+        "get_operator_airtime_products",
+        fake_get_operator_airtime_products,
+    )
+    def test_get_operator_airtime_products_view(self):
+        self.assertFalse(fake_get_operator_airtime_products.called)
+        response = self.api_client.get(
+            reverse(
+                "get_operator_airtime_products", kwargs={"operator_id": 222}
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content),
+            GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT,
+        )
+        self.assertTrue(fake_get_operator_airtime_products.called)
+
+    @patch.object(
+        TransferToClient2, "get_operator_products", fake_get_operator_products
     )
     def test_get_operator_products_view(self):
         self.assertFalse(fake_get_operator_products.called)
@@ -100,6 +127,37 @@ class TestTransferToViews(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content), GET_OPERATOR_PRODUCTS_RESPONSE_DICT
+            json.loads(response.content), GET_PRODUCTS_RESPONSE_DICT
         )
         self.assertTrue(fake_get_operator_products.called)
+
+    @patch.object(
+        TransferToClient2, "get_country_services", fake_get_country_services
+    )
+    def test_get_country_services_view(self):
+        self.assertFalse(fake_get_country_services.called)
+        response = self.api_client.get(
+            reverse("get_country_services", kwargs={"country_id": 222})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content), GET_COUNTRY_SERVICES_RESPONSE_DICT
+        )
+        self.assertTrue(fake_get_country_services.called)
+
+    @patch.object(topup_data, "delay", fake_delay)
+    def test_top_up_data_view(self):
+        self.assertFalse(fake_delay.called)
+        response = self.api_client.get(
+            "{base_url}?msisdn={msisdn}&user_uuid={user_uuid}&data_amount={data_amount}".format(
+                base_url=reverse("top_up_data"),
+                msisdn="+27820000000",
+                user_uuid="abc-1234",
+                data_amount="100MB",
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content), {"info_txt": "top_up_data"}
+        )
+        self.assertTrue(fake_delay.called)

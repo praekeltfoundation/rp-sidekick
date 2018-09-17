@@ -7,23 +7,19 @@ PING_RESPONSE_DICT = {
 
 
 MSISDN_INFO_RESPONSE_DICT = {
-    "country": "Malaysia",
-    "countryid": "799",
-    "operator": "Maxis Malaysia",
-    "operatorid": "385",
+    "country": "South Africa",
+    "countryid": "111",
+    "operator": "MNO South Africa",
+    "operatorid": "222",
     "connection_status": "100",
-    "destination_msisdn": "60172860300",
-    "destination_currency": "MYR",
-    "product_list": "5,10,20,30",
-    "service_fee_list": "0.00,0.00,0.00,0.00",
-    "retail_price_list": "2.10,4.00,7.80,11.60",
-    "wholesale_price_list": "1.95,3.72,7.25,10.79",
-    "authentication_key": "1326965217",
+    "destination_msisdn": "27820000000",
+    "destination_currency": "ZAR",
+    "product_list": "2,5,10,15,30,40,50,100,150,300,500,750,1000",
+    "retail_price_list": "2.80,6.50,12.70,18.90,37.50,49.90,62.20,124.10,185.90,371.50,618.90,928.10,1243.90",
+    "wholesale_price_list": "2.23,5.20,10.15,15.10,29.94,39.84,49.74,99.22,148.70,297.14,495.06,742.47,995.08",
+    "authentication_key": "123456789",
     "error_code": "0",
     "error_txt": "Transaction successful",
-    "local_info_amount_list": "5.00,10.00,20.00,30.00",
-    "local_info_value_list": "5.00,10.00,20.00,30.00",
-    "local_info_currency": "MYR",
 }
 
 
@@ -90,7 +86,7 @@ GET_OPERATORS_RESPONSE_DICT = {
 }
 
 
-GET_OPERATOR_PRODUCTS_RESPONSE_DICT = {
+GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT = {
     "country": "Indonesia",
     "countryid": "767",
     "operator": "Indosat IM3 Indonesia",
@@ -102,4 +98,109 @@ GET_OPERATOR_PRODUCTS_RESPONSE_DICT = {
     "authentication_key": "1337662386",
     "error_code": "0",
     "error_txt": "Transaction successful",
+}
+
+GET_COUNTRY_SERVICES_RESPONSE_DICT = {
+    "services": [{"service_id": 7, "service": "bundles"}]
+}
+
+GET_PRODUCTS_RESPONSE_DICT = {
+    "fixed_value_vouchers": [],
+    "fixed_value_recharges": [
+        {
+            "product_id": 1234,
+            "product_name": "Gig 1 - ZAR 100",
+            "product_short_desc": "1GB / 30 Days",
+            "operator_id": 222,
+            "operator": "MNO South Africa",
+            "country_id": 111,
+            "country": "South Africa",
+            "service_id": 111111,
+            "service": "bundles",
+            "account_currency": "ZAR",
+            "wholesale_price": 99.99,
+            "retail_price": 222.22,
+            "fee": 0,
+            "product_currency": "ZAR",
+            "product_value": 111,
+            "local_currency": "ZAR",
+            "local_value": 111,
+        },
+        {
+            "product_id": 1235,
+            "product_name": "MyGig 2 - ZAR 555",
+            "product_short_desc": "2GB / 30 Days",
+            "operator_id": 222,
+            "operator": "MNO South Africa",
+            "country_id": 111,
+            "country": "South Africa",
+            "service_id": 0,
+            "service": "bundles",
+            "account_currency": "ZAR",
+            "wholesale_price": 277.77,
+            "retail_price": 333.33,
+            "fee": 0,
+            "product_currency": "ZAR",
+            "product_value": 333,
+            "local_currency": "ZAR",
+            "local_value": 333,
+        },
+    ],
+    "variable_value_payments": [],
+    "fixed_value_payments": [],
+    "variable_value_vouchers": [],
+    "variable_value_recharges": [],
+}
+
+POST_TOPUP_DATA_RESPONSE = {
+    "transaction_id": "1234567",
+    "simulation": 0,
+    "status": "0",
+    "status_message": "Transaction successful",
+    "date": "2018-09-14 10:40:19",
+    "account_number": "2782000000",
+    "external_id": "12345678",
+    "operator_reference": "OPERTRREF009",
+    "product_id": "1234",
+    "product": "Gig 1 - ZAR 100",
+    "product_desc": "1GB / 30 Days",
+    "product_currency": "ZAR",
+    "product_value": 29,
+    "local_currency": "ZAR",
+    "local_value": 29,
+    "operator_id": "222",
+    "operator": "MNO South Africa",
+    "country_id": "222",
+    "country": "South Africa",
+    "account_currency": "ZAR",
+    "wholesale_price": 30.77,
+    "retail_price": 38.46,
+    "fee": 0,
+    "sender": {
+        "last_name": "",
+        "middle_name": "",
+        "first_name": "",
+        "email": "",
+        "mobile": "876000",
+        "custom_field_1": "",
+        "custom_field_2": "",
+        "custom_field_3": "",
+    },
+    "recipient": {
+        "last_name": "",
+        "middle_name": "",
+        "first_name": "",
+        "email": "",
+        "mobile": "2782000000",
+        "custom_field_1": "",
+        "custom_field_2": "",
+        "custom_field_3": "",
+    },
+    "sender_sms_notification": 1,
+    "sender_sms_text": "Sender message",
+    "recipient_sms_notification": 1,
+    "recipient_sms_text": "Recipient SMS",
+    "custom_field_1": "",
+    "custom_field_2": "",
+    "custom_field_3": "",
 }

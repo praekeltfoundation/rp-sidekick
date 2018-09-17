@@ -18,7 +18,18 @@ urlpatterns = [
     ),
     path(
         "get_products/<int:operator_id>/",
-        views.GetProducts.as_view(),
+        views.GetOperatorProducts.as_view(),
         name="get_operator_products",
     ),
+    path(
+        "get_products/airtime/<int:operator_id>/",
+        views.GetOperatorAirtimeProducts.as_view(),
+        name="get_operator_airtime_products",
+    ),
+    path(
+        "get_country_services/<int:country_id>/",
+        views.GetCountryServices.as_view(),
+        name="get_country_services",
+    ),
+    path("top_up_data/", views.TopUpData.as_view(), name="top_up_data"),
 ]
