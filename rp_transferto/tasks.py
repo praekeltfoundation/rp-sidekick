@@ -7,6 +7,7 @@ from celery.utils.log import get_task_logger
 from .utils import TransferToClient, TransferToClient2
 from temba_client.v2 import TembaClient
 
+
 log = get_task_logger(__name__)
 
 
@@ -20,7 +21,6 @@ class TopupData(Task):
         new_client = TransferToClient2(
             settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
         )
-
         # get msisdn number info
         operator_id_info = default_client.get_misisdn_info(msisdn)
         log.info(json.dumps(operator_id_info, indent=2))
@@ -52,6 +52,7 @@ class TopupData(Task):
         product_id = product["product_id"]
 
         # update RapidPro with those values
+
         rapidpro_client = TembaClient(
             settings.RAPIDPRO_URL, settings.RAPIDPRO_TOKEN
         )
