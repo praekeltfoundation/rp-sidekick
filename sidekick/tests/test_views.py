@@ -46,7 +46,7 @@ class SurveyCheckViewTests(APITestCase):
             name="Test Organization",
             url="http://localhost:8002/",
             token="REPLACEME",
-            engage_url="http://localhost:8005/",
+            engage_url="http://localhost:8005",
             engage_token="REPLACEME",
         )
 

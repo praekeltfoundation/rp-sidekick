@@ -1,6 +1,7 @@
 import requests
 import json
 from os import environ
+from urllib.parse import urljoin
 from django.http import JsonResponse
 from rest_framework import status
 
@@ -54,7 +55,7 @@ def send_wa_template_message(request):
     }
 
     result = requests.post(
-        "{}v1/messages".format(org.engage_url),
+        urljoin(org.engage_url, "v1/messages"),
         headers=headers,
         data={
             "to": wa_id,

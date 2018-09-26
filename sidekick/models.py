@@ -9,7 +9,7 @@ class Organization(models.Model):
     url = models.CharField(max_length=200, null=False, blank=False)
     token = models.CharField(max_length=200, null=False, blank=False)
     users = models.ManyToManyField(User, related_name="org_users")
-    engage_url = models.CharField(max_length=200, null=True)
+    engage_url = models.URLField(max_length=200, null=True)
     engage_token = models.CharField(max_length=200, null=True)
 
     def __str__(self):
