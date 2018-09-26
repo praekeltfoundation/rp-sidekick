@@ -57,16 +57,18 @@ def send_wa_template_message(request):
     result = requests.post(
         urljoin(org.engage_url, "v1/messages"),
         headers=headers,
-        data={
-            "to": wa_id,
-            "type": "hsm",
-            "hsm": {
-                "namespace": namespace,
-                "element_name": element_name,
-                "language": {"policy": "fallback", "code": "en_US"},
-                "localizable_params": [{"default": message}],
-            },
-        },
+        data=json.dumps(
+            {
+                "to": wa_id,
+                "type": "hsm",
+                "hsm": {
+                    "namespace": namespace,
+                    "element_name": element_name,
+                    "language": {"policy": "fallback", "code": "en_US"},
+                    "localizable_params": [{"default": message}],
+                },
+            }
+        ),
     )
 
     return JsonResponse(json.loads(result.content), status=result.status_code)
