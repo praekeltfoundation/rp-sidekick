@@ -1,9 +1,13 @@
 import json
+import responses
 from os import environ
+from urllib.parse import urlencode
 
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
+
+from ..models import Organization
 
 
 class SurveyCheckViewTests(APITestCase):
@@ -34,3 +38,65 @@ class SurveyCheckViewTests(APITestCase):
 
         self.assertTrue("version" in result)
         self.assertEqual(result["version"], environ["MARATHON_APP_VERSION"])
+
+    @responses.activate
+    def test_send_wa_template_message(self):
+
+        org = Organization.objects.create(
+            name="Test Organization",
+            url="http://localhost:8002/",
+            token="REPLACEME",
+            engage_url="http://localhost:8005/",
+            engage_token="REPLACEME",
+        )
+
+        responses.add(
+            responses.POST,
+            "http://localhost:8005/v1/messages",
+            json={
+                "messages": [{"id": "sdkjfgksjfgoksdflgs"}],
+                "meta": {"api_status": "stable", "version": "2.19.4"},
+            },
+            status=201,
+            match_querystring=True,
+        )
+
+        params = {
+            "org_id": org.id,
+            "wa_id": "1234",
+            "namespace": "test.namespace",
+            "element_name": "el",
+            "message": "hey!",
+        }
+
+        url = "{}?{}".format(reverse("send_template"), urlencode(params))
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_send_wa_template_message_no_org(self):
+        params = {
+            "org_id": "2",
+            "wa_id": "1234",
+            "namespace": "test.namespace",
+            "element_name": "el",
+            "message": "hey!",
+        }
+
+        url = "{}?{}".format(reverse("send_template"), urlencode(params))
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_send_wa_template_message_missing_params(self):
+        params = {
+            "org_id": "2",
+            "wa_id": "1234",
+            "namespace": "test.namespace",
+            "element_name": "el",
+        }
+
+        url = "{}?{}".format(reverse("send_template"), urlencode(params))
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
