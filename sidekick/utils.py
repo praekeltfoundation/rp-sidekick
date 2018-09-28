@@ -7,3 +7,7 @@ def get_today():
 
 def get_current_week_number():
     return int(get_today().strftime("%W"))
+
+
+def clean_message(message):
+    return " ".join(message.replace("\n", " ").replace("\t", " ").split())

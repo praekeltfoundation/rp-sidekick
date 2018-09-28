@@ -74,6 +74,21 @@ class SurveyCheckViewTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual(
+            request_body,
+            {
+                "to": "1234",
+                "type": "hsm",
+                "hsm": {
+                    "namespace": "test.namespace",
+                    "element_name": "el",
+                    "language": {"policy": "fallback", "code": "en_US"},
+                    "localizable_params": [{"default": "hey!"}],
+                },
+            },
+        )
+
     def test_send_wa_template_message_no_org(self):
         params = {
             "org_id": "2",
