@@ -39,7 +39,9 @@ def send_wa_template_message(request):
     wa_id = data["wa_id"]
     namespace = data["namespace"]
     element_name = data["element_name"]
-    message = data["message"]
+    message = " ".join(
+        data["message"].replace("\n", " ").replace("\t", " ").split()
+    )
 
     try:
         org = Organization.objects.get(id=org_id)
