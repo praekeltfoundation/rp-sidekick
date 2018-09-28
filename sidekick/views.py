@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from rest_framework import status
 
 from .models import Organization
+from .utils import clean_message
 
 
 def health(request):
@@ -39,9 +40,7 @@ def send_wa_template_message(request):
     wa_id = data["wa_id"]
     namespace = data["namespace"]
     element_name = data["element_name"]
-    message = " ".join(
-        data["message"].replace("\n", " ").replace("\t", " ").split()
-    )
+    message = clean_message(data["message"])
 
     try:
         org = Organization.objects.get(id=org_id)
