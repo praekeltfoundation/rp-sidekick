@@ -318,13 +318,11 @@ class PatientDataCheck(Task):
                 for msg in hosp_msgs:
                     reminders.append(msg)
 
-            urns = []
-            if hospital.hospital_lead_urn:
-                urns.append("whatsapp:{}".format(hospital.hospital_lead_urn))
+            urns = ["tel:{}".format(hospital.hospital_lead_urn)]
             if hospital.nomination_urn:
-                urns.append("whatsapp:{}".format(hospital.nomination_urn))
+                urns.append("tel:{}".format(hospital.nomination_urn))
 
-            if urns and reminders:
+            if reminders:
                 extra_info = {
                     "hospital_name": hospital.name,
                     "week": utils.get_current_week_number(),

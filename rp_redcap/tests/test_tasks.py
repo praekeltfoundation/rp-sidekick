@@ -614,14 +614,19 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         self.org = self.create_org()
         self.project = self.create_project(self.org)
 
-    def create_hospital(self, name="My Test Hospital", dag="my_test_hospital"):
+    def create_hospital(
+        self,
+        name="My Test Hospital",
+        dag="my_test_hospital",
+        nomination_urn="+27321",
+    ):
         return Hospital.objects.create(
             name=name,
             project_id=self.project.id,
             data_access_group=dag,
             rapidpro_flow="123123123",
-            hospital_lead_urn="27123",
-            nomination_urn="27321",
+            hospital_lead_urn="+27123",
+            nomination_urn=nomination_urn,
         )
 
     def create_patient_records(self, date):
@@ -729,7 +734,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "field_one": "new_value",
         }
 
-        patient_data_check.save_patient_records(self.project, [new_data], date)
+        patient_data_check.save_patient_records(self.project, [new_data])
 
         # check
         patient_record = PatientRecord.objects.all()[0]
@@ -900,7 +905,51 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             {
                 "flow": "123123123",
                 "restart_participants": 1,
-                "urns": ["whatsapp:27123", "whatsapp:27321"],
+                "urns": ["tel:+27123", "tel:+27321"],
+                "extra": {
+                    "hospital_name": "My Test Hospital",
+                    "week": 42,
+                    "reminder": "2018-06-06\nA test message",
+                },
+            },
+        )
+
+    @responses.activate
+    def test_send_reminders_no_nomination_urn(self):
+        date = override_get_today()
+        hospital = self.create_hospital(nomination_urn=None)
+        rapidpro_client = self.org.get_rapidpro_client()
+
+        messages = defaultdict(lambda: defaultdict(list))
+        messages[hospital][date].append("A test message")
+
+        responses.add(
+            responses.POST,
+            "http://localhost:8002/api/v2/flow_starts.json",
+            json={
+                "uuid": "09d23a05",
+                "flow": {"uuid": "f5901b62", "name": "Send Reminder"},
+                "groups": [{"uuid": "f5901b62", "name": "Investigators"}],
+                "contacts": [{"uuid": "f5901b62", "name": "Ryan Lewis"}],
+                "restart_participants": True,
+                "status": "complete",
+                "extra": {},
+                "created_on": "2013-08-19T19:11:21.082Z",
+                "modified_on": "2013-08-19T19:11:21.082Z",
+            },
+            status=200,
+            match_querystring=True,
+        )
+
+        patient_data_check.send_reminders(messages, rapidpro_client)
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(
+            json.loads(responses.calls[0].request.body),
+            {
+                "flow": "123123123",
+                "restart_participants": 1,
+                "urns": ["tel:+27123"],
                 "extra": {
                     "hospital_name": "My Test Hospital",
                     "week": 42,
