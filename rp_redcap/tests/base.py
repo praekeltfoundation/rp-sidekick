@@ -8,6 +8,7 @@ class RedcapBaseTestCase(object):
             name="Test Project",
             url="http://localhost:8001/",
             token="REPLACEME",
+            crf_token="REPLACEME_CRF",
             org=org,
         )
 

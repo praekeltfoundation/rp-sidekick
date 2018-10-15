@@ -8,6 +8,7 @@ class Project(models.Model):
     name = models.CharField(max_length=200, null=False, blank=False)
     url = models.CharField(max_length=200, null=False, blank=False)
     token = models.CharField(max_length=200, null=False, blank=False)
+    crf_token = models.CharField(max_length=200, null=True)
     org = models.ForeignKey(
         Organization,
         related_name="projects",
@@ -18,8 +19,11 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
-    def get_redcap_client(self):
-        return redcap.Project(self.url, self.token)  # pragma: no cover
+    def get_redcap_client(self, token=None):
+        return redcap.Project(self.url, token or self.token)  # pragma: no cover
+
+    def get_redcap_crf_client(self):
+        return self.get_redcap_client(self.crf_token)
 
 
 class Survey(models.Model):
@@ -74,3 +78,57 @@ class SurveyAnswer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     unique_together = (("survey", "contact", "name"),)
+
+
+class Hospital(models.Model):
+    name = models.CharField(max_length=200, blank=False)
+    data_access_group = models.CharField(max_length=200, blank=False)
+    project = models.ForeignKey(
+        Project, related_name="hospitals", null=False, on_delete=models.CASCADE
+    )
+    rapidpro_flow = models.CharField(max_length=200)
+    hospital_lead_urn = models.CharField(max_length=200)
+    nomination_urn = models.CharField(max_length=200, null=True)
+
+    unique_together = (("name", "project_id"),)
+
+    def __str__(self):
+        return "{} - {}".format(self.project.name, self.name)
+
+
+class PatientRecord(models.Model):
+
+    INCOMPLETE_STATUS = "0"
+    UNVERIFIED_STATUS = "1"
+    COMPLETE_STATUS = "2"
+
+    STATUS_CHOICES = (
+        (INCOMPLETE_STATUS, "Incomplete"),
+        (UNVERIFIED_STATUS, "Unverified"),
+        (COMPLETE_STATUS, "Complete"),
+    )
+    project = models.ForeignKey(
+        Project, related_name="patients", null=False, on_delete=models.CASCADE
+    )
+    record_id = models.CharField(max_length=30, null=False, blank=False)
+    date = models.DateField()
+    status = models.CharField(
+        max_length=1, null=False, blank=False, choices=STATUS_CHOICES
+    )
+
+    unique_together = (("project", "record_id"),)
+
+
+class PatientValue(models.Model):
+    patient = models.ForeignKey(
+        PatientRecord,
+        related_name="values",
+        null=False,
+        on_delete=models.CASCADE,
+    )
+    name = models.CharField(max_length=200, blank=False)
+    value = models.TextField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    unique_together = (("patient", "name"),)

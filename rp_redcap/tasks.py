@@ -1,9 +1,12 @@
+import datetime
+
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from collections import defaultdict
+from django.conf import settings
 from sidekick import utils
 
-from .models import Contact, Project, SurveyAnswer
+from .models import Contact, Project, SurveyAnswer, PatientRecord, PatientValue
 
 
 class ProjectCheck(Task):
@@ -11,13 +14,6 @@ class ProjectCheck(Task):
 
     name = "rp_redcap.tasks.project_check"
     log = get_task_logger(__name__)
-
-    def get_records(self, survey_name, redcap_client):
-        return redcap_client.export_records(
-            forms=[survey_name],
-            export_survey_fields=True,
-            export_data_access_groups=False,
-        )
 
     def get_metadata(self, survey_name, redcap_client):
         return redcap_client.export_metadata(forms=[survey_name])
@@ -43,6 +39,13 @@ class ProjectCheck(Task):
                 }
 
         return required_fields
+
+    def get_records(self, survey_name, redcap_client):
+        return redcap_client.export_records(
+            forms=[survey_name],
+            export_survey_fields=True,
+            export_data_access_groups=False,
+        )
 
     def get_choices(self, metadata, field_name):
         choices = {}
@@ -99,6 +102,9 @@ class ProjectCheck(Task):
                     "missing_fields_count": "\n".join(missing_fields_count),
                     "missing_fields": "\n".join(missing_fields.keys()),
                 }
+
+                # do contact lookup
+                # do contact check and update whatsapp urn
 
                 rapidpro_client.create_flow_start(
                     flow,
@@ -186,3 +192,177 @@ class ProjectCheck(Task):
 
 
 project_check = ProjectCheck()
+
+
+class PatientDataCheck(Task):
+    """Remind hospital leads about missing patient data."""
+
+    name = "rp_redcap.tasks.patient_data_check"
+    log = get_task_logger(__name__)
+
+    def get_redcap_records(
+        self, redcap_client, form, filter=None, record_ids=None
+    ):
+        return redcap_client.export_records(
+            forms=[form],
+            export_survey_fields=True,
+            export_data_access_groups=True,
+            filter_logic=filter,
+            export_checkbox_labels=True,
+            records=record_ids,
+        )
+
+    def save_patient_records(self, project, patients, date=None):
+        for patient in patients:
+            patient_defaults = {"status": patient["asos2_crf_complete"]}
+
+            if date:
+                patient_defaults.update({"date": date})
+
+            patient_obj, created = PatientRecord.objects.update_or_create(
+                project=project,
+                record_id=patient["record_id"],
+                defaults=patient_defaults,
+            )
+
+            for field, value in patient.items():
+                if (
+                    field not in ["record_id", "asos2_crf_complete"]
+                    and value != ""
+                ):
+                    obj, created = PatientValue.objects.update_or_create(
+                        patient=patient_obj,
+                        name=field,
+                        defaults={"value": value},
+                    )
+
+    def refresh_historical_data(self, project, patient_client):
+        record_ids = []
+
+        for patient_record in PatientRecord.objects.filter(
+            project=project
+        ).exclude(status=PatientRecord.COMPLETE_STATUS):
+            record_ids.append(patient_record.record_id)
+
+        if record_ids:
+            patient_records = self.get_redcap_records(
+                patient_client, "asos2_crf", record_ids=record_ids
+            )
+
+            self.save_patient_records(project, patient_records)
+
+    def get_reminders_for_date(
+        self, date, project, screening_client, patient_client
+    ):
+        messages = defaultdict(lambda: defaultdict(list))
+        screening_records = self.get_redcap_records(
+            screening_client, "screening_tool", "[date] = '{}'".format(date)
+        )
+
+        patient_records = self.get_redcap_records(
+            patient_client, "asos2_crf", "[date_surg] = '{}'".format(date)
+        )
+
+        for hospital in project.hospitals.all():
+
+            hospital_screening_records = [
+                d
+                for d in screening_records
+                if d["redcap_data_access_group"] == hospital.data_access_group
+            ]
+            hospital_patient_records = [
+                d
+                for d in patient_records
+                if d["redcap_data_access_group"] == hospital.data_access_group
+            ]
+
+            if hospital_screening_records:
+                patient_count = hospital_screening_records[0]["asos2_eligible"]
+
+                # Check count
+                if patient_count != len(hospital_patient_records):
+                    messages[hospital][date].append(
+                        "Not all patients captured.({}/{})".format(
+                            len(hospital_patient_records), patient_count
+                        )
+                    )
+
+                # check status
+                incomplete = [
+                    patient.get("record_id")
+                    for patient in hospital_patient_records
+                    if patient.get("asos2_crf_complete")
+                    != PatientRecord.COMPLETE_STATUS
+                ]
+
+                if incomplete:
+                    messages[hospital][date].append(
+                        "Incomplete patient data.({})".format(
+                            ", ".join(incomplete)
+                        )
+                    )
+            else:
+                messages[hospital][date].append(
+                    "No screening records found.({})".format(date)
+                )
+
+        self.save_patient_records(project, patient_records, date)
+
+        return messages
+
+    def send_reminders(self, messages, rapidpro_client):
+        for hospital, msgs in messages.items():
+            reminders = []
+            for date, hosp_msgs in msgs.items():
+                reminders.append(date.strftime("%Y-%m-%d"))
+                for msg in hosp_msgs:
+                    reminders.append(msg)
+
+            urns = []
+            if hospital.hospital_lead_urn:
+                urns.append("whatsapp:{}".format(hospital.hospital_lead_urn))
+            if hospital.nomination_urn:
+                urns.append("whatsapp:{}".format(hospital.nomination_urn))
+
+            if urns and reminders:
+                extra_info = {
+                    "hospital_name": hospital.name,
+                    "week": utils.get_current_week_number(),
+                    "reminder": "\n".join(reminders),
+                }
+
+                rapidpro_client.create_flow_start(
+                    hospital.rapidpro_flow,
+                    urns,
+                    restart_participants=True,
+                    extra=extra_info,
+                )
+
+    def run(self, project_id, **kwargs):
+        project = Project.objects.prefetch_related("hospitals").get(
+            id=project_id
+        )
+
+        screening_client = project.get_redcap_client()
+        patient_client = project.get_redcap_crf_client()
+        rapidpro_client = project.org.get_rapidpro_client()
+
+        messages = defaultdict(lambda: defaultdict(list))
+
+        for day in range(0, settings.REDCAP_HISTORICAL_DAYS):
+            date = utils.get_today() - datetime.timedelta(days=day + 1)
+
+            new_messages = self.get_reminders_for_date(
+                date, project, screening_client, patient_client
+            )
+
+            for hospital, date_messages in new_messages.items():
+                for date, hospital_messages in date_messages.items():
+                    messages[hospital][date] += hospital_messages
+
+        self.send_reminders(messages, rapidpro_client)
+
+        self.refresh_historical_data(project, patient_client)
+
+
+patient_data_check = PatientDataCheck()
