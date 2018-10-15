@@ -957,3 +957,16 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 },
             },
         )
+
+    @responses.activate
+    def test_send_reminders_empty(self):
+        date = override_get_today()
+        hospital = self.create_hospital(nomination_urn=None)
+        rapidpro_client = self.org.get_rapidpro_client()
+
+        messages = defaultdict(lambda: defaultdict(list))
+        messages[hospital][date] = []
+
+        patient_data_check.send_reminders(messages, rapidpro_client)
+
+        self.assertEqual(len(responses.calls), 0)

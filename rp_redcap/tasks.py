@@ -314,7 +314,8 @@ class PatientDataCheck(Task):
         for hospital, msgs in messages.items():
             reminders = []
             for date, hosp_msgs in msgs.items():
-                reminders.append(date.strftime("%Y-%m-%d"))
+                if hosp_msgs:
+                    reminders.append(date.strftime("%Y-%m-%d"))
                 for msg in hosp_msgs:
                     reminders.append(msg)
 
