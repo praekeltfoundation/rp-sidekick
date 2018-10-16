@@ -608,6 +608,45 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         self.assertEqual(roles["0"], "Lead (Investigator, Detective)")
         self.assertEqual(roles["1"], "Investigator")
 
+    def test_save_answers(self):
+        no_update_row = {"my_field": "original_value"}
+        update_row = {"my_field": "new_value"}
+        survey = Survey.objects.create(
+            name="survey_ONE",
+            description="Survey One",
+            rapidpro_flow="f5901b62",
+            urn_field="mobile",
+            project=self.project,
+            sequence=1,
+        )
+        contact = Contact.objects.create(
+            project=self.project, record_id=1, urn="+27123"
+        )
+        answer = SurveyAnswer.objects.create(
+            contact=contact,
+            survey=survey,
+            name="my_field",
+            value="original_value",
+        )
+
+        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+        SurveyAnswer.objects.filter(pk=answer.pk).update(updated_at=yesterday)
+        answer.refresh_from_db()
+
+        updated_at = answer.updated_at
+
+        # check that it is not updated
+        project_check.save_answers(no_update_row, survey, contact)
+        answer.refresh_from_db()
+        self.assertEqual(answer.updated_at, updated_at)
+
+        # check that it is updated
+        project_check.save_answers(update_row, survey, contact)
+        answer.refresh_from_db()
+        self.assertEqual(
+            answer.updated_at.date(), datetime.datetime.now().date()
+        )
+
 
 class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def setUp(self):
@@ -746,6 +785,28 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_value = PatientValue.objects.all()[0]
 
         self.assertEqual(patient_record.status, PatientRecord.COMPLETE_STATUS)
+        self.assertEqual(patient_value.value, "new_value")
+
+    def test_save_patient_records_existing_update(self):
+        date = utils.get_today()
+
+        # create records to update
+        self.create_patient_records(date)
+
+        # update records
+        new_data = {
+            "record_id": "1",
+            "asos2_crf_complete": PatientRecord.INCOMPLETE_STATUS,
+            "field_one": "new_value",
+        }
+
+        patient_data_check.save_patient_records(self.project, [new_data])
+
+        # check
+        patient_record = PatientRecord.objects.all()[0]
+        patient_value = PatientValue.objects.all()[0]
+
+        self.assertEqual(patient_record.status, PatientRecord.INCOMPLETE_STATUS)
         self.assertEqual(patient_value.value, "new_value")
 
     def test_save_patient_records_new(self):

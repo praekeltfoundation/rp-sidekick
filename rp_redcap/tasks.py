@@ -72,12 +72,16 @@ class ProjectCheck(Task):
                 ]
                 and value != ""
             ):
-                obj, created = SurveyAnswer.objects.update_or_create(
+                obj, created = SurveyAnswer.objects.get_or_create(
                     survey=survey,
                     contact=contact,
                     name=field,
                     defaults={"value": value},
                 )
+
+                if not created and obj.value != value:
+                    obj.value = value
+                    obj.save()
 
     def start_flows(self, rapidpro_client, flow, project_name, reminders):
         for contact_id, missing_fields in reminders.items():
@@ -219,22 +223,33 @@ class PatientDataCheck(Task):
             if date:
                 patient_defaults.update({"date": date})
 
-            patient_obj, created = PatientRecord.objects.update_or_create(
+            patient_obj, created = PatientRecord.objects.get_or_create(
                 project=project,
                 record_id=patient["record_id"],
                 defaults=patient_defaults,
             )
+
+            if (
+                not created
+                and patient_obj.status != patient["asos2_crf_complete"]
+            ):
+                patient_obj.status = patient["asos2_crf_complete"]
+                patient_obj.save()
 
             for field, value in patient.items():
                 if (
                     field not in ["record_id", "asos2_crf_complete"]
                     and value != ""
                 ):
-                    obj, created = PatientValue.objects.update_or_create(
+                    obj, created = PatientValue.objects.get_or_create(
                         patient=patient_obj,
                         name=field,
                         defaults={"value": value},
                     )
+
+                    if not created and obj.value != value:
+                        obj.value = value
+                        obj.save()
 
     def refresh_historical_data(self, project, patient_client):
         record_ids = []
