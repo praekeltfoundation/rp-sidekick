@@ -38,6 +38,10 @@ def get_whatsapp_contact(org, msisdn):
 
 
 def update_rapidpro_whatsapp_urn(org, msisdn):
+    """
+    Creates or updates a rapidpro contact with the whatsapp URN from the contact
+    check
+    """
     client = TembaClient(org.url, org.token)
 
     whatsapp_id = get_whatsapp_contact(msisdn)
