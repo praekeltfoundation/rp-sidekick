@@ -5,6 +5,7 @@ from collections import defaultdict
 import responses
 from django.test import TestCase
 from django.test.utils import override_settings
+from django.utils import timezone
 from mock import ANY, call, patch
 
 from rp_redcap.models import (
@@ -629,7 +630,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             value="original_value",
         )
 
-        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+        yesterday = timezone.now() - datetime.timedelta(days=1)
         SurveyAnswer.objects.filter(pk=answer.pk).update(updated_at=yesterday)
         answer.refresh_from_db()
 
