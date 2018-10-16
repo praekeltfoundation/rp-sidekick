@@ -19,11 +19,11 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
-    def get_redcap_client(self, token=None):
-        return redcap.Project(self.url, token or self.token)  # pragma: no cover
+    def get_redcap_client(self):
+        return redcap.Project(self.url, self.token)  # pragma: no cover
 
     def get_redcap_crf_client(self):
-        return self.get_redcap_client(self.crf_token)
+        return redcap.Project(self.url, self.crf_token)  # pragma: no cover
 
 
 class Survey(models.Model):

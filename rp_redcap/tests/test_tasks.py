@@ -646,6 +646,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             }
         )
 
+    @patch("rp_redcap.models.Project.get_redcap_crf_client")
     @patch("rp_redcap.models.Project.get_redcap_client")
     @patch("rp_redcap.tasks.patient_data_check.get_reminders_for_date")
     @patch("rp_redcap.tasks.patient_data_check.refresh_historical_data")
@@ -656,6 +657,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_refresh_historical_data,
         mock_get_reminders_for_date,
         mock_get_redcap_client,
+        mock_get_redcap_crf_client,
     ):
         hospital = self.create_hospital()
         date = override_get_today()
@@ -665,6 +667,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_reminders_for_date.return_value = return_data
 
         mock_get_redcap_client.return_value = MockRedCapPatients()
+        mock_get_redcap_crf_client.return_value = MockRedCapPatients()
 
         with patch("sidekick.utils.get_today", override_get_today):
             patient_data_check(str(self.project.id))
@@ -679,9 +682,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         mock_refresh_historical_data.assert_called_with(self.project, ANY)
 
-        calls = [call(), call("REPLACEME_CRF")]
-        mock_get_redcap_client.assert_has_calls(calls)
-        self.assertEqual(len(mock_get_redcap_client.mock_calls), 2)
+        mock_get_redcap_crf_client.assert_called_once()
+        mock_get_redcap_client.assert_called_once()
 
         return_data[hospital][date].append("test notification")
         return_data[hospital][date].append("test notification")
@@ -689,6 +691,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_send_reminders.assert_called_with(return_data, ANY)
 
     @override_settings(REDCAP_HISTORICAL_DAYS=1)
+    @patch("rp_redcap.models.Project.get_redcap_crf_client")
     @patch("rp_redcap.models.Project.get_redcap_client")
     @patch("rp_redcap.tasks.patient_data_check.get_reminders_for_date")
     @patch("rp_redcap.tasks.patient_data_check.refresh_historical_data")
@@ -699,6 +702,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_refresh_historical_data,
         mock_get_reminders_for_date,
         mock_get_redcap_client,
+        mock_get_redcap_crf_client,
     ):
         hospital = self.create_hospital()
         date = override_get_today()
@@ -708,6 +712,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_reminders_for_date.return_value = return_data
 
         mock_get_redcap_client.return_value = MockRedCapPatients()
+        mock_get_redcap_crf_client.return_value = MockRedCapPatients()
 
         with patch("sidekick.utils.get_today", override_get_today):
             patient_data_check(str(self.project.id))
