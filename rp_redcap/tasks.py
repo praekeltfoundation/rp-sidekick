@@ -83,11 +83,15 @@ class ProjectCheck(Task):
                     obj.value = value
                     obj.save()
 
-    def start_flows(self, rapidpro_client, flow, project_name, reminders):
+    def start_flows(self, rapidpro_client, flow, project_name, reminders, org):
         for contact_id, missing_fields in reminders.items():
             contact = Contact.objects.get(id=contact_id)
 
             if contact.urn:
+                utils.update_rapidpro_whatsapp_urn(
+                    org, contact.urn.replace("tel:", "")
+                )
+
                 missing_fields_count = []
                 for survey, count in missing_fields.items():
                     missing_fields_count.append(
@@ -106,9 +110,6 @@ class ProjectCheck(Task):
                     "missing_fields_count": "\n".join(missing_fields_count),
                     "missing_fields": "\n".join(missing_fields.keys()),
                 }
-
-                # do contact lookup
-                # do contact check and update whatsapp urn
 
                 rapidpro_client.create_flow_start(
                     flow,
@@ -191,7 +192,11 @@ class ProjectCheck(Task):
                         )
 
         self.start_flows(
-            rapidpro_client, survey.rapidpro_flow, project.name, reminders
+            rapidpro_client,
+            survey.rapidpro_flow,
+            project.name,
+            reminders,
+            project.org,
         )
 
 
@@ -325,7 +330,7 @@ class PatientDataCheck(Task):
 
         return messages
 
-    def send_reminders(self, messages, rapidpro_client):
+    def send_reminders(self, messages, rapidpro_client, org):
         for hospital, msgs in messages.items():
             reminders = []
             for date, hosp_msgs in msgs.items():
@@ -334,11 +339,17 @@ class PatientDataCheck(Task):
                 for msg in hosp_msgs:
                     reminders.append(msg)
 
-            urns = ["tel:{}".format(hospital.hospital_lead_urn)]
-            if hospital.nomination_urn:
-                urns.append("tel:{}".format(hospital.nomination_urn))
-
             if reminders:
+                urns = ["tel:{}".format(hospital.hospital_lead_urn)]
+                utils.update_rapidpro_whatsapp_urn(
+                    org, hospital.hospital_lead_urn
+                )
+                if hospital.nomination_urn:
+                    urns.append("tel:{}".format(hospital.nomination_urn))
+                    utils.update_rapidpro_whatsapp_urn(
+                        org, hospital.nomination_urn
+                    )
+
                 extra_info = {
                     "hospital_name": hospital.name,
                     "week": utils.get_current_week_number(),
@@ -374,7 +385,7 @@ class PatientDataCheck(Task):
                 for date, hospital_messages in date_messages.items():
                     messages[hospital][date] += hospital_messages
 
-        self.send_reminders(messages, rapidpro_client)
+        self.send_reminders(messages, rapidpro_client, project.org)
 
         self.refresh_historical_data(project, patient_client)
 

@@ -331,7 +331,10 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
     @responses.activate
     @patch("rp_redcap.models.Project.get_redcap_client")
-    def test_project_check_multiple_incomplete(self, mock_get_redcap_client):
+    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
+    def test_project_check_multiple_incomplete(
+        self, mock_update_rapidpro_whatsapp_urn, mock_get_redcap_client
+    ):
         """
         Survey task test.
 
@@ -388,10 +391,14 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         self.assertEqual(contact.project, self.project)
 
         self.assertEqual(SurveyAnswer.objects.count(), 3)
+        mock_update_rapidpro_whatsapp_urn.assert_called()
 
     @responses.activate
     @patch("rp_redcap.models.Project.get_redcap_client")
-    def test_project_check_multiple_surveys(self, mock_get_redcap_client):
+    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
+    def test_project_check_multiple_surveys(
+        self, mock_update_rapidpro_whatsapp_urn, mock_get_redcap_client
+    ):
         """
         Project task test.
 
@@ -464,10 +471,14 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
 
         contact = Contact.objects.get(record_id=1)
         self.assertEqual(contact.role, "Investigator")
+        mock_update_rapidpro_whatsapp_urn.assert_called()
 
     @responses.activate
     @patch("rp_redcap.models.Project.get_redcap_client")
-    def test_project_check_with_ignore_fields(self, mock_get_redcap_client):
+    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
+    def test_project_check_with_ignore_fields(
+        self, mock_update_rapidpro_whatsapp_urn, mock_get_redcap_client
+    ):
         """
         Project task test with ignore_fields.
 
@@ -529,6 +540,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
                 },
             },
         )
+        mock_update_rapidpro_whatsapp_urn.assert_called()
 
     @responses.activate
     @patch("rp_redcap.models.Project.get_redcap_client")
@@ -728,7 +740,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         return_data[hospital][date].append("test notification")
         return_data[hospital][date].append("test notification")
 
-        mock_send_reminders.assert_called_with(return_data, ANY)
+        mock_send_reminders.assert_called_with(return_data, ANY, self.org)
 
     @override_settings(REDCAP_HISTORICAL_DAYS=1)
     @patch("rp_redcap.models.Project.get_redcap_crf_client")
@@ -764,7 +776,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         mock_refresh_historical_data.assert_called_with(self.project, ANY)
 
-        mock_send_reminders.assert_called_with(return_data, ANY)
+        mock_send_reminders.assert_called_with(return_data, ANY, self.org)
 
     def test_save_patient_records_existing(self):
         date = utils.get_today()
@@ -938,7 +950,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         )
 
     @responses.activate
-    def test_send_reminders(self):
+    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
+    def test_send_reminders(self, mock_update_rapidpro_whatsapp_urn):
         date = override_get_today()
         hospital = self.create_hospital()
         rapidpro_client = self.org.get_rapidpro_client()
@@ -964,7 +977,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             match_querystring=True,
         )
 
-        patient_data_check.send_reminders(messages, rapidpro_client)
+        patient_data_check.send_reminders(messages, rapidpro_client, self.org)
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -980,9 +993,13 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 },
             },
         )
+        mock_update_rapidpro_whatsapp_urn.assert_called()
 
     @responses.activate
-    def test_send_reminders_no_nomination_urn(self):
+    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
+    def test_send_reminders_no_nomination_urn(
+        self, mock_update_rapidpro_whatsapp_urn
+    ):
         date = override_get_today()
         hospital = self.create_hospital(nomination_urn=None)
         rapidpro_client = self.org.get_rapidpro_client()
@@ -1008,7 +1025,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             match_querystring=True,
         )
 
-        patient_data_check.send_reminders(messages, rapidpro_client)
+        patient_data_check.send_reminders(messages, rapidpro_client, self.org)
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -1024,9 +1041,11 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 },
             },
         )
+        mock_update_rapidpro_whatsapp_urn.assert_called()
 
     @responses.activate
-    def test_send_reminders_empty(self):
+    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
+    def test_send_reminders_empty(self, mock_update_rapidpro_whatsapp_urn):
         date = override_get_today()
         hospital = self.create_hospital(nomination_urn=None)
         rapidpro_client = self.org.get_rapidpro_client()
@@ -1034,6 +1053,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         messages = defaultdict(lambda: defaultdict(list))
         messages[hospital][date] = []
 
-        patient_data_check.send_reminders(messages, rapidpro_client)
+        patient_data_check.send_reminders(messages, rapidpro_client, self.org)
 
         self.assertEqual(len(responses.calls), 0)
+        mock_update_rapidpro_whatsapp_urn.assert_not_called()
