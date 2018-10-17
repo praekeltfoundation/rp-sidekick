@@ -153,13 +153,15 @@ class UtilsTests(TestCase):
     def test_update_rapidpro_whatsapp_urn_no_wa_id(
         self, mock_get_whatsapp_contact
     ):
+        msisdn = "+27820001001"
         org = self.create_org()
 
         mock_get_whatsapp_contact.return_value = None
 
-        utils.update_rapidpro_whatsapp_urn(org, "+27820001001")
+        utils.update_rapidpro_whatsapp_urn(org, msisdn)
 
         self.assertEqual(len(responses.calls), 0)
+        mock_get_whatsapp_contact.assert_called_with(org, msisdn)
 
     @responses.activate
     @patch("sidekick.utils.get_whatsapp_contact")
