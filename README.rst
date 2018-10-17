@@ -39,3 +39,11 @@ Tools
 
 .. _pre-commit: https://pre-commit.com
 .. _black: https://github.com/ambv/black
+
+------------
+Contributing
+------------
+
+See our `ways of working` for a guide on how to contribute to ``rp-sidekick``.
+
+.. _ways of working: ./docs/ways-of-working.md
