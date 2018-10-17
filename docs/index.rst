@@ -14,6 +14,8 @@ Sidekick Django Web Application for Rapidpro - used to extend the functionality 
    :maxdepth: 2
    :caption: Contents:
 
+   apps/redcap.rst
+
    ways-of-working.md
 
 Indices and tables
