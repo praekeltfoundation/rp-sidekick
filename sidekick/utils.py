@@ -44,7 +44,7 @@ def update_rapidpro_whatsapp_urn(org, msisdn):
     """
     client = TembaClient(org.url, org.token)
 
-    whatsapp_id = get_whatsapp_contact(msisdn)
+    whatsapp_id = get_whatsapp_contact(org, msisdn)
 
     if whatsapp_id:
         contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
