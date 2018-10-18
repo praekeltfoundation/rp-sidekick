@@ -223,7 +223,10 @@ class PatientDataCheck(Task):
 
     def save_patient_records(self, project, patients, date=None):
         for patient in patients:
-            patient_defaults = {"status": patient["asos2_crf_complete"]}
+            patient_defaults = {
+                "pre_operation_status": patient["pre_operation_status"],
+                "post_operation_status": patient["post_operation_status"],
+            }
 
             if date:
                 patient_defaults.update({"date": date})
@@ -234,16 +237,29 @@ class PatientDataCheck(Task):
                 defaults=patient_defaults,
             )
 
-            if (
-                not created
-                and patient_obj.status != patient["asos2_crf_complete"]
+            if not created and (
+                patient_obj.pre_operation_status
+                != patient["pre_operation_status"]
+                or patient_obj.post_operation_status
+                != patient["post_operation_status"]
             ):
-                patient_obj.status = patient["asos2_crf_complete"]
+                patient_obj.pre_operation_status = patient[
+                    "pre_operation_status"
+                ]
+                patient_obj.post_operation_status = patient[
+                    "post_operation_status"
+                ]
                 patient_obj.save()
 
             for field, value in patient.items():
                 if (
-                    field not in ["record_id", "asos2_crf_complete"]
+                    field
+                    not in [
+                        "record_id",
+                        "asos2_crf_complete",
+                        "pre_operation_status",
+                        "post_operation_status",
+                    ]
                     and value != ""
                 ):
                     obj, created = PatientValue.objects.get_or_create(
@@ -261,7 +277,10 @@ class PatientDataCheck(Task):
 
         for patient_record in PatientRecord.objects.filter(
             project=project
-        ).exclude(status=PatientRecord.COMPLETE_STATUS):
+        ).exclude(
+            pre_operation_status=PatientRecord.COMPLETE_STATUS,
+            post_operation_status=PatientRecord.COMPLETE_STATUS,
+        ):
             record_ids.append(patient_record.record_id)
 
         if record_ids:
@@ -269,7 +288,31 @@ class PatientDataCheck(Task):
                 patient_client, "asos2_crf", record_ids=record_ids
             )
 
+            patient_records = self.check_patients_status(
+                project, patient_records
+            )
+
             self.save_patient_records(project, patient_records)
+
+    def check_patients_status(self, project, patients):
+
+        pre_op_fields = project.pre_operation_fields.split(",")
+        post_op_fields = project.post_operation_fields.split(",")
+
+        for patient in patients:
+            patient["pre_operation_status"] = PatientRecord.COMPLETE_STATUS
+            patient["post_operation_status"] = PatientRecord.COMPLETE_STATUS
+            for field, value in patient.items():
+                if value == "" and field in pre_op_fields:
+                    patient[
+                        "pre_operation_status"
+                    ] = PatientRecord.INCOMPLETE_STATUS
+                if value == "" and field in post_op_fields:
+                    patient[
+                        "post_operation_status"
+                    ] = PatientRecord.INCOMPLETE_STATUS
+
+        return patients
 
     def get_reminders_for_date(
         self, date, project, screening_client, patient_client
@@ -288,6 +331,8 @@ class PatientDataCheck(Task):
         patient_records = self.get_redcap_records(
             patient_client, "asos2_crf", "[date_surg] = '{}'".format(date)
         )
+
+        patient_records = self.check_patients_status(project, patient_records)
 
         for hospital in project.hospitals.all():
 
@@ -316,19 +361,20 @@ class PatientDataCheck(Task):
                     )
 
                 # check status
-                incomplete = [
-                    patient.get("record_id")
-                    for patient in hospital_patient_records
-                    if patient.get("asos2_crf_complete")
-                    != PatientRecord.COMPLETE_STATUS
-                ]
+                for status in ["pre", "post"]:
+                    incomplete = [
+                        patient.get("record_id")
+                        for patient in hospital_patient_records
+                        if patient.get("{}_operation_status".format(status))
+                        != PatientRecord.COMPLETE_STATUS
+                    ]
 
-                if incomplete:
-                    messages[hospital][date].append(
-                        "Incomplete patient data.({})".format(
-                            ", ".join(incomplete)
+                    if incomplete:
+                        messages[hospital][date].append(
+                            "Incomplete {} operation patient data.({})".format(
+                                status, ", ".join(incomplete)
+                            )
                         )
-                    )
             else:
                 messages[hospital][date].append(
                     "No screening records found.({})".format(date)
