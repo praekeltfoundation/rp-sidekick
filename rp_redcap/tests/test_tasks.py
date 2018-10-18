@@ -206,7 +206,7 @@ class MockRedCapPatients(object):
                     "field_one": "new_value",
                 }
             ]
-        if "'2018-01-01'" in filter_logic:
+        if "'2018-01-16'" in filter_logic or "'2018-01-15'" in filter_logic:
             # test_get_reminders_no_errors
             if "screening_tool" in forms:
                 return [
@@ -216,34 +216,7 @@ class MockRedCapPatients(object):
                         "day1": "1",
                         "day2": "1",
                         "day3": "1",
-                        "day4": "1",
-                        "day5": "",
-                        "redcap_data_access_group": "my_test_hospital",
-                    }
-                ]
-            if "asos2_crf" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
-                        "redcap_data_access_group": "my_test_hospital",
-                    }
-                ]
-        elif "'2018-02-20'" in filter_logic:
-            # test_get_reminders_no_screening_record
-            if "screening_tool" in forms:
-                return []
-        elif "'2018-03-01'" in filter_logic or "'2018-02-26'" in filter_logic:
-            # test_get_reminders_eligible_mismatch
-            if "screening_tool" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "6",
-                        "day1": "1",
-                        "day2": "1",
-                        "day3": "1",
-                        "day4": "2",
+                        "day4": "",
                         "day5": "1",
                         "redcap_data_access_group": "my_test_hospital",
                     }
@@ -256,7 +229,34 @@ class MockRedCapPatients(object):
                         "redcap_data_access_group": "my_test_hospital",
                     }
                 ]
-        elif "'2018-03-27'" in filter_logic or "'2018-03-26'" in filter_logic:
+        elif "'2018-02-20'" in filter_logic or "'2018-02-19'" in filter_logic:
+            # test_get_reminders_no_screening_record
+            if "screening_tool" in forms:
+                return []
+        elif "'2018-03-20'" in filter_logic or "'2018-03-19'" in filter_logic:
+            # test_get_reminders_eligible_mismatch
+            if "screening_tool" in forms:
+                return [
+                    {
+                        "record_id": "1",
+                        "asos2_eligible": "6",
+                        "day1": "1",
+                        "day2": "2",
+                        "day3": "1",
+                        "day4": "1",
+                        "day5": "1",
+                        "redcap_data_access_group": "my_test_hospital",
+                    }
+                ]
+            if "asos2_crf" in forms:
+                return [
+                    {
+                        "record_id": "1",
+                        "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
+                        "redcap_data_access_group": "my_test_hospital",
+                    }
+                ]
+        elif "'2018-04-20'" in filter_logic or "'2018-04-16'" in filter_logic:
             # test_get_reminders_patients_incomplete
             if "screening_tool" in forms:
                 return [
@@ -284,7 +284,7 @@ class MockRedCapPatients(object):
                         "redcap_data_access_group": "my_test_hospital",
                     },
                 ]
-        elif "'2018-05-01'" in filter_logic or "'2018-04-30'" in filter_logic:
+        elif "'2018-05-18'" in filter_logic or "'2018-05-14'" in filter_logic:
             # test_get_reminders_patients_multiple_hospitals
             if "screening_tool" in forms:
                 return [
@@ -892,7 +892,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
     def test_get_reminders_no_errors(self):
         hospital = self.create_hospital()
-        date = datetime.date(2018, 1, 1)
+        date = datetime.date(2018, 1, 16)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
@@ -905,7 +905,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def test_get_reminders_no_screening_record(self):
         hospital = self.create_hospital()
 
-        date = datetime.date(2018, 2, 1)
+        date = datetime.date(2018, 2, 20)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
@@ -915,14 +915,14 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         check_messages = defaultdict(lambda: defaultdict(list))
         check_messages[hospital][date].append(
-            "No screening records found.(2018-02-01)"
+            "No screening records found.(2018-02-20)"
         )
 
         self.assertEqual(messages, check_messages)
 
     def test_get_reminders_eligible_mismatch(self):
         hospital = self.create_hospital()
-        date = datetime.date(2018, 3, 1)
+        date = datetime.date(2018, 3, 20)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
@@ -938,7 +938,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def test_get_reminders_patients_incomplete(self):
         hospital = self.create_hospital()
 
-        date = datetime.date(2018, 3, 27)
+        date = datetime.date(2018, 4, 20)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
@@ -959,7 +959,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "Another Test Hospital", "another_hosp"
         )
 
-        date = datetime.date(2018, 5, 1)
+        date = datetime.date(2018, 5, 18)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
