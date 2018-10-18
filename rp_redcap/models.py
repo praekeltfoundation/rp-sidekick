@@ -15,6 +15,8 @@ class Project(models.Model):
         null=False,
         on_delete=models.CASCADE,
     )
+    pre_operation_fields = models.TextField(null=True)
+    post_operation_fields = models.TextField(null=True)
 
     def __str__(self):
         return self.name
@@ -112,8 +114,19 @@ class PatientRecord(models.Model):
     )
     record_id = models.CharField(max_length=30, null=False, blank=False)
     date = models.DateField()
-    status = models.CharField(
-        max_length=1, null=False, blank=False, choices=STATUS_CHOICES
+    pre_operation_status = models.CharField(
+        max_length=1,
+        null=False,
+        blank=False,
+        choices=STATUS_CHOICES,
+        default=INCOMPLETE_STATUS,
+    )
+    post_operation_status = models.CharField(
+        max_length=1,
+        null=False,
+        blank=False,
+        choices=STATUS_CHOICES,
+        default=INCOMPLETE_STATUS,
     )
 
     unique_together = (("project", "record_id"),)

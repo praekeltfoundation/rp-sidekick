@@ -227,6 +227,10 @@ class MockRedCapPatients(object):
                         "record_id": "1",
                         "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
                         "redcap_data_access_group": "my_test_hospital",
+                        "pre_op_field_1": "value",
+                        "pre_op_field_2": "value",
+                        "post_op_field_1": "value",
+                        "post_op_field_2": "value",
                     }
                 ]
         elif "'2018-02-20'" in filter_logic or "'2018-02-19'" in filter_logic:
@@ -254,6 +258,10 @@ class MockRedCapPatients(object):
                         "record_id": "1",
                         "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
                         "redcap_data_access_group": "my_test_hospital",
+                        "pre_op_field_1": "value",
+                        "pre_op_field_2": "value",
+                        "post_op_field_1": "value",
+                        "post_op_field_2": "value",
                     }
                 ]
         elif "'2018-04-20'" in filter_logic or "'2018-04-16'" in filter_logic:
@@ -277,11 +285,19 @@ class MockRedCapPatients(object):
                         "record_id": "1999-1",
                         "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
                         "redcap_data_access_group": "my_test_hospital",
+                        "pre_op_field_1": "value",
+                        "pre_op_field_2": "value",
+                        "post_op_field_1": "value",
+                        "post_op_field_2": "value",
                     },
                     {
                         "record_id": "1999-2",
                         "asos2_crf_complete": PatientRecord.INCOMPLETE_STATUS,
                         "redcap_data_access_group": "my_test_hospital",
+                        "pre_op_field_1": "",
+                        "pre_op_field_2": "",
+                        "post_op_field_1": "",
+                        "post_op_field_2": "",
                     },
                 ]
         elif "'2018-05-18'" in filter_logic or "'2018-05-14'" in filter_logic:
@@ -315,16 +331,28 @@ class MockRedCapPatients(object):
                         "record_id": "1888-1",
                         "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
                         "redcap_data_access_group": "my_test_hospital",
+                        "pre_op_field_1": "value",
+                        "pre_op_field_2": "value",
+                        "post_op_field_1": "value",
+                        "post_op_field_2": "value",
                     },
                     {
                         "record_id": "1888-2",
                         "asos2_crf_complete": PatientRecord.INCOMPLETE_STATUS,
                         "redcap_data_access_group": "my_test_hospital",
+                        "pre_op_field_1": "",
+                        "pre_op_field_2": "",
+                        "post_op_field_1": "",
+                        "post_op_field_2": "",
                     },
                     {
                         "record_id": "1888-3",
                         "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
                         "redcap_data_access_group": "another_hosp",
+                        "pre_op_field_1": "value",
+                        "pre_op_field_2": "value",
+                        "post_op_field_1": "value",
+                        "post_op_field_2": "value",
                     },
                 ]
         return []
@@ -712,7 +740,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "project": self.project,
                 "date": date,
                 "record_id": "1",
-                "status": PatientRecord.INCOMPLETE_STATUS,
+                "pre_operation_status": PatientRecord.INCOMPLETE_STATUS,
             }
         )
         PatientValue.objects.create(
@@ -812,7 +840,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         # update records
         new_data = {
             "record_id": "1",
-            "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
+            "pre_operation_status": PatientRecord.COMPLETE_STATUS,
+            "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
         }
 
@@ -822,7 +851,13 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_record = PatientRecord.objects.all()[0]
         patient_value = PatientValue.objects.all()[0]
 
-        self.assertEqual(patient_record.status, PatientRecord.COMPLETE_STATUS)
+        self.assertEqual(
+            patient_record.pre_operation_status, PatientRecord.COMPLETE_STATUS
+        )
+        self.assertEqual(
+            patient_record.post_operation_status,
+            PatientRecord.INCOMPLETE_STATUS,
+        )
         self.assertEqual(patient_value.value, "new_value")
 
     def test_save_patient_records_existing_update(self):
@@ -834,7 +869,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         # update records
         new_data = {
             "record_id": "1",
-            "asos2_crf_complete": PatientRecord.INCOMPLETE_STATUS,
+            "pre_operation_status": PatientRecord.COMPLETE_STATUS,
+            "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
         }
 
@@ -844,14 +880,18 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_record = PatientRecord.objects.all()[0]
         patient_value = PatientValue.objects.all()[0]
 
-        self.assertEqual(patient_record.status, PatientRecord.INCOMPLETE_STATUS)
+        self.assertEqual(
+            patient_record.post_operation_status,
+            PatientRecord.INCOMPLETE_STATUS,
+        )
         self.assertEqual(patient_value.value, "new_value")
 
     def test_save_patient_records_new(self):
         date = utils.get_today()
         data = {
             "record_id": "1",
-            "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
+            "pre_operation_status": PatientRecord.COMPLETE_STATUS,
+            "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
         }
 
@@ -860,7 +900,9 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_record = PatientRecord.objects.all()[0]
         patient_value = PatientValue.objects.all()[0]
 
-        self.assertEqual(patient_record.status, PatientRecord.COMPLETE_STATUS)
+        self.assertEqual(
+            patient_record.pre_operation_status, PatientRecord.COMPLETE_STATUS
+        )
         self.assertEqual(patient_value.value, "new_value")
 
     @patch("rp_redcap.tasks.patient_data_check.save_patient_records")
@@ -886,6 +928,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                     "record_id": "1",
                     "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
                     "field_one": "new_value",
+                    "pre_operation_status": "2",
+                    "post_operation_status": "2",
                 }
             ],
         )
@@ -948,7 +992,10 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         check_messages = defaultdict(lambda: defaultdict(list))
         check_messages[hospital][date].append(
-            "Incomplete patient data.(1999-2)"
+            "Incomplete pre operation patient data.(1999-2)"
+        )
+        check_messages[hospital][date].append(
+            "Incomplete post operation patient data.(1999-2)"
         )
 
         self.assertEqual(messages, check_messages)
@@ -968,7 +1015,11 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         )
 
         self.assertEqual(
-            messages[hospital1][date], ["Incomplete patient data.(1888-2)"]
+            messages[hospital1][date],
+            [
+                "Incomplete pre operation patient data.(1888-2)",
+                "Incomplete post operation patient data.(1888-2)",
+            ],
         )
         self.assertEqual(
             messages[hospital2][date], ["Not all patients captured.(1/2)"]

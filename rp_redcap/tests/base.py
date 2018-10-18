@@ -10,6 +10,8 @@ class RedcapBaseTestCase(object):
             token="REPLACEME",
             crf_token="REPLACEME_CRF",
             org=org,
+            pre_operation_fields="pre_op_field_1,pre_op_field_2",
+            post_operation_fields="post_op_field_1,post_op_field_2",
         )
 
     def create_org(self):
