@@ -275,8 +275,14 @@ class PatientDataCheck(Task):
         self, date, project, screening_client, patient_client
     ):
         messages = defaultdict(lambda: defaultdict(list))
+
+        screening_date = date - datetime.timedelta(days=date.weekday())
+        screening_field = "day{}".format(date.weekday() + 1)
+
         screening_records = self.get_redcap_records(
-            screening_client, "screening_tool", "[date] = '{}'".format(date)
+            screening_client,
+            "screening_tool",
+            "[date] = '{}'".format(screening_date),
         )
 
         patient_records = self.get_redcap_records(
@@ -297,7 +303,9 @@ class PatientDataCheck(Task):
             ]
 
             if hospital_screening_records:
-                patient_count = hospital_screening_records[0]["asos2_eligible"]
+                patient_count = int(
+                    hospital_screening_records[0][screening_field] or "0"
+                )
 
                 # Check count
                 if patient_count != len(hospital_patient_records):

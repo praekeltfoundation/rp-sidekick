@@ -212,7 +212,12 @@ class MockRedCapPatients(object):
                 return [
                     {
                         "record_id": "1",
-                        "asos2_eligible": 1,
+                        "asos2_eligible": "5",
+                        "day1": "1",
+                        "day2": "1",
+                        "day3": "1",
+                        "day4": "1",
+                        "day5": "",
                         "redcap_data_access_group": "my_test_hospital",
                     }
                 ]
@@ -224,17 +229,22 @@ class MockRedCapPatients(object):
                         "redcap_data_access_group": "my_test_hospital",
                     }
                 ]
-        elif "'2018-01-02'" in filter_logic:
+        elif "'2018-02-01'" in filter_logic:
             # test_get_reminders_no_screening_record
             if "screening_tool" in forms:
                 return []
-        elif "'2018-01-03'" in filter_logic:
+        elif "'2018-03-01'" in filter_logic or "'2018-02-26'" in filter_logic:
             # test_get_reminders_eligible_mismatch
             if "screening_tool" in forms:
                 return [
                     {
                         "record_id": "1",
-                        "asos2_eligible": 2,
+                        "asos2_eligible": "6",
+                        "day1": "1",
+                        "day2": "1",
+                        "day3": "1",
+                        "day4": "2",
+                        "day5": "1",
                         "redcap_data_access_group": "my_test_hospital",
                     }
                 ]
@@ -246,13 +256,18 @@ class MockRedCapPatients(object):
                         "redcap_data_access_group": "my_test_hospital",
                     }
                 ]
-        elif "'2018-01-04'" in filter_logic:
+        elif "'2018-03-27'" in filter_logic or "'2018-03-26'" in filter_logic:
             # test_get_reminders_patients_incomplete
             if "screening_tool" in forms:
                 return [
                     {
                         "record_id": "1",
-                        "asos2_eligible": 2,
+                        "asos2_eligible": "10",
+                        "day1": "2",
+                        "day2": "2",
+                        "day3": "2",
+                        "day4": "2",
+                        "day5": "2",
                         "redcap_data_access_group": "my_test_hospital",
                     }
                 ]
@@ -269,18 +284,28 @@ class MockRedCapPatients(object):
                         "redcap_data_access_group": "my_test_hospital",
                     },
                 ]
-        elif "'2018-01-05'" in filter_logic:
+        elif "'2018-05-01'" in filter_logic or "'2018-04-30'" in filter_logic:
             # test_get_reminders_patients_multiple_hospitals
             if "screening_tool" in forms:
                 return [
                     {
                         "record_id": "1",
-                        "asos2_eligible": 2,
+                        "asos2_eligible": "10",
+                        "day1": "2",
+                        "day2": "2",
+                        "day3": "2",
+                        "day4": "2",
+                        "day5": "2",
                         "redcap_data_access_group": "my_test_hospital",
                     },
                     {
                         "record_id": "1",
-                        "asos2_eligible": 2,
+                        "asos2_eligible": "10",
+                        "day1": "2",
+                        "day2": "2",
+                        "day3": "2",
+                        "day4": "2",
+                        "day5": "2",
                         "redcap_data_access_group": "another_hosp",
                     },
                 ]
@@ -866,7 +891,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         )
 
     def test_get_reminders_no_errors(self):
-        self.create_hospital()
+        hospital = self.create_hospital()
         date = datetime.date(2018, 1, 1)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
@@ -875,12 +900,12 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             date, self.project, screening_client, patient_client
         )
 
-        self.assertEqual(messages, defaultdict(list))
+        self.assertEqual(messages[hospital][date], [])
 
     def test_get_reminders_no_screening_record(self):
         hospital = self.create_hospital()
 
-        date = datetime.date(2018, 1, 2)
+        date = datetime.date(2018, 2, 1)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
@@ -890,14 +915,14 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         check_messages = defaultdict(lambda: defaultdict(list))
         check_messages[hospital][date].append(
-            "No screening records found.(2018-01-02)"
+            "No screening records found.(2018-02-01)"
         )
 
         self.assertEqual(messages, check_messages)
 
     def test_get_reminders_eligible_mismatch(self):
         hospital = self.create_hospital()
-        date = datetime.date(2018, 1, 3)
+        date = datetime.date(2018, 3, 1)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
@@ -913,7 +938,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def test_get_reminders_patients_incomplete(self):
         hospital = self.create_hospital()
 
-        date = datetime.date(2018, 1, 4)
+        date = datetime.date(2018, 3, 27)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
@@ -934,7 +959,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "Another Test Hospital", "another_hosp"
         )
 
-        date = datetime.date(2018, 1, 5)
+        date = datetime.date(2018, 5, 1)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
 
