@@ -229,7 +229,7 @@ class MockRedCapPatients(object):
                         "redcap_data_access_group": "my_test_hospital",
                     }
                 ]
-        elif "'2018-02-01'" in filter_logic:
+        elif "'2018-02-20'" in filter_logic:
             # test_get_reminders_no_screening_record
             if "screening_tool" in forms:
                 return []
