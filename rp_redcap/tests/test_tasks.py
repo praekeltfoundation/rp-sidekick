@@ -1025,6 +1025,21 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             messages[hospital2][date], ["Not all patients captured.(1/2)"]
         )
 
+    @patch("rp_redcap.tasks.patient_data_check.get_redcap_records")
+    def test_get_reminders_patients_weekend(self, mock_get_redcap_records):
+        hospital = self.create_hospital()
+
+        date = datetime.date(2018, 6, 17)
+        screening_client = MockRedCapPatients()
+        patient_client = MockRedCapPatients()
+
+        messages = patient_data_check.get_reminders_for_date(
+            date, self.project, screening_client, patient_client
+        )
+
+        self.assertEqual(messages[hospital][date], [])
+        mock_get_redcap_records.assert_not_called()
+
     @responses.activate
     @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
     def test_send_reminders(self, mock_update_rapidpro_whatsapp_urn):
