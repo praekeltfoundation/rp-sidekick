@@ -188,6 +188,36 @@ class MockRedCapSurveys(object):
 
 
 class MockRedCapPatients(object):
+    def export_metadata(self, forms=None):
+        metadata = [
+            {
+                "field_name": "pre_op_field_1",
+                "field_label": "Pre Field 1",
+                "required_field": "y",
+                "branching_logic": "",
+            },
+            {
+                "field_name": "pre_op_field_2",
+                "field_label": "Pre Field 2",
+                "required_field": "y",
+                "branching_logic": "",
+            },
+            {
+                "field_name": "post_op_field_1",
+                "field_label": "Post Field 1",
+                "required_field": "y",
+                "branching_logic": "",
+            },
+            {
+                "field_name": "post_op_field_2",
+                "field_label": "Post Field 2",
+                "required_field": "y",
+                "branching_logic": "",
+            },
+        ]
+
+        return metadata
+
     def export_records(
         self,
         records=[],
@@ -777,15 +807,42 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         with patch("sidekick.utils.get_today", override_get_today):
             patient_data_check(str(self.project.id))
 
+        required_fields = {
+            "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
+            "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
+            "post_op_field_1": {"condition": "True", "label": "Post Field 1"},
+            "post_op_field_2": {"condition": "True", "label": "Post Field 2"},
+        }
+
         calls = [
-            call(date - datetime.timedelta(days=1), self.project, ANY, ANY),
-            call(date - datetime.timedelta(days=2), self.project, ANY, ANY),
-            call(date - datetime.timedelta(days=3), self.project, ANY, ANY),
+            call(
+                date - datetime.timedelta(days=1),
+                self.project,
+                ANY,
+                ANY,
+                required_fields,
+            ),
+            call(
+                date - datetime.timedelta(days=2),
+                self.project,
+                ANY,
+                ANY,
+                required_fields,
+            ),
+            call(
+                date - datetime.timedelta(days=3),
+                self.project,
+                ANY,
+                ANY,
+                required_fields,
+            ),
         ]
         mock_get_reminders_for_date.assert_has_calls(calls)
         self.assertEqual(len(mock_get_reminders_for_date.mock_calls), 3)
 
-        mock_refresh_historical_data.assert_called_with(self.project, ANY)
+        mock_refresh_historical_data.assert_called_with(
+            self.project, ANY, required_fields
+        )
 
         mock_get_redcap_crf_client.assert_called_once()
         mock_get_redcap_client.assert_called_once()
@@ -822,12 +879,25 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         with patch("sidekick.utils.get_today", override_get_today):
             patient_data_check(str(self.project.id))
 
+        required_fields = {
+            "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
+            "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
+            "post_op_field_1": {"condition": "True", "label": "Post Field 1"},
+            "post_op_field_2": {"condition": "True", "label": "Post Field 2"},
+        }
+
         mock_get_reminders_for_date.assert_called_with(
-            date - datetime.timedelta(days=1), self.project, ANY, ANY
+            date - datetime.timedelta(days=1),
+            self.project,
+            ANY,
+            ANY,
+            required_fields,
         )
         self.assertEqual(len(mock_get_reminders_for_date.mock_calls), 1)
 
-        mock_refresh_historical_data.assert_called_with(self.project, ANY)
+        mock_refresh_historical_data.assert_called_with(
+            self.project, ANY, required_fields
+        )
 
         mock_send_reminders.assert_called_with(return_data, ANY, self.org)
 
@@ -910,7 +980,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         self, mock_save_patient_records
     ):
 
-        patient_data_check.refresh_historical_data(self.project, None)
+        patient_data_check.refresh_historical_data(self.project, None, {})
         mock_save_patient_records.assert_not_called()
 
     @patch("rp_redcap.tasks.patient_data_check.save_patient_records")
@@ -919,7 +989,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     ):
         self.create_patient_records(utils.get_today())
         client = MockRedCapPatients()
-        patient_data_check.refresh_historical_data(self.project, client)
+        patient_data_check.refresh_historical_data(self.project, client, {})
 
         mock_save_patient_records.assert_called_with(
             self.project,
@@ -941,7 +1011,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client
+            date, self.project, screening_client, patient_client, {}
         )
 
         self.assertEqual(messages[hospital][date], [])
@@ -954,7 +1024,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client
+            date, self.project, screening_client, patient_client, {}
         )
 
         check_messages = defaultdict(lambda: defaultdict(list))
@@ -971,7 +1041,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client
+            date, self.project, screening_client, patient_client, {}
         )
 
         check_messages = defaultdict(lambda: defaultdict(list))
@@ -987,7 +1057,16 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client
+            date,
+            self.project,
+            screening_client,
+            patient_client,
+            {
+                "pre_op_field_1": {"condition": "True"},
+                "pre_op_field_2": {"condition": "True"},
+                "post_op_field_1": {"condition": "True"},
+                "post_op_field_2": {"condition": "True"},
+            },
         )
 
         check_messages = defaultdict(lambda: defaultdict(list))
@@ -1011,7 +1090,16 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client
+            date,
+            self.project,
+            screening_client,
+            patient_client,
+            {
+                "pre_op_field_1": {"condition": "True"},
+                "pre_op_field_2": {"condition": "True"},
+                "post_op_field_1": {"condition": "True"},
+                "post_op_field_2": {"condition": "True"},
+            },
         )
 
         self.assertEqual(
@@ -1034,7 +1122,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client
+            date, self.project, screening_client, patient_client, {}
         )
 
         self.assertEqual(messages[hospital][date], [])
