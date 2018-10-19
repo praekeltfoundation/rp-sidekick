@@ -318,6 +318,8 @@ class PatientDataCheck(Task):
         self, date, project, screening_client, patient_client
     ):
         messages = defaultdict(lambda: defaultdict(list))
+        if date.weekday() > 4:
+            return messages
 
         screening_date = date - datetime.timedelta(days=date.weekday())
         screening_field = "day{}".format(date.weekday() + 1)
