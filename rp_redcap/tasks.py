@@ -1,12 +1,14 @@
 import datetime
+import re
+from collections import defaultdict
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
-from collections import defaultdict
 from django.conf import settings
+
 from sidekick import utils
 
-from .models import Contact, Project, SurveyAnswer, PatientRecord, PatientValue
+from .models import Contact, PatientRecord, PatientValue, Project, SurveyAnswer
 
 
 class BaseTask(Task):
@@ -30,7 +32,8 @@ class BaseTask(Task):
                         "[", 'data[row["record_id"]]["'
                     )
                     condition = condition.replace(" = ", " == ")
-                    condition = condition.replace("(", "___").replace(")", "")
+                    condition = re.sub(r"\b[(](?=[0-9]{1,5})", "___", condition)
+                    condition = re.sub(r"\b[)](?!=[0-9])", "", condition)
 
                 required_fields[field["field_name"]] = {
                     "condition": condition,
@@ -305,17 +308,26 @@ class PatientDataCheck(BaseTask):
         pre_op_fields = project.pre_operation_fields.split(",")
         post_op_fields = project.post_operation_fields.split(",")
 
-        for patient in patients:
-            patient["pre_operation_status"] = PatientRecord.COMPLETE_STATUS
-            patient["post_operation_status"] = PatientRecord.COMPLETE_STATUS
-            for field, value in patient.items():
+        data = {}
+        for row in patients:
+            for field, value in row.items():
+                try:
+                    row[field] = int(value)
+                except Exception:
+                    pass
+            data[row["record_id"]] = row
+
+        for row in patients:
+            row["pre_operation_status"] = PatientRecord.COMPLETE_STATUS
+            row["post_operation_status"] = PatientRecord.COMPLETE_STATUS
+            for field, value in row.items():
                 if (
                     value == ""
                     and field in pre_op_fields
                     and field in required_fields
                     and eval(required_fields[field]["condition"])
                 ):
-                    patient[
+                    row[
                         "pre_operation_status"
                     ] = PatientRecord.INCOMPLETE_STATUS
                 if (
@@ -324,7 +336,7 @@ class PatientDataCheck(BaseTask):
                     and field in required_fields
                     and eval(required_fields[field]["condition"])
                 ):
-                    patient[
+                    row[
                         "post_operation_status"
                     ] = PatientRecord.INCOMPLETE_STATUS
         return patients
