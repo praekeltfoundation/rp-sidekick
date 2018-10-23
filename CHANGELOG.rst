@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+
+1.0.11
+------------
  * Install PyCap from Github commit until they make a release(temporary)
  * Add Hospital and PatientRecord to admin site
 
