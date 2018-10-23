@@ -16,7 +16,7 @@ from rp_redcap.models import (
     Survey,
     SurveyAnswer,
 )
-from rp_redcap.tasks import patient_data_check, project_check
+from rp_redcap.tasks import patient_data_check, project_check, BaseTask
 from sidekick import utils
 
 from .base import RedcapBaseTestCase
@@ -386,6 +386,43 @@ class MockRedCapPatients(object):
                     },
                 ]
         return []
+
+
+class BaseTaskTests(RedcapBaseTestCase, TestCase):
+    def test_get_required_fields_no_branching_logic(self):
+
+        metadata = [
+            {
+                "field_name": "surname",
+                "field_label": "Surname",
+                "required_field": "y",
+                "branching_logic": "",
+            }
+        ]
+
+        task = BaseTask()
+        output = task.get_required_fields(metadata)
+
+        self.assertEqual(output["surname"]["condition"], "True")
+
+    def test_get_required_fields_replace(self):
+
+        metadata = [
+            {
+                "field_name": "surname",
+                "field_label": "Surname",
+                "required_field": "y",
+                "branching_logic": "([role(0)] = '1' or [role(1)] = '1')",
+            }
+        ]
+
+        task = BaseTask()
+        output = task.get_required_fields(metadata)
+
+        self.assertEqual(
+            output["surname"]["condition"],
+            '(data[row["record_id"]]["role___0"] == \'1\' or data[row["record_id"]]["role___1"] == \'1\')',
+        )
 
 
 class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
@@ -995,8 +1032,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             self.project,
             [
                 {
-                    "record_id": "1",
-                    "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
+                    "record_id": 1,
+                    "asos2_crf_complete": int(PatientRecord.COMPLETE_STATUS),
                     "field_one": "new_value",
                     "pre_operation_status": "2",
                     "post_operation_status": "2",
@@ -1156,7 +1193,10 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             match_querystring=True,
         )
 
-        patient_data_check.send_reminders(messages, rapidpro_client, self.org)
+        with patch("sidekick.utils.get_today", override_get_today):
+            patient_data_check.send_reminders(
+                messages, rapidpro_client, self.org
+            )
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -1167,7 +1207,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27123", "tel:+27321"],
                 "extra": {
                     "hospital_name": "My Test Hospital",
-                    "week": 42,
+                    "week": 23,
                     "reminder": "2018-06-06\nA test message",
                 },
             },
@@ -1204,7 +1244,10 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             match_querystring=True,
         )
 
-        patient_data_check.send_reminders(messages, rapidpro_client, self.org)
+        with patch("sidekick.utils.get_today", override_get_today):
+            patient_data_check.send_reminders(
+                messages, rapidpro_client, self.org
+            )
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -1215,7 +1258,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "urns": ["tel:+27123"],
                 "extra": {
                     "hospital_name": "My Test Hospital",
-                    "week": 42,
+                    "week": 23,
                     "reminder": "2018-06-06\nA test message",
                 },
             },
