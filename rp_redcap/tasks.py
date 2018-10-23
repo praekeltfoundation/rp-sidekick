@@ -415,7 +415,7 @@ class PatientDataCheck(BaseTask):
                         != PatientRecord.COMPLETE_STATUS
                     ):
                         messages[hospital][date].append(
-                            "{}: {} preop {} postop fields missing".format(
+                            "{}: {} preoperative, {} postoperative fields missing".format(
                                 patient["record_id"],
                                 len(patient["missing_pre_op_fields"]),
                                 len(patient["missing_post_op_fields"]),
