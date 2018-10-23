@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+
+1.0.10
+------------
  * Added function to do WhatsApp contact check
  * Added function to update Rapidpro Contact with WhatsApp ID
  * Redcap: Added tasks to send patient data collection reminders
