@@ -1,22 +1,23 @@
 import datetime
+import re
+from collections import defaultdict
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
-from collections import defaultdict
 from django.conf import settings
+
 from sidekick import utils
 
-from .models import Contact, Project, SurveyAnswer, PatientRecord, PatientValue
+from .models import Contact, PatientRecord, PatientValue, Project, SurveyAnswer
 
 
-class ProjectCheck(Task):
-    """Task to look for incomplete surveys in a Project."""
+class BaseTask(Task):
+    def get_metadata(self, redcap_client, survey_name=None):
+        forms = []
+        if survey_name:
+            forms.append(survey_name)
 
-    name = "rp_redcap.tasks.project_check"
-    log = get_task_logger(__name__)
-
-    def get_metadata(self, survey_name, redcap_client):
-        return redcap_client.export_metadata(forms=[survey_name])
+        return redcap_client.export_metadata(forms=forms)
 
     def get_required_fields(self, metadata):
 
@@ -31,7 +32,8 @@ class ProjectCheck(Task):
                         "[", 'data[row["record_id"]]["'
                     )
                     condition = condition.replace(" = ", " == ")
-                    condition = condition.replace("(", "___").replace(")", "")
+                    condition = re.sub(r"\b[(](?=[0-9]{1,5})", "___", condition)
+                    condition = re.sub(r"\b[)](?!=[0-9])", "", condition)
 
                 required_fields[field["field_name"]] = {
                     "condition": condition,
@@ -39,6 +41,13 @@ class ProjectCheck(Task):
                 }
 
         return required_fields
+
+
+class ProjectCheck(BaseTask):
+    """Task to look for incomplete surveys in a Project."""
+
+    name = "rp_redcap.tasks.project_check"
+    log = get_task_logger(__name__)
 
     def get_records(self, survey_name, redcap_client):
         return redcap_client.export_records(
@@ -132,7 +141,7 @@ class ProjectCheck(Task):
         for survey in project.surveys.all().order_by("sequence"):
 
             records = self.get_records(survey.name, redcap_client)
-            metadata = self.get_metadata(survey.name, redcap_client)
+            metadata = self.get_metadata(redcap_client, survey.name)
 
             required_fields = self.get_required_fields(metadata)
             ignore_fields = survey.get_ignore_fields()
@@ -203,7 +212,7 @@ class ProjectCheck(Task):
 project_check = ProjectCheck()
 
 
-class PatientDataCheck(Task):
+class PatientDataCheck(BaseTask):
     """Remind hospital leads about missing patient data."""
 
     name = "rp_redcap.tasks.patient_data_check"
@@ -272,7 +281,7 @@ class PatientDataCheck(Task):
                         obj.value = value
                         obj.save()
 
-    def refresh_historical_data(self, project, patient_client):
+    def refresh_historical_data(self, project, patient_client, required_fields):
         record_ids = []
 
         for patient_record in PatientRecord.objects.filter(
@@ -289,33 +298,51 @@ class PatientDataCheck(Task):
             )
 
             patient_records = self.check_patients_status(
-                project, patient_records
+                project, patient_records, required_fields
             )
 
             self.save_patient_records(project, patient_records)
 
-    def check_patients_status(self, project, patients):
+    def check_patients_status(self, project, patients, required_fields):
 
         pre_op_fields = project.pre_operation_fields.split(",")
         post_op_fields = project.post_operation_fields.split(",")
 
-        for patient in patients:
-            patient["pre_operation_status"] = PatientRecord.COMPLETE_STATUS
-            patient["post_operation_status"] = PatientRecord.COMPLETE_STATUS
-            for field, value in patient.items():
-                if value == "" and field in pre_op_fields:
-                    patient[
+        data = {}
+        for row in patients:
+            for field, value in row.items():
+                try:
+                    row[field] = int(value)
+                except Exception:
+                    pass
+            data[row["record_id"]] = row
+
+        for row in patients:
+            row["pre_operation_status"] = PatientRecord.COMPLETE_STATUS
+            row["post_operation_status"] = PatientRecord.COMPLETE_STATUS
+            for field, value in row.items():
+                if (
+                    value == ""
+                    and field in pre_op_fields
+                    and field in required_fields
+                    and eval(required_fields[field]["condition"])
+                ):
+                    row[
                         "pre_operation_status"
                     ] = PatientRecord.INCOMPLETE_STATUS
-                if value == "" and field in post_op_fields:
-                    patient[
+                if (
+                    value == ""
+                    and field in post_op_fields
+                    and field in required_fields
+                    and eval(required_fields[field]["condition"])
+                ):
+                    row[
                         "post_operation_status"
                     ] = PatientRecord.INCOMPLETE_STATUS
-
         return patients
 
     def get_reminders_for_date(
-        self, date, project, screening_client, patient_client
+        self, date, project, screening_client, patient_client, required_fields
     ):
         messages = defaultdict(lambda: defaultdict(list))
         if date.weekday() > 4:
@@ -334,7 +361,9 @@ class PatientDataCheck(Task):
             patient_client, "asos2_crf", "[date_surg] = '{}'".format(date)
         )
 
-        patient_records = self.check_patients_status(project, patient_records)
+        patient_records = self.check_patients_status(
+            project, patient_records, required_fields
+        )
 
         for hospital in project.hospitals.all():
 
@@ -428,13 +457,16 @@ class PatientDataCheck(Task):
         patient_client = project.get_redcap_crf_client()
         rapidpro_client = project.org.get_rapidpro_client()
 
+        metadata = self.get_metadata(patient_client)
+        required_fields = self.get_required_fields(metadata)
+
         messages = defaultdict(lambda: defaultdict(list))
 
         for day in range(0, settings.REDCAP_HISTORICAL_DAYS):
             date = utils.get_today() - datetime.timedelta(days=day + 1)
 
             new_messages = self.get_reminders_for_date(
-                date, project, screening_client, patient_client
+                date, project, screening_client, patient_client, required_fields
             )
 
             for hospital, date_messages in new_messages.items():
@@ -443,7 +475,7 @@ class PatientDataCheck(Task):
 
         self.send_reminders(messages, rapidpro_client, project.org)
 
-        self.refresh_historical_data(project, patient_client)
+        self.refresh_historical_data(project, patient_client, required_fields)
 
 
 patient_data_check = PatientDataCheck()
