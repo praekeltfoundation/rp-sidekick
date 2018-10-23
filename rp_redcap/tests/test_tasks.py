@@ -1120,7 +1120,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         check_messages = defaultdict(lambda: defaultdict(list))
         check_messages[hospital][date].append(
-            "1999-2: 2 preop 2 postop fields missing"
+            "1999-2: 2 preoperative, 2 postoperative fields missing"
         )
         self.assertEqual(messages, check_messages)
 
@@ -1155,7 +1155,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         self.assertEqual(
             messages[hospital1][date],
-            ["1888-2: 2 preop 2 postop fields missing"],
+            ["1888-2: 2 preoperative, 2 postoperative fields missing"],
         )
         self.assertEqual(
             messages[hospital2][date], ["Not all patients captured.(1/2)"]
