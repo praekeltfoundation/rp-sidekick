@@ -18,7 +18,6 @@ setup(
         "django-extensions==2.1.0",
         "djangorestframework==3.8.2",
         "psycopg2==2.7.1",
-        "PyCap",
         "rapidpro-python==2.4",
         "redis==2.10.6",
         "whitenoise==3.3.1",
