@@ -950,6 +950,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "pre_operation_status": PatientRecord.COMPLETE_STATUS,
             "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
+            "missing_pre_op_fields": [],
+            "missing_post_op_fields": [],
         }
 
         patient_data_check.save_patient_records(self.project, [new_data])
@@ -957,6 +959,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         # check
         patient_record = PatientRecord.objects.all()[0]
         patient_value = PatientValue.objects.all()[0]
+
+        self.assertEqual(PatientValue.objects.all().count(), 1)
 
         self.assertEqual(
             patient_record.pre_operation_status, PatientRecord.COMPLETE_STATUS
@@ -1037,6 +1041,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                     "field_one": "new_value",
                     "pre_operation_status": "2",
                     "post_operation_status": "2",
+                    "missing_pre_op_fields": [],
+                    "missing_post_op_fields": [],
                 }
             ],
         )
@@ -1099,21 +1105,23 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             screening_client,
             patient_client,
             {
-                "pre_op_field_1": {"condition": "True"},
-                "pre_op_field_2": {"condition": "True"},
-                "post_op_field_1": {"condition": "True"},
-                "post_op_field_2": {"condition": "True"},
+                "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
+                "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
+                "post_op_field_1": {
+                    "condition": "True",
+                    "label": "Post Field 1",
+                },
+                "post_op_field_2": {
+                    "condition": "True",
+                    "label": "Post Field 2",
+                },
             },
         )
 
         check_messages = defaultdict(lambda: defaultdict(list))
         check_messages[hospital][date].append(
-            "Incomplete pre operation patient data.(1999-2)"
+            "1999-2: 2 preop 2 postop fields missing"
         )
-        check_messages[hospital][date].append(
-            "Incomplete post operation patient data.(1999-2)"
-        )
-
         self.assertEqual(messages, check_messages)
 
     def test_get_reminders_patients_multiple_hospitals(self):
@@ -1132,19 +1140,22 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             screening_client,
             patient_client,
             {
-                "pre_op_field_1": {"condition": "True"},
-                "pre_op_field_2": {"condition": "True"},
-                "post_op_field_1": {"condition": "True"},
-                "post_op_field_2": {"condition": "True"},
+                "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
+                "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
+                "post_op_field_1": {
+                    "condition": "True",
+                    "label": "Post Field 1",
+                },
+                "post_op_field_2": {
+                    "condition": "True",
+                    "label": "Post Field 2",
+                },
             },
         )
 
         self.assertEqual(
             messages[hospital1][date],
-            [
-                "Incomplete pre operation patient data.(1888-2)",
-                "Incomplete post operation patient data.(1888-2)",
-            ],
+            ["1888-2: 2 preop 2 postop fields missing"],
         )
         self.assertEqual(
             messages[hospital2][date], ["Not all patients captured.(1/2)"]
@@ -1208,7 +1219,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "hospital_name": "My Test Hospital",
                     "week": 23,
-                    "reminder": "2018-06-06\nA test message",
+                    "reminder": "\nFor surgeries registered on 06 June 2018:\nA test message",
                 },
             },
         )
@@ -1259,7 +1270,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "extra": {
                     "hospital_name": "My Test Hospital",
                     "week": 23,
-                    "reminder": "2018-06-06\nA test message",
+                    "reminder": "\nFor surgeries registered on 06 June 2018:\nA test message",
                 },
             },
         )
@@ -1279,3 +1290,34 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         self.assertEqual(len(responses.calls), 0)
         mock_update_rapidpro_whatsapp_urn.assert_not_called()
+
+    def test_check_patients_status(self):
+
+        patients = [
+            {
+                "record_id": "1999-1",
+                "pre_op_field_1": "",
+                "pre_op_field_2": "",
+                "post_op_field_1": "",
+                "post_op_field_2": "",
+            }
+        ]
+        required_fields = {
+            "pre_op_field_1": {
+                "condition": 'data[row["record_id"]]["pre_op_field_1"] > 0',
+                "label": "Pre Field 1",
+            },
+            "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
+            "post_op_field_1": {"condition": "True", "label": "Post Field 1"},
+            "post_op_field_2": {"condition": "True", "label": "Post Field 2"},
+        }
+
+        patients = patient_data_check.check_patients_status(
+            self.project, patients, required_fields
+        )
+
+        self.assertEqual(patients[0]["missing_pre_op_fields"], ["Pre Field 2"])
+        self.assertEqual(
+            patients[0]["missing_post_op_fields"],
+            ["Post Field 1", "Post Field 2"],
+        )
