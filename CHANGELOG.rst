@@ -3,6 +3,7 @@ VERSIONS
 
 Next Release
 ------------
+ * Install PyCap from Github commit until they make a release(temporary)
 
 1.0.10
 ------------
