@@ -268,6 +268,8 @@ class PatientDataCheck(BaseTask):
                         "asos2_crf_complete",
                         "pre_operation_status",
                         "post_operation_status",
+                        "missing_pre_op_fields",
+                        "missing_post_op_fields",
                     ]
                     and value != ""
                 ):
@@ -317,28 +319,41 @@ class PatientDataCheck(BaseTask):
                     pass
             data[row["record_id"]] = row
 
+        def check_field(field, status_fields, row, data):
+            if (
+                value == ""
+                and field in status_fields
+                and field in required_fields
+            ):
+                try:
+                    return eval(required_fields[field]["condition"])
+                except TypeError:
+                    pass
+
+            return False
+
         for row in patients:
             row["pre_operation_status"] = PatientRecord.COMPLETE_STATUS
             row["post_operation_status"] = PatientRecord.COMPLETE_STATUS
+            row["missing_pre_op_fields"] = []
+            row["missing_post_op_fields"] = []
             for field, value in row.items():
-                if (
-                    value == ""
-                    and field in pre_op_fields
-                    and field in required_fields
-                    and eval(required_fields[field]["condition"])
-                ):
+                if check_field(field, pre_op_fields, row, data):
                     row[
                         "pre_operation_status"
                     ] = PatientRecord.INCOMPLETE_STATUS
-                if (
-                    value == ""
-                    and field in post_op_fields
-                    and field in required_fields
-                    and eval(required_fields[field]["condition"])
-                ):
+                    row["missing_pre_op_fields"].append(
+                        required_fields[field]["label"]
+                    )
+
+                if check_field(field, post_op_fields, row, data):
                     row[
                         "post_operation_status"
                     ] = PatientRecord.INCOMPLETE_STATUS
+                    row["missing_post_op_fields"].append(
+                        required_fields[field]["label"]
+                    )
+
         return patients
 
     def get_reminders_for_date(
@@ -392,18 +407,18 @@ class PatientDataCheck(BaseTask):
                     )
 
                 # check status
-                for status in ["pre", "post"]:
-                    incomplete = [
-                        patient.get("record_id")
-                        for patient in hospital_patient_records
-                        if patient.get("{}_operation_status".format(status))
+                for patient in hospital_patient_records:
+                    if (
+                        patient.get("pre_operation_status")
                         != PatientRecord.COMPLETE_STATUS
-                    ]
-
-                    if incomplete:
+                        or patient.get("post_operation_status")
+                        != PatientRecord.COMPLETE_STATUS
+                    ):
                         messages[hospital][date].append(
-                            "Incomplete {} operation patient data.({})".format(
-                                status, ", ".join(incomplete)
+                            "{}: {} preop {} postop fields missing".format(
+                                patient["record_id"],
+                                len(patient["missing_pre_op_fields"]),
+                                len(patient["missing_post_op_fields"]),
                             )
                         )
             else:
@@ -420,7 +435,11 @@ class PatientDataCheck(BaseTask):
             reminders = []
             for date, hosp_msgs in msgs.items():
                 if hosp_msgs:
-                    reminders.append(date.strftime("%Y-%m-%d"))
+                    reminders.append(
+                        "\nFor surgeries registered on {}:".format(
+                            date.strftime("%d %B %Y")
+                        )
+                    )
                 for msg in hosp_msgs:
                     reminders.append(msg)
 
