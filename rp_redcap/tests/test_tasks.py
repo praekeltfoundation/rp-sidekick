@@ -798,7 +798,9 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             data_access_group=dag,
             rapidpro_flow="123123123",
             hospital_lead_urn="+27123",
+            hospital_lead_name="Tony Test",
             nomination_urn=nomination_urn,
+            nomination_name="Peter Test",
         )
 
     def create_patient_records(self, date):
@@ -1209,17 +1211,32 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 messages, rapidpro_client, self.org
             )
 
-        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(len(responses.calls), 2)
         self.assertEqual(
             json.loads(responses.calls[0].request.body),
             {
                 "flow": "123123123",
                 "restart_participants": 1,
-                "urns": ["tel:+27123", "tel:+27321"],
+                "urns": ["tel:+27123"],
                 "extra": {
                     "hospital_name": "My Test Hospital",
                     "week": 23,
                     "reminder": "\nFor surgeries registered on 06 June 2018:\nA test message",
+                    "contact_name": "Tony Test",
+                },
+            },
+        )
+        self.assertEqual(
+            json.loads(responses.calls[1].request.body),
+            {
+                "flow": "123123123",
+                "restart_participants": 1,
+                "urns": ["tel:+27321"],
+                "extra": {
+                    "hospital_name": "My Test Hospital",
+                    "week": 23,
+                    "reminder": "\nFor surgeries registered on 06 June 2018:\nA test message",
+                    "contact_name": "Peter Test",
                 },
             },
         )
@@ -1271,6 +1288,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                     "hospital_name": "My Test Hospital",
                     "week": 23,
                     "reminder": "\nFor surgeries registered on 06 June 2018:\nA test message",
+                    "contact_name": "Tony Test",
                 },
             },
         )
