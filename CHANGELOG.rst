@@ -3,6 +3,7 @@ VERSIONS
 
 Next Release
 ------------
+ * Redcap: Allow blank Nomination url
 
 1.0.11
 ------------

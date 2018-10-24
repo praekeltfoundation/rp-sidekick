@@ -90,7 +90,7 @@ class Hospital(models.Model):
     )
     rapidpro_flow = models.CharField(max_length=200)
     hospital_lead_urn = models.CharField(max_length=200)
-    nomination_urn = models.CharField(max_length=200, null=True)
+    nomination_urn = models.CharField(max_length=200, null=True, blank=True)
 
     unique_together = (("name", "project_id"),)
 
