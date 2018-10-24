@@ -4,6 +4,7 @@ VERSIONS
 Next Release
 ------------
  * Redcap: Allow blank Nomination url
+ * Redcap: Send names when starting patient reminder flow
 
 1.0.11
 ------------

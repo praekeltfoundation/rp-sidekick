@@ -89,7 +89,9 @@ class Hospital(models.Model):
         Project, related_name="hospitals", null=False, on_delete=models.CASCADE
     )
     rapidpro_flow = models.CharField(max_length=200)
+    hospital_lead_name = models.CharField(max_length=200)
     hospital_lead_urn = models.CharField(max_length=200)
+    nomination_name = models.CharField(max_length=200, null=True, blank=True)
     nomination_urn = models.CharField(max_length=200, null=True, blank=True)
 
     unique_together = (("name", "project_id"),)
