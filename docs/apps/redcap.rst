@@ -25,3 +25,15 @@ The task is started by doing a POST request on the `/redcap/start-patient-check/
 The task will keep track of the changes being made to the patient records.
 
 The number of days included in the check is configured by the `REDCAP_HISTORICAL_DAYS` environment variable, the default is 3.
+
+Configuration
+-------------
+
+Hospital:
+ * ``name`` The name of the hospital send to the RapidPro Flow.
+ * ``data_access_group`` Used to filter records from Redcap.
+ * ``rapidpro_flow`` UUID of the reminder flow that will get started in Rapidpro
+ * ``hospital_lead_name`` Name of the hospital lead.
+ * ``hospital_lead_urn`` URN where reminder will be sent.
+ * ``nomination_name`` Name of second nominated person to receive reminder(Optional).
+ * ``nomination_urn`` URN where second reminder will be sent(Optional).
