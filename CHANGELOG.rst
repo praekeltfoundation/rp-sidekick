@@ -3,6 +3,7 @@ VERSIONS
 
 Next Release
 ------------
+ * TransferTo: store data on number in database
  * Redcap: Allow blank Nomination url
  * Redcap: Send names when starting patient reminder flow
 
