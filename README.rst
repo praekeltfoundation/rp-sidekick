@@ -37,13 +37,12 @@ Tools
 - `black`_ - this repository uses an opinionated python code formatter. See ``pyproject.toml`` for config.
 - `pre-commit`_ - lints staged code as a git pre-commit check. Will prevent commits if linting fails. Currently runs black, flake8 and yamllint.
 
-.. _pre-commit: https://pre-commit.com
-.. _black: https://github.com/ambv/black
-
 ------------
 Contributing
 ------------
 
-See our `ways of working` for a guide on how to contribute to ``rp-sidekick``.
+See our `ways of working`_ for a guide on how to contribute to ``rp-sidekick``.
 
+.. _pre-commit: https://pre-commit.com
+.. _black: https://github.com/ambv/black
 .. _ways of working: ./docs/ways-of-working.md
