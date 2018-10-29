@@ -2,6 +2,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from rest_framework.views import APIView
 
+from .models import MsisdnInformation
 from .utils import TransferToClient, TransferToClient2
 from .tasks import topup_data
 
@@ -20,7 +21,9 @@ class MsisdnInfo(APIView):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        return JsonResponse(client.get_misisdn_info(msisdn))
+        info = client.get_misisdn_info(msisdn)
+        MsisdnInformation.objects.create(data=info, msisdn=msisdn)
+        return JsonResponse(info)
 
 
 class ReserveId(APIView):

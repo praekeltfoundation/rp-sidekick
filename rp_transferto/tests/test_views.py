@@ -9,6 +9,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase, APIClient
 
+from rp_transferto.models import MsisdnInformation
 from rp_transferto.tasks import topup_data
 from rp_transferto.utils import TransferToClient, TransferToClient2
 from .constants import (
@@ -58,6 +59,7 @@ class TestTransferToViews(APITestCase):
 
     @patch.object(TransferToClient, "get_misisdn_info", fake_msisdn_info)
     def test_msisdn_info_view(self):
+        self.assertEqual(MsisdnInformation.objects.count(), 0)
         self.assertFalse(fake_ping.called)
         response = self.api_client.get(
             reverse("msisdn_info", kwargs={"msisdn": "+27820000001"})
@@ -67,6 +69,7 @@ class TestTransferToViews(APITestCase):
             json.loads(response.content), MSISDN_INFO_RESPONSE_DICT
         )
         self.assertTrue(fake_msisdn_info.called)
+        self.assertEqual(MsisdnInformation.objects.count(), 1)
 
     @patch.object(TransferToClient, "reserve_id", fake_reserve_id)
     def test_reserve_id_view(self):
