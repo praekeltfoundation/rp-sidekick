@@ -24,7 +24,7 @@ The task is started by doing a POST request on the `/redcap/start-patient-check/
 
 The task will keep track of the changes being made to the patient records.
 
-The number of days included in the check is configured by the `REDCAP_HISTORICAL_DAYS` environment variable, the default is 3.
+The number of days included in the check is configured by the `ASOS_HISTORICAL_DAYS` environment variable, the default is 3.
 
 Configuration
 -------------

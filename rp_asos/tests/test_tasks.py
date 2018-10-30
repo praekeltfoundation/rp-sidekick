@@ -329,7 +329,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         mock_send_reminders.assert_called_with(return_data, ANY, self.org)
 
-    @override_settings(REDCAP_HISTORICAL_DAYS=1)
+    @override_settings(ASOS_HISTORICAL_DAYS=1)
     @patch("rp_redcap.models.Project.get_redcap_crf_client")
     @patch("rp_redcap.models.Project.get_redcap_client")
     @patch("rp_asos.tasks.patient_data_check.get_reminders_for_date")

@@ -289,7 +289,7 @@ class PatientDataCheck(BaseTask):
 
         messages = defaultdict(lambda: defaultdict(list))
 
-        for day in range(0, settings.REDCAP_HISTORICAL_DAYS):
+        for day in range(0, settings.ASOS_HISTORICAL_DAYS):
             date = utils.get_today() - datetime.timedelta(days=day + 1)
 
             new_messages = self.get_reminders_for_date(
