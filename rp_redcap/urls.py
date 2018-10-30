@@ -1,16 +1,11 @@
 from django.conf.urls import url
 
-from .views import StartProjectCheckView, StartPatientDataCheckView
+from .views import StartProjectCheckView
 
 urlpatterns = [
     url(
         r"^start-project-check/(?P<project_id>[^/]+)$",
         StartProjectCheckView.as_view(),
         name="rp_redcap.start_project_check",
-    ),
-    url(
-        r"^start-patient-check/(?P<project_id>[^/]+)$",
-        StartPatientDataCheckView.as_view(),
-        name="rp_redcap.start_patient_check",
-    ),
+    )
 ]
