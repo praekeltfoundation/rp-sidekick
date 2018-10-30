@@ -100,24 +100,3 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         mock_project_check.assert_called_with(self.project.id)
-
-    @patch("rp_redcap.tasks.patient_data_check.delay")
-    def test_start_patient_check(self, mock_patient_data_check):
-        """
-        Valid request test.
-
-        If this is a valid request, a 202 status should be returned and the
-        task should be started.
-        """
-        self.org.users.add(self.user)
-
-        survey_url = reverse(
-            "rp_redcap.start_patient_check", args=[self.project.id]
-        )
-
-        response = self.client.post(
-            survey_url, {}, content_type="application/json"
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
-        mock_patient_data_check.assert_called_with(self.project.id)

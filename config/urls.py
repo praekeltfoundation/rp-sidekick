@@ -9,6 +9,7 @@ urlpatterns = [
     path("", include("sidekick.urls"), name="sidekick"),
     path("admin/", admin.site.urls),
     path("redcap/", include("rp_redcap.urls"), name="rp_redcap"),
+    path("asos/", include("rp_asos.urls"), name="rp_asos"),
     path("transferto/", include("rp_transferto.urls"), name="rp_transferto"),
     path(
         "docs/api/",

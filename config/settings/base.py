@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "djcelery",
     "django_extensions",
     "sidekick",
+    "rp_asos",
     "rp_redcap",
     "rp_transferto",
 ]
