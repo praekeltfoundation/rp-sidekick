@@ -54,7 +54,7 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         If the project id in the url doesn't exist we should respond with an
         appropriate message.
         """
-        survey_url = reverse("rp_redcap.start_project_check", args=[-1])
+        survey_url = reverse("rp_redcap.start_project_check", args=[999])
 
         response = self.client.post(
             survey_url, {}, content_type="application/json"

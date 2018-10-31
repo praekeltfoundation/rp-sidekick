@@ -1,10 +1,10 @@
-from django.conf.urls import url
+from django.urls import path
 
 from .views import StartPatientDataCheckView
 
 urlpatterns = [
-    url(
-        r"^start-patient-check/(?P<project_id>[^/]+)$",
+    path(
+        "start-patient-check/<int:project_id>/",
         StartPatientDataCheckView.as_view(),
         name="rp_asos.start_patient_check",
     )
