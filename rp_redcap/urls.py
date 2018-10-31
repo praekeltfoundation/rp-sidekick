@@ -1,10 +1,10 @@
-from django.conf.urls import url
+from django.urls import path
 
 from .views import StartProjectCheckView
 
 urlpatterns = [
-    url(
-        r"^start-project-check/(?P<project_id>[^/]+)$",
+    path(
+        "start-project-check/<int:project_id>/",
         StartProjectCheckView.as_view(),
         name="rp_redcap.start_project_check",
     )
