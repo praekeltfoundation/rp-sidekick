@@ -1,9 +1,13 @@
 import json
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
 
+from sidekick.utils import clean_msisdn
+
+from .models import MsisdnInformation
 from .utils import TransferToClient, TransferToClient2
 from temba_client.v2 import TembaClient
 
@@ -21,8 +25,16 @@ class TopupData(Task):
         new_client = TransferToClient2(
             settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
         )
+        try:
+            msisdn_object = MsisdnInformation.objects.filter(
+                msisdn=clean_msisdn(msisdn)
+            ).latest()
+            # use dict to make a copy of the info
+            operator_id_info = dict(msisdn_object.data)
+        except ObjectDoesNotExist:
+            operator_id_info = default_client.get_misisdn_info(msisdn)
+
         # get msisdn number info
-        operator_id_info = default_client.get_misisdn_info(msisdn)
         log.info(json.dumps(operator_id_info, indent=2))
 
         # extract the user's operator ID
