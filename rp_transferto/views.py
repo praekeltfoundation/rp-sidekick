@@ -2,6 +2,8 @@ from django.conf import settings
 from django.http import JsonResponse
 from rest_framework.views import APIView
 
+from sidekick.utils import clean_msisdn
+
 from .models import MsisdnInformation
 from .utils import TransferToClient, TransferToClient2
 from .tasks import topup_data
@@ -21,8 +23,9 @@ class MsisdnInfo(APIView):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        info = client.get_misisdn_info(msisdn)
-        MsisdnInformation.objects.create(data=info, msisdn=msisdn)
+        cleaned_msisdn = clean_msisdn(msisdn)
+        info = client.get_misisdn_info(cleaned_msisdn)
+        MsisdnInformation.objects.create(data=info, msisdn=cleaned_msisdn)
         return JsonResponse(info)
 
 
