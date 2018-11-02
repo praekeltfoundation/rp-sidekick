@@ -17,6 +17,13 @@ def clean_message(message):
     return " ".join(message.replace("\n", " ").replace("\t", " ").split())
 
 
+def clean_msisdn(msisdn):
+    """
+    returns a number without preceeding '+' if it has one
+    """
+    return msisdn.replace("+", "")
+
+
 def get_whatsapp_contact(org, msisdn):
     """
     Returns the WhatsApp ID for the given MSISDN

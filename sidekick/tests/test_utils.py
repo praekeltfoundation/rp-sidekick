@@ -237,3 +237,9 @@ class UtilsTests(TestCase):
                 ]
             },
         )
+
+    def test_clean_msisdn_1(self):
+        self.assertEqual(utils.clean_msisdn("+2782653"), "2782653")
+
+    def test_clean_msisdn_2(self):
+        self.assertEqual(utils.clean_msisdn("2782653"), "2782653")
