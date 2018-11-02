@@ -5,6 +5,7 @@ from django.test import TestCase, override_settings
 from temba_client.v2 import TembaClient
 
 from rp_transferto.tasks import topup_data
+from rp_transferto.models import MsisdnInformation
 from rp_transferto.utils import TransferToClient, TransferToClient2
 
 from .constants import (
@@ -54,6 +55,34 @@ class TestTopupDataTask(TestCase):
 
         # check that functions were called
         self.assertTrue(fake_get_misisdn_info.called)
+        self.assertTrue(fake_get_operator_products.called)
+        self.assertTrue(fake_topup_data.called)
+        self.assertTrue(fake_get_contacts_query.called)
+        self.assertTrue(fake_update_contact.called)
+
+    def test_successsful_run_with_cached_msisdn(self):
+        # check nothing has been called
+        self.assertFalse(fake_get_misisdn_info.called)
+        self.assertFalse(fake_get_operator_products.called)
+        self.assertFalse(fake_topup_data.called)
+        self.assertFalse(fake_get_contacts_query.called)
+        self.assertFalse(fake_update_contact.called)
+
+        # create test variables
+        msisdn = "+27820000000"
+        user_uuid = "1234-abc"
+        recharge_value = "1GB"
+
+        MsisdnInformation.objects.create(
+            msisdn=msisdn, data=MSISDN_INFO_RESPONSE_DICT
+        )
+
+        # run the task
+        topup_data(msisdn, user_uuid, recharge_value)
+
+        # check that external call was NOT made
+        self.assertFalse(fake_get_misisdn_info.called)
+        # check that functions were called
         self.assertTrue(fake_get_operator_products.called)
         self.assertTrue(fake_topup_data.called)
         self.assertTrue(fake_get_contacts_query.called)
