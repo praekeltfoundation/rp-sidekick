@@ -26,3 +26,6 @@ class MsisdnInformation(models.Model):
             self.msisdn,
             json.dumps(self.data, indent=2),
         )
+
+    class Meta:
+        get_latest_by = "timestamp"
