@@ -7,7 +7,7 @@ from django.db import models
 
 class MsisdnInformation(models.Model):
     """
-    Before we can allocated data to a number, we have to first determine
+    Before we can allocate data to a number, we have to first determine
     the mobile network operator that the user has. This stores the
     response that we get from calling the TransferTo endpoint.
 
