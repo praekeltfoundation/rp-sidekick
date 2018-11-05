@@ -25,6 +25,7 @@ class TopupData(Task):
         new_client = TransferToClient2(
             settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
         )
+        # get msisdn number info
         try:
             msisdn_object = MsisdnInformation.objects.filter(
                 msisdn=clean_msisdn(msisdn)
@@ -34,7 +35,6 @@ class TopupData(Task):
         except ObjectDoesNotExist:
             operator_id_info = default_client.get_misisdn_info(msisdn)
 
-        # get msisdn number info
         log.info(json.dumps(operator_id_info, indent=2))
 
         # extract the user's operator ID
