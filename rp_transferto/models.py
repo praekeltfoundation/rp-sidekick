@@ -4,6 +4,8 @@ from django.utils import timezone
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 
+from sidekick.utils import clean_msisdn
+
 
 class MsisdnInformation(models.Model):
     """
@@ -26,6 +28,10 @@ class MsisdnInformation(models.Model):
             self.msisdn,
             json.dumps(self.data, indent=2),
         )
+
+    def save(self, *args, **kwargs):
+        self.msisdn = clean_msisdn(self.msisdn)
+        super().save(*args, **kwargs)
 
     class Meta:
         get_latest_by = "timestamp"
