@@ -15,6 +15,10 @@ Rapidpro Sidekick
     :target: https://rp-sidekick.readthedocs.io/
     :alt: Rapidpro Sidekick Documentation
 
+.. image:: https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg
+    :target: https://hub.docker.com/r/praekeltfoundation/rp-sidekick/tags/
+    :alt: Docker Automated build
+
 Sidekick Django Web Application for Rapidpro - used to extend the functionality of Rapidpro.
 
 ------------------
