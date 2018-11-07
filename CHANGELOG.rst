@@ -3,7 +3,12 @@ VERSIONS
 
 Next Release
 ------------
+
+1.0.12
+------------
  * TransferTo: store data on number in database
+ * TransferTo: use cached msisdn number in tasks
+ * TransferTo: refactored tests for tasks
  * Redcap: Allow blank Nomination url
  * Redcap: Send names when starting patient reminder flow
 
