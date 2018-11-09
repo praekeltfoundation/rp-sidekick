@@ -10,7 +10,7 @@ from .tasks import topup_data
 
 
 class Ping(APIView):
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
@@ -18,7 +18,7 @@ class Ping(APIView):
 
 
 class MsisdnInfo(APIView):
-    def get(self, request, msisdn):
+    def get(self, request, msisdn, *args, **kwargs):
         # TODO: check msisdn
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
@@ -30,7 +30,7 @@ class MsisdnInfo(APIView):
 
 
 class ReserveId(APIView):
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
@@ -38,7 +38,7 @@ class ReserveId(APIView):
 
 
 class GetCountries(APIView):
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
@@ -46,7 +46,7 @@ class GetCountries(APIView):
 
 
 class GetOperators(APIView):
-    def get(self, request, country_id):
+    def get(self, request, country_id, *args, **kwargs):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
@@ -54,7 +54,7 @@ class GetOperators(APIView):
 
 
 class GetOperatorAirtimeProducts(APIView):
-    def get(self, request, operator_id):
+    def get(self, request, operator_id, *args, **kwargs):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
@@ -62,7 +62,7 @@ class GetOperatorAirtimeProducts(APIView):
 
 
 class GetOperatorProducts(APIView):
-    def get(self, request, operator_id):
+    def get(self, request, operator_id, *args, **kwargs):
         client = TransferToClient2(
             settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
         )
@@ -71,7 +71,7 @@ class GetOperatorProducts(APIView):
 
 
 class GetCountryServices(APIView):
-    def get(self, request, country_id):
+    def get(self, request, country_id, *args, **kwargs):
         client = TransferToClient2(
             settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
         )
@@ -80,7 +80,7 @@ class GetCountryServices(APIView):
 
 
 class TopUpData(APIView):
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         data = request.GET.dict()
         msisdn = data["msisdn"]
         user_uuid = data["user_uuid"]
