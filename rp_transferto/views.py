@@ -19,14 +19,29 @@ class Ping(APIView):
 
 class MsisdnInfo(APIView):
     def get(self, request, msisdn, *args, **kwargs):
-        # TODO: check msisdn
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+        use_cache = (
+            request.GET.get("no_cache", False)
+            and request.GET.get("no_cache").lower() == "true"
         )
-        cleaned_msisdn = clean_msisdn(msisdn)
-        info = client.get_misisdn_info(cleaned_msisdn)
-        MsisdnInformation.objects.create(data=info, msisdn=cleaned_msisdn)
-        return JsonResponse(info)
+        if (
+            use_cache
+            or not MsisdnInformation.objects.filter(
+                msisdn=clean_msisdn(msisdn)
+            ).exists()
+        ):
+            client = TransferToClient(
+                settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+            )
+            cleaned_msisdn = clean_msisdn(msisdn)
+            info = client.get_misisdn_info(cleaned_msisdn)
+            MsisdnInformation.objects.create(data=info, msisdn=cleaned_msisdn)
+            return JsonResponse(info)
+        cached_result = dict(
+            MsisdnInformation.objects.filter(msisdn=clean_msisdn(msisdn))
+            .latest()
+            .data
+        )
+        return JsonResponse(cached_result)
 
 
 class ReserveId(APIView):
