@@ -57,10 +57,13 @@ class TestTransferToViews(APITestCase):
         self.assertEqual(json.loads(response.content), PING_RESPONSE_DICT)
         self.assertTrue(fake_ping.called)
 
-    @patch.object(TransferToClient, "get_misisdn_info", fake_msisdn_info)
-    def test_msisdn_info_view(self):
+    @patch("rp_transferto.utils.TransferToClient.get_misisdn_info")
+    def test_msisdn_info_view_object_does_not_exist(
+        self, fake_get_misisdn_info
+    ):
+        fake_get_misisdn_info.return_value = MSISDN_INFO_RESPONSE_DICT
         self.assertEqual(MsisdnInformation.objects.count(), 0)
-        self.assertFalse(fake_ping.called)
+        self.assertFalse(fake_get_misisdn_info.called)
         response = self.api_client.get(
             reverse("msisdn_info", kwargs={"msisdn": "+27820000001"})
         )
@@ -68,8 +71,48 @@ class TestTransferToViews(APITestCase):
         self.assertEqual(
             json.loads(response.content), MSISDN_INFO_RESPONSE_DICT
         )
-        self.assertTrue(fake_msisdn_info.called)
+        self.assertTrue(fake_get_misisdn_info.called)
         self.assertEqual(MsisdnInformation.objects.count(), 1)
+
+    @patch("rp_transferto.utils.TransferToClient.get_misisdn_info")
+    def test_msisdn_info_view_cached_object(self, fake_get_misisdn_info):
+        fake_get_misisdn_info.return_value = MSISDN_INFO_RESPONSE_DICT
+        msisdn = "+27820000000"
+        MsisdnInformation.objects.create(
+            msisdn=msisdn, data=MSISDN_INFO_RESPONSE_DICT
+        )
+        self.assertEqual(MsisdnInformation.objects.count(), 1)
+        self.assertFalse(fake_get_misisdn_info.called)
+        response = self.api_client.get(
+            reverse("msisdn_info", kwargs={"msisdn": msisdn})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content), MSISDN_INFO_RESPONSE_DICT
+        )
+        self.assertFalse(fake_get_misisdn_info.called)
+        self.assertEqual(MsisdnInformation.objects.count(), 1)
+
+    @patch("rp_transferto.utils.TransferToClient.get_misisdn_info")
+    def test_msisdn_info_no_cache(self, fake_get_misisdn_info):
+        fake_get_misisdn_info.return_value = MSISDN_INFO_RESPONSE_DICT
+        msisdn = "+27820000000"
+        MsisdnInformation.objects.create(
+            msisdn=msisdn, data=MSISDN_INFO_RESPONSE_DICT
+        )
+        self.assertEqual(MsisdnInformation.objects.count(), 1)
+        self.assertFalse(fake_get_misisdn_info.called)
+        response = self.api_client.get(
+            "{}?no_cache=True".format(
+                reverse("msisdn_info", kwargs={"msisdn": msisdn})
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content), MSISDN_INFO_RESPONSE_DICT
+        )
+        self.assertTrue(fake_get_misisdn_info.called)
+        self.assertEqual(MsisdnInformation.objects.count(), 2)
 
     @patch.object(TransferToClient, "reserve_id", fake_reserve_id)
     def test_reserve_id_view(self):
