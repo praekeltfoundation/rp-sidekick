@@ -3,6 +3,8 @@ VERSIONS
 
 Next Release
 ------------
+* TransferTo: default to using cached msisdn number in views
+* TransferTo: add endpoint which purchases product then updates fields and/or starts another flow
 
 1.0.12
 ------------
