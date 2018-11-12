@@ -1,6 +1,6 @@
 from mock import patch
 from unittest.mock import MagicMock
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
 from rp_transferto.tasks import topup_data, buy_product_take_action
 from rp_transferto.models import MsisdnInformation
@@ -17,12 +17,6 @@ from .constants import (
 @patch("rp_transferto.utils.TransferToClient2.topup_data")
 @patch("rp_transferto.utils.TransferToClient2.get_operator_products")
 @patch("rp_transferto.utils.TransferToClient.get_misisdn_info")
-@override_settings(
-    TRANSFERTO_LOGIN="fake_transferto_login",
-    TRANSFERTO_TOKEN="fake_transferto_token",
-    TRANSFERTO_APIKEY="fake_transferto_apikey",
-    TRANSFERTO_APISECRET="fake_transferto_apisecret",
-)
 class TestTopupDataTask(TestCase):
     def test_successsful_run(
         self,
@@ -108,12 +102,6 @@ class TestTopupDataTask(TestCase):
         self.assertTrue(fake_update_contact.called)
 
 
-@override_settings(
-    TRANSFERTO_LOGIN="fake_transferto_login",
-    TRANSFERTO_TOKEN="fake_transferto_token",
-    TRANSFERTO_APIKEY="fake_transferto_apikey",
-    TRANSFERTO_APISECRET="fake_transferto_apisecret",
-)
 class TestBuyProductTakeActionTask(TestCase):
     @patch("temba_client.v2.TembaClient.create_flow_start")
     @patch("temba_client.v2.TembaClient.update_contact")
