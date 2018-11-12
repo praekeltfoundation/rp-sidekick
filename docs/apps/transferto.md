@@ -11,3 +11,9 @@ While RapidPro does provide an integration with TransferTo to release airtime, i
 - `GetOperatorProducts`: get products offered by a particular MNO
 - `GetCountryServices`: get services available in a particular country
 - `TopUpData`: an endpoint that immediately returns a 200 status code and then starts a Celery task to get information about a number, send the reward and update the necessary fields in RapidPro.
+
+## Sidekick Endpoints
+- `BuyProductTakeAction`: this endpoint allows the user to
+    - purchase a product for a particular msisdn
+    - [optional] update a rapidpro contact's fields based on the response
+    - [optional] start the participant on another rapidpro flow, once the task has been completed.

@@ -79,4 +79,50 @@ class TopupData(Task):
         rapidpro_client.update_contact(rp_contact, fields=fields)
 
 
+class BuyProductTakeAction(Task):
+    name = "rp_transferto.tasks.buy_product_take_action"
+
+    def run(
+        self,
+        msisdn,
+        product_id,
+        user_uuid=None,
+        values_to_update={},
+        flow_start=None,
+    ):
+        new_client = TransferToClient2(
+            settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
+        )
+        purchase_result = new_client.topup_data(
+            msisdn, product_id, simulate=False
+        )
+        from pprint import pprint
+
+        pprint(purchase_result)
+        log.info(json.dumps(purchase_result, indent=2))
+
+        if user_uuid:
+            # update rapidpro with info
+            rapidpro_client = TembaClient(
+                settings.RAPIDPRO_URL, settings.RAPIDPRO_TOKEN
+            )
+
+            if values_to_update:
+                fields = {}
+                for (
+                    rapidpro_field,
+                    transferto_field,
+                ) in values_to_update.items():
+                    print(rapidpro_field, transferto_field)
+                    fields[rapidpro_field] = purchase_result[transferto_field]
+
+                rapidpro_client.update_contact(user_uuid, fields=fields)
+
+            if flow_start:
+                rapidpro_client.create_flow_start(
+                    flow_start, contacts=[user_uuid], restart_participants=True
+                )
+
+
 topup_data = TopupData()
+buy_product_take_action = BuyProductTakeAction()
