@@ -32,4 +32,9 @@ urlpatterns = [
         name="get_country_services",
     ),
     path("top_up_data/", views.TopUpData.as_view(), name="top_up_data"),
+    path(
+        "buy/<int:product_id>/<str:msisdn>/",
+        views.BuyProductTakeAction.as_view(),
+        name="buy_product_take_action",
+    ),
 ]

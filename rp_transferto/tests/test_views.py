@@ -9,6 +9,8 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase, APIClient
 
+from sidekick.utils import clean_msisdn
+
 from rp_transferto.models import MsisdnInformation
 from rp_transferto.tasks import topup_data
 from rp_transferto.utils import TransferToClient, TransferToClient2
@@ -207,3 +209,107 @@ class TestTransferToViews(APITestCase):
             json.loads(response.content), {"info_txt": "top_up_data"}
         )
         self.assertTrue(fake_delay.called)
+
+    @patch("rp_transferto.tasks.BuyProductTakeAction.delay")
+    def test_buy_product_take_action_view_simple(
+        self, fake_buy_product_take_action
+    ):
+        msisdn = "+27820006000"
+        product_id = 444
+        self.assertFalse(fake_buy_product_take_action.called)
+
+        response = self.api_client.get(
+            reverse(
+                "buy_product_take_action",
+                kwargs={"msisdn": msisdn, "product_id": product_id},
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content),
+            {"info_txt": "buy_product_take_action"},
+        )
+        fake_buy_product_take_action.assert_called_with(
+            clean_msisdn(msisdn),
+            product_id,
+            flow_start=False,
+            user_uuid=False,
+            values_to_update={},
+        )
+
+    @patch("rp_transferto.tasks.BuyProductTakeAction.delay")
+    def test_buy_product_take_action_view_update_fields(
+        self, fake_buy_product_take_action
+    ):
+        msisdn = "+27820006000"
+        product_id = 444
+        user_uuid = "3333-abc"
+        values_to_update = {
+            "rp_0001_01_transferto_status": "status",
+            "rp_0001_01_transferto_status_message": "status_message",
+            "rp_0001_01_transferto_product_desc": "product_desc",
+        }
+        self.assertFalse(fake_buy_product_take_action.called)
+
+        url = (
+            "{base_url}?rp_0001_01_transferto_status=status"
+            "&rp_0001_01_transferto_status_message=status_message"
+            "&rp_0001_01_transferto_product_desc=product_desc"
+            "&user_uuid={user_uuid}"
+        ).format(
+            base_url=reverse(
+                "buy_product_take_action",
+                kwargs={"msisdn": msisdn, "product_id": product_id},
+            ),
+            user_uuid=user_uuid,
+        )
+
+        response = self.api_client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content),
+            {"info_txt": "buy_product_take_action"},
+        )
+        fake_buy_product_take_action.assert_called_with(
+            clean_msisdn(msisdn),
+            product_id,
+            flow_start=False,
+            user_uuid=user_uuid,
+            values_to_update=values_to_update,
+        )
+
+    @patch("rp_transferto.tasks.BuyProductTakeAction.delay")
+    def test_buy_product_take_action_view_start_flow(
+        self, fake_buy_product_take_action
+    ):
+        msisdn = "+27820006000"
+        product_id = 444
+        user_uuid = "3333-abc"
+        flow_uuid = "123412341234"
+
+        url = (
+            "{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}" ""
+        ).format(
+            base_url=reverse(
+                "buy_product_take_action",
+                kwargs={"msisdn": msisdn, "product_id": product_id},
+            ),
+            user_uuid=user_uuid,
+            flow_uuid=flow_uuid,
+        )
+
+        response = self.api_client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content),
+            {"info_txt": "buy_product_take_action"},
+        )
+        fake_buy_product_take_action.assert_called_with(
+            clean_msisdn(msisdn),
+            product_id,
+            flow_start=flow_uuid,
+            user_uuid=user_uuid,
+            values_to_update={},
+        )

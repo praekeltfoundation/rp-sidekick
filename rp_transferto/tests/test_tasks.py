@@ -2,7 +2,7 @@ from mock import patch
 from unittest.mock import MagicMock
 from django.test import TestCase, override_settings
 
-from rp_transferto.tasks import topup_data
+from rp_transferto.tasks import topup_data, buy_product_take_action
 from rp_transferto.models import MsisdnInformation
 
 from .constants import (
@@ -106,3 +106,107 @@ class TestTopupDataTask(TestCase):
         self.assertTrue(fake_topup_data.called)
         self.assertTrue(fake_get_contacts.called)
         self.assertTrue(fake_update_contact.called)
+
+
+@override_settings(
+    TRANSFERTO_LOGIN="fake_transferto_login",
+    TRANSFERTO_TOKEN="fake_transferto_token",
+    TRANSFERTO_APIKEY="fake_transferto_apikey",
+    TRANSFERTO_APISECRET="fake_transferto_apisecret",
+)
+class TestBuyProductTakeActionTask(TestCase):
+    @patch("temba_client.v2.TembaClient.create_flow_start")
+    @patch("temba_client.v2.TembaClient.update_contact")
+    @patch("rp_transferto.utils.TransferToClient2.topup_data")
+    def test_successsful_run_simple(
+        self, fake_topup_data, fake_update_contact, fake_create_flow_start
+    ):
+        fake_topup_data.return_value = POST_TOPUP_DATA_RESPONSE
+        fake_update_contact.return_value = {}
+        fake_create_flow_start.return_value = {}
+
+        self.assertFalse(fake_topup_data.called)
+        self.assertFalse(fake_update_contact.called)
+        self.assertFalse(fake_create_flow_start.called)
+
+        msisdn = "+27820000001"
+        product_id = 111
+        buy_product_take_action(msisdn, product_id)
+
+        self.assertTrue(fake_topup_data.called)
+        fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
+        self.assertFalse(fake_update_contact.called)
+        self.assertFalse(fake_create_flow_start.called)
+
+    @patch("temba_client.v2.TembaClient.create_flow_start")
+    @patch("temba_client.v2.TembaClient.update_contact")
+    @patch("rp_transferto.utils.TransferToClient2.topup_data")
+    def test_successsful_run_update_fields(
+        self, fake_topup_data, fake_update_contact, fake_create_flow_start
+    ):
+        fake_topup_data.return_value = POST_TOPUP_DATA_RESPONSE
+        self.assertFalse(fake_topup_data.called)
+        self.assertFalse(fake_update_contact.called)
+        self.assertFalse(fake_create_flow_start.called)
+
+        msisdn = "+27820000001"
+        product_id = 333
+        user_uuid = "3333-abc"
+        values_to_update = {
+            "rp_0001_01_transferto_status": "status",
+            "rp_0001_01_transferto_status_message": "status_message",
+            "rp_0001_01_transferto_product_desc": "product_desc",
+        }
+
+        buy_product_take_action(
+            msisdn,
+            product_id,
+            user_uuid=user_uuid,
+            values_to_update=values_to_update,
+        )
+
+        self.assertTrue(fake_topup_data.called)
+        fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
+        self.assertTrue(fake_update_contact.called)
+        fake_update_contact.assert_called_with(
+            user_uuid,
+            fields={
+                "rp_0001_01_transferto_status": POST_TOPUP_DATA_RESPONSE[
+                    "status"
+                ],
+                "rp_0001_01_transferto_status_message": POST_TOPUP_DATA_RESPONSE[
+                    "status_message"
+                ],
+                "rp_0001_01_transferto_product_desc": POST_TOPUP_DATA_RESPONSE[
+                    "product_desc"
+                ],
+            },
+        )
+        self.assertFalse(fake_create_flow_start.called)
+
+    @patch("temba_client.v2.TembaClient.create_flow_start")
+    @patch("temba_client.v2.TembaClient.update_contact")
+    @patch("rp_transferto.utils.TransferToClient2.topup_data")
+    def test_successsful_run_start_flow(
+        self, fake_topup_data, fake_update_contact, fake_create_flow_start
+    ):
+        fake_topup_data.return_value = POST_TOPUP_DATA_RESPONSE
+        self.assertFalse(fake_topup_data.called)
+        self.assertFalse(fake_update_contact.called)
+        self.assertFalse(fake_create_flow_start.called)
+
+        msisdn = "+27820006000"
+        product_id = 444
+        user_uuid = "4444-abc"
+        flow_uuid = "123412341234"
+
+        buy_product_take_action(
+            msisdn, product_id, user_uuid=user_uuid, flow_start=flow_uuid
+        )
+
+        fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
+        self.assertFalse(fake_update_contact.called)
+        self.assertTrue(fake_create_flow_start.called)
+        fake_create_flow_start.assert_called_with(
+            flow_uuid, contacts=[user_uuid], restart_participants=True
+        )
