@@ -96,9 +96,7 @@ class BuyProductTakeAction(Task):
         purchase_result = new_client.topup_data(
             msisdn, product_id, simulate=False
         )
-        from pprint import pprint
 
-        pprint(purchase_result)
         log.info(json.dumps(purchase_result, indent=2))
 
         if user_uuid:
@@ -113,7 +111,6 @@ class BuyProductTakeAction(Task):
                     rapidpro_field,
                     transferto_field,
                 ) in values_to_update.items():
-                    print(rapidpro_field, transferto_field)
                     fields[rapidpro_field] = purchase_result[transferto_field]
 
                 rapidpro_client.update_contact(user_uuid, fields=fields)
