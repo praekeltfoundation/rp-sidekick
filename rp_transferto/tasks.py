@@ -15,6 +15,34 @@ from temba_client.v2 import TembaClient
 log = get_task_logger(__name__)
 
 
+def take_action(
+    user_uuid, values_to_update=None, call_result=None, flow_start=None
+):
+    """
+    Update rapidpro contact and/or start a user on a flow
+
+    :param str user_uuid: contact UUID in RapidPro
+    :param dict values_to_update: key-value mapping which represents variable_on_rapidpro_to_update:variable_from_response
+    :param dict call_result: response from transferto call
+    :param str flow_start: flow UUID in RapidPro
+    """
+    rapidpro_client = TembaClient(
+        settings.RAPIDPRO_URL, settings.RAPIDPRO_TOKEN
+    )
+
+    if values_to_update and call_result:
+        fields = {}
+        for (rapidpro_field, transferto_field) in values_to_update.items():
+            fields[rapidpro_field] = call_result[transferto_field]
+
+        rapidpro_client.update_contact(user_uuid, fields=fields)
+
+    if flow_start:
+        rapidpro_client.create_flow_start(
+            flow_start, contacts=[user_uuid], restart_participants=True
+        )
+
+
 class TopupData(Task):
     name = "rp_transferto.tasks.topup_data"
 
@@ -90,6 +118,19 @@ class BuyProductTakeAction(Task):
         values_to_update={},
         flow_start=None,
     ):
+        log.info(
+            json.dumps(
+                dict(
+                    name=self.name,
+                    msisdn=msisdn,
+                    product_id=product_id,
+                    user_uuid=user_uuid,
+                    values_to_update=values_to_update,
+                    flow_start=flow_start,
+                ),
+                indent=2,
+            )
+        )
         new_client = TransferToClient2(
             settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
         )
