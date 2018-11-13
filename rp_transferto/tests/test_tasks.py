@@ -2,7 +2,7 @@ from mock import patch
 from unittest.mock import MagicMock
 from django.test import TestCase
 
-from rp_transferto.tasks import topup_data, buy_product_take_action
+from rp_transferto.tasks import topup_data, buy_product_take_action, take_action
 from rp_transferto.models import MsisdnInformation
 
 from .constants import (
@@ -10,6 +10,78 @@ from .constants import (
     GET_PRODUCTS_RESPONSE_DICT,
     POST_TOPUP_DATA_RESPONSE,
 )
+
+
+class TestFunctions(TestCase):
+    @patch("temba_client.v2.TembaClient.update_contact")
+    def test_take_action_update_fields(self, fake_update_contact):
+        user_uuid = "3333-abc"
+        values_to_update = {
+            "rp_0001_01_transferto_status": "status",
+            "rp_0001_01_transferto_status_message": "status_message",
+            "rp_0001_01_transferto_product_desc": "product_desc",
+        }
+        call_result = POST_TOPUP_DATA_RESPONSE
+        take_action(user_uuid, values_to_update, call_result, flow_start=None)
+        fake_update_contact.assert_called_with(
+            user_uuid,
+            fields={
+                "rp_0001_01_transferto_status": POST_TOPUP_DATA_RESPONSE[
+                    "status"
+                ],
+                "rp_0001_01_transferto_status_message": POST_TOPUP_DATA_RESPONSE[
+                    "status_message"
+                ],
+                "rp_0001_01_transferto_product_desc": POST_TOPUP_DATA_RESPONSE[
+                    "product_desc"
+                ],
+            },
+        )
+
+    @patch("temba_client.v2.TembaClient.create_flow_start")
+    def test_take_action_start_flow(self, fake_create_flow_start):
+        user_uuid = "3333-abc"
+        flow_uuid = "123412341234"
+
+        take_action(user_uuid, flow_start=flow_uuid)
+
+        fake_create_flow_start.assert_called_with(
+            flow_uuid, contacts=[user_uuid], restart_participants=True
+        )
+
+    @patch("temba_client.v2.TembaClient.create_flow_start")
+    @patch("temba_client.v2.TembaClient.update_contact")
+    def test_take_action_update_fields_start_flow(
+        self, fake_update_contact, fake_create_flow_start
+    ):
+        user_uuid = "3333-abc"
+        values_to_update = {
+            "rp_0001_01_transferto_status": "status",
+            "rp_0001_01_transferto_status_message": "status_message",
+            "rp_0001_01_transferto_product_desc": "product_desc",
+        }
+        flow_uuid = "123412341234"
+        call_result = POST_TOPUP_DATA_RESPONSE
+        take_action(
+            user_uuid, values_to_update, call_result, flow_start=flow_uuid
+        )
+        fake_update_contact.assert_called_with(
+            user_uuid,
+            fields={
+                "rp_0001_01_transferto_status": POST_TOPUP_DATA_RESPONSE[
+                    "status"
+                ],
+                "rp_0001_01_transferto_status_message": POST_TOPUP_DATA_RESPONSE[
+                    "status_message"
+                ],
+                "rp_0001_01_transferto_product_desc": POST_TOPUP_DATA_RESPONSE[
+                    "product_desc"
+                ],
+            },
+        )
+        fake_create_flow_start.assert_called_with(
+            flow_uuid, contacts=[user_uuid], restart_participants=True
+        )
 
 
 @patch("temba_client.v2.TembaClient.update_contact")
