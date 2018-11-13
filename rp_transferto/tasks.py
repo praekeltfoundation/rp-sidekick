@@ -141,25 +141,12 @@ class BuyProductTakeAction(Task):
         log.info(json.dumps(purchase_result, indent=2))
 
         if user_uuid:
-            # update rapidpro with info
-            rapidpro_client = TembaClient(
-                settings.RAPIDPRO_URL, settings.RAPIDPRO_TOKEN
+            take_action(
+                user_uuid,
+                values_to_update=values_to_update,
+                call_result=purchase_result,
+                flow_start=flow_start,
             )
-
-            if values_to_update:
-                fields = {}
-                for (
-                    rapidpro_field,
-                    transferto_field,
-                ) in values_to_update.items():
-                    fields[rapidpro_field] = purchase_result[transferto_field]
-
-                rapidpro_client.update_contact(user_uuid, fields=fields)
-
-            if flow_start:
-                rapidpro_client.create_flow_start(
-                    flow_start, contacts=[user_uuid], restart_participants=True
-                )
 
 
 topup_data = TopupData()

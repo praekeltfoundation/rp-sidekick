@@ -175,19 +175,12 @@ class TestTopupDataTask(TestCase):
 
 
 class TestBuyProductTakeActionTask(TestCase):
-    @patch("temba_client.v2.TembaClient.create_flow_start")
-    @patch("temba_client.v2.TembaClient.update_contact")
+    @patch("rp_transferto.tasks.take_action")
     @patch("rp_transferto.utils.TransferToClient2.topup_data")
-    def test_successsful_run_simple(
-        self, fake_topup_data, fake_update_contact, fake_create_flow_start
-    ):
+    def test_successsful_run_simple(self, fake_topup_data, fake_take_action):
         fake_topup_data.return_value = POST_TOPUP_DATA_RESPONSE
-        fake_update_contact.return_value = {}
-        fake_create_flow_start.return_value = {}
-
         self.assertFalse(fake_topup_data.called)
-        self.assertFalse(fake_update_contact.called)
-        self.assertFalse(fake_create_flow_start.called)
+        self.assertFalse(fake_take_action.called)
 
         msisdn = "+27820000001"
         product_id = 111
@@ -195,19 +188,16 @@ class TestBuyProductTakeActionTask(TestCase):
 
         self.assertTrue(fake_topup_data.called)
         fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
-        self.assertFalse(fake_update_contact.called)
-        self.assertFalse(fake_create_flow_start.called)
+        self.assertFalse(fake_take_action.called)
 
-    @patch("temba_client.v2.TembaClient.create_flow_start")
-    @patch("temba_client.v2.TembaClient.update_contact")
+    @patch("rp_transferto.tasks.take_action")
     @patch("rp_transferto.utils.TransferToClient2.topup_data")
     def test_successsful_run_update_fields(
-        self, fake_topup_data, fake_update_contact, fake_create_flow_start
+        self, fake_topup_data, fake_take_action
     ):
         fake_topup_data.return_value = POST_TOPUP_DATA_RESPONSE
         self.assertFalse(fake_topup_data.called)
-        self.assertFalse(fake_update_contact.called)
-        self.assertFalse(fake_create_flow_start.called)
+        self.assertFalse(fake_take_action.called)
 
         msisdn = "+27820000001"
         product_id = 333
@@ -225,35 +215,23 @@ class TestBuyProductTakeActionTask(TestCase):
             values_to_update=values_to_update,
         )
 
-        self.assertTrue(fake_topup_data.called)
         fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
-        self.assertTrue(fake_update_contact.called)
-        fake_update_contact.assert_called_with(
+        self.assertTrue(fake_take_action.called)
+        fake_take_action.assert_called_with(
             user_uuid,
-            fields={
-                "rp_0001_01_transferto_status": POST_TOPUP_DATA_RESPONSE[
-                    "status"
-                ],
-                "rp_0001_01_transferto_status_message": POST_TOPUP_DATA_RESPONSE[
-                    "status_message"
-                ],
-                "rp_0001_01_transferto_product_desc": POST_TOPUP_DATA_RESPONSE[
-                    "product_desc"
-                ],
-            },
+            values_to_update=values_to_update,
+            call_result=POST_TOPUP_DATA_RESPONSE,
+            flow_start=None,
         )
-        self.assertFalse(fake_create_flow_start.called)
 
-    @patch("temba_client.v2.TembaClient.create_flow_start")
-    @patch("temba_client.v2.TembaClient.update_contact")
+    @patch("rp_transferto.tasks.take_action")
     @patch("rp_transferto.utils.TransferToClient2.topup_data")
     def test_successsful_run_start_flow(
-        self, fake_topup_data, fake_update_contact, fake_create_flow_start
+        self, fake_topup_data, fake_take_action
     ):
         fake_topup_data.return_value = POST_TOPUP_DATA_RESPONSE
         self.assertFalse(fake_topup_data.called)
-        self.assertFalse(fake_update_contact.called)
-        self.assertFalse(fake_create_flow_start.called)
+        self.assertFalse(fake_take_action.called)
 
         msisdn = "+27820006000"
         product_id = 444
@@ -265,8 +243,10 @@ class TestBuyProductTakeActionTask(TestCase):
         )
 
         fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
-        self.assertFalse(fake_update_contact.called)
-        self.assertTrue(fake_create_flow_start.called)
-        fake_create_flow_start.assert_called_with(
-            flow_uuid, contacts=[user_uuid], restart_participants=True
+        self.assertTrue(fake_take_action.called)
+        fake_take_action.assert_called_with(
+            user_uuid,
+            values_to_update={},
+            call_result=POST_TOPUP_DATA_RESPONSE,
+            flow_start=flow_uuid,
         )
