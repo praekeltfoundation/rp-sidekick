@@ -149,5 +149,46 @@ class BuyProductTakeAction(Task):
             )
 
 
+class BuyAirtimeTakeAction(Task):
+    name = "rp_transferto.tasks.buy_airtime_take_action"
+
+    def run(
+        self,
+        msisdn,
+        airtime_amount,
+        user_uuid=None,
+        values_to_update={},
+        flow_start=None,
+    ):
+        log.info(
+            json.dumps(
+                dict(
+                    name=self.name,
+                    msisdn=msisdn,
+                    airtime_amount=airtime_amount,
+                    user_uuid=user_uuid,
+                    values_to_update=values_to_update,
+                    flow_start=flow_start,
+                ),
+                indent=2,
+            )
+        )
+        transferto_client = TransferToClient(
+            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+        )
+        topup_result = transferto_client.make_topup(msisdn, airtime_amount)
+
+        log.info(json.dumps(topup_result, indent=2))
+
+        if user_uuid:
+            take_action(
+                user_uuid,
+                values_to_update=values_to_update,
+                call_result=topup_result,
+                flow_start=flow_start,
+            )
+
+
 topup_data = TopupData()
 buy_product_take_action = BuyProductTakeAction()
+buy_airtime_take_action = BuyAirtimeTakeAction()
