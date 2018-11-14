@@ -98,8 +98,7 @@ class TransferToClient:
         reserve_id=None,
     ):
         """
-        Returns the list of denomination including wholesale and retail prices offered to your account,
-        for a specific operator
+        Purchase amount for a specifc number
         """
         if source_msisdn is None and source_name is None:
             raise Exception("source_msisdn and source_name cannot both be None")

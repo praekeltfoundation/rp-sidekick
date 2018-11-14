@@ -2,13 +2,19 @@ from mock import patch
 from unittest.mock import MagicMock
 from django.test import TestCase
 
-from rp_transferto.tasks import topup_data, buy_product_take_action, take_action
+from rp_transferto.tasks import (
+    topup_data,
+    buy_product_take_action,
+    buy_airtime_take_action,
+    take_action,
+)
 from rp_transferto.models import MsisdnInformation
 
 from .constants import (
     MSISDN_INFO_RESPONSE_DICT,
     GET_PRODUCTS_RESPONSE_DICT,
     POST_TOPUP_DATA_RESPONSE,
+    TOPUP_RESPONSE_DICT,
 )
 
 
@@ -248,5 +254,83 @@ class TestBuyProductTakeActionTask(TestCase):
             user_uuid,
             values_to_update={},
             call_result=POST_TOPUP_DATA_RESPONSE,
+            flow_start=flow_uuid,
+        )
+
+
+class TestBuyAirtimeTakeAction(TestCase):
+    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_successsful_run_simple(self, fake_make_topup, fake_take_action):
+        fake_make_topup.return_value = TOPUP_RESPONSE_DICT
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_take_action.called)
+
+        msisdn = "+27820000001"
+        product_id = 111
+        buy_airtime_take_action(msisdn, product_id)
+
+        self.assertTrue(fake_make_topup.called)
+        fake_make_topup.assert_called_with(msisdn, product_id)
+        self.assertFalse(fake_take_action.called)
+
+    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_successsful_run_update_fields(
+        self, fake_make_topup, fake_take_action
+    ):
+        fake_make_topup.return_value = TOPUP_RESPONSE_DICT
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_take_action.called)
+
+        msisdn = "+27820000001"
+        product_id = 333
+        user_uuid = "3333-abc"
+        values_to_update = {
+            "rp_0001_01_transferto_status": "status",
+            "rp_0001_01_transferto_status_message": "status_message",
+            "rp_0001_01_transferto_product_desc": "product_desc",
+        }
+
+        buy_airtime_take_action(
+            msisdn,
+            product_id,
+            user_uuid=user_uuid,
+            values_to_update=values_to_update,
+        )
+
+        fake_make_topup.assert_called_with(msisdn, product_id)
+        self.assertTrue(fake_take_action.called)
+        fake_take_action.assert_called_with(
+            user_uuid,
+            values_to_update=values_to_update,
+            call_result=TOPUP_RESPONSE_DICT,
+            flow_start=None,
+        )
+
+    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_successsful_run_start_flow(
+        self, fake_make_topup, fake_take_action
+    ):
+        fake_make_topup.return_value = TOPUP_RESPONSE_DICT
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_take_action.called)
+
+        msisdn = "+27820006000"
+        product_id = 444
+        user_uuid = "4444-abc"
+        flow_uuid = "123412341234"
+
+        buy_airtime_take_action(
+            msisdn, product_id, user_uuid=user_uuid, flow_start=flow_uuid
+        )
+
+        fake_make_topup.assert_called_with(msisdn, product_id)
+        self.assertTrue(fake_take_action.called)
+        fake_take_action.assert_called_with(
+            user_uuid,
+            values_to_update={},
+            call_result=TOPUP_RESPONSE_DICT,
             flow_start=flow_uuid,
         )
