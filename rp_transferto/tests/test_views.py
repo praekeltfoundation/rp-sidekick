@@ -320,12 +320,17 @@ class TestTransferToViews(APITestCase):
     ):
         msisdn = "+27820006000"
         airtime_amount = 444
+        from_string = "bob"
         self.assertFalse(fake_buy_airtime_take_action.called)
 
         response = self.api_client.get(
             reverse(
                 "buy_airtime_take_action",
-                kwargs={"msisdn": msisdn, "airtime_amount": airtime_amount},
+                kwargs={
+                    "msisdn": msisdn,
+                    "airtime_amount": airtime_amount,
+                    "from_string": from_string,
+                },
             )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -336,6 +341,7 @@ class TestTransferToViews(APITestCase):
         fake_buy_airtime_take_action.assert_called_with(
             clean_msisdn(msisdn),
             airtime_amount,
+            from_string,
             flow_start=False,
             user_uuid=False,
             values_to_update={},
@@ -347,6 +353,7 @@ class TestTransferToViews(APITestCase):
     ):
         msisdn = "+27820006000"
         airtime_amount = 444
+        from_string = "bob"
         user_uuid = "3333-abc"
         values_to_update = {
             "rp_0001_01_transferto_status": "status",
@@ -363,7 +370,11 @@ class TestTransferToViews(APITestCase):
         ).format(
             base_url=reverse(
                 "buy_airtime_take_action",
-                kwargs={"msisdn": msisdn, "airtime_amount": airtime_amount},
+                kwargs={
+                    "msisdn": msisdn,
+                    "airtime_amount": airtime_amount,
+                    "from_string": from_string,
+                },
             ),
             user_uuid=user_uuid,
         )
@@ -378,6 +389,7 @@ class TestTransferToViews(APITestCase):
         fake_buy_airtime_take_action.assert_called_with(
             clean_msisdn(msisdn),
             airtime_amount,
+            from_string,
             flow_start=False,
             user_uuid=user_uuid,
             values_to_update=values_to_update,
@@ -389,6 +401,7 @@ class TestTransferToViews(APITestCase):
     ):
         msisdn = "+27820006000"
         airtime_amount = 444
+        from_string = "bob"
         user_uuid = "3333-abc"
         flow_uuid = "123412341234"
 
@@ -397,7 +410,11 @@ class TestTransferToViews(APITestCase):
         ).format(
             base_url=reverse(
                 "buy_airtime_take_action",
-                kwargs={"msisdn": msisdn, "airtime_amount": airtime_amount},
+                kwargs={
+                    "msisdn": msisdn,
+                    "airtime_amount": airtime_amount,
+                    "from_string": from_string,
+                },
             ),
             user_uuid=user_uuid,
             flow_uuid=flow_uuid,
@@ -413,6 +430,7 @@ class TestTransferToViews(APITestCase):
         fake_buy_airtime_take_action.assert_called_with(
             clean_msisdn(msisdn),
             airtime_amount,
+            from_string,
             flow_start=flow_uuid,
             user_uuid=user_uuid,
             values_to_update={},

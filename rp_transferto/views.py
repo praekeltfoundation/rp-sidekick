@@ -134,7 +134,9 @@ class BuyProductTakeAction(APIView):
 
 
 class BuyAirtimeTakeAction(APIView):
-    def get(self, request, airtime_amount, msisdn, *args, **kwargs):
+    def get(
+        self, request, airtime_amount, msisdn, from_string, *args, **kwargs
+    ):
         flow_uuid_key = "flow_uuid"
         user_uuid_key = "user_uuid"
         data = dict(request.GET.dict())
@@ -151,6 +153,7 @@ class BuyAirtimeTakeAction(APIView):
         buy_airtime_take_action.delay(
             clean_msisdn(msisdn),
             airtime_amount,
+            from_string,
             user_uuid=user_uuid,
             values_to_update=data,
             flow_start=flow_start,
