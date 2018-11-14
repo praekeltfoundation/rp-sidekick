@@ -3,6 +3,8 @@ VERSIONS
 
 Next Release
 ------------
+* TransferTo: refactored task functionality into to take_action function - updates RapidPro fields and/or starts another flow
+* TransferTo: add endpoint which purchases airtime, then updates RapidPro state with new take_action function
 
 1.0.13
 ------------
