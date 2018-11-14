@@ -156,6 +156,7 @@ class BuyAirtimeTakeAction(Task):
         self,
         msisdn,
         airtime_amount,
+        from_string,
         user_uuid=None,
         values_to_update={},
         flow_start=None,
@@ -176,7 +177,9 @@ class BuyAirtimeTakeAction(Task):
         transferto_client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        topup_result = transferto_client.make_topup(msisdn, airtime_amount)
+        topup_result = transferto_client.make_topup(
+            msisdn, airtime_amount, from_string
+        )
 
         log.info(json.dumps(topup_result, indent=2))
 
