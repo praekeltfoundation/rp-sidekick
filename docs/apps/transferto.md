@@ -17,3 +17,8 @@ While RapidPro does provide an integration with TransferTo to release airtime, i
     - purchase a product for a particular msisdn
     - [optional] update a rapidpro contact's fields based on the response
     - [optional] start the participant on another rapidpro flow, once the task has been completed.
+
+- `BuyAirtimeTakeAction`: this endpoint allows the user to
+    - purchase airtime for a particular msisdn
+    - [optional] update a rapidpro contact's fields based on the response
+    - [optional] start the participant on another rapidpro flow, once the task has been completed.
