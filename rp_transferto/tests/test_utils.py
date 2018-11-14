@@ -104,17 +104,9 @@ class TestTransferToClient(TestCase):
             self.client.get_operator_airtime_products("not an int")
         self.assertEqual(exception_info.value.__str__(), "arg must be an int")
 
-    def test_make_topup_throws_exception_source_variables(self):
-        with raises(Exception) as exception_info:
-            self.client.make_topup("fake_msisdn", 10)
-        self.assertEqual(
-            exception_info.value.__str__(),
-            "source_msisdn and source_name cannot both be None",
-        )
-
     def test_make_topup_throws_exception_product_must_be_int(self):
         with raises(TypeError) as exception_info:
-            self.client.make_topup("fake_msisdn", "10", source_name="test_name")
+            self.client.make_topup("fake_msisdn", "10", from_string="test_name")
         self.assertEqual(
             exception_info.value.__str__(), "product arg must be an int"
         )
@@ -122,7 +114,7 @@ class TestTransferToClient(TestCase):
     def test_make_topup_1(self):
         client = TransferToClient("fake_login", "fake_token")
         with patch.object(client, "_make_transferto_request") as mock:
-            client.make_topup("+27820000001", 10, source_msisdn="+27820000002")
+            client.make_topup("+27820000001", 10, from_string="+27820000002")
 
         mock.assert_called_once_with(
             action="topup",
@@ -134,7 +126,7 @@ class TestTransferToClient(TestCase):
     def test_make_topup_2(self):
         client = TransferToClient("fake_login", "fake_token")
         with patch.object(client, "_make_transferto_request") as mock:
-            client.make_topup("+27820000001", 10, source_name="john")
+            client.make_topup("+27820000001", 10, from_string="john")
 
         mock.assert_called_once_with(
             action="topup",
@@ -147,10 +139,7 @@ class TestTransferToClient(TestCase):
         client = TransferToClient("fake_login", "fake_token")
         with patch.object(client, "_make_transferto_request") as mock:
             client.make_topup(
-                "+27820000001",
-                10,
-                source_msisdn="+27820000002",
-                reserve_id=1234,
+                "+27820000001", 10, from_string="+27820000002", reserve_id=1234
             )
 
         mock.assert_called_once_with(

@@ -89,26 +89,23 @@ class TransferToClient:
                 action="pricelist", info_type="operator", content=operator_id
             )
 
-    def make_topup(
-        self,
-        msisdn,
-        product,
-        source_msisdn=None,
-        source_name=None,
-        reserve_id=None,
-    ):
+    def make_topup(self, msisdn, product, from_string, reserve_id=None):
         """
-        Purchase amount for a specifc number
+        Make
+
+        :param str msisdn: the msisdn that should receive the data
+        :param int product: integer representing amount of airtime to send to msisdn
+        :param str from_string: either in msisdn form or a name. e.g. "+6012345678" or "John" are all valid.
+        :param str reserve_id: [optional] see transferto documentation for more details about reserve id
+        :return: dict of transaction response from transferto
         """
-        if source_msisdn is None and source_name is None:
-            raise Exception("source_msisdn and source_name cannot both be None")
         if type(product) != int:
             raise TypeError("product arg must be an int")
 
         keyword_args = {
             "action": "topup",
             "destination_msisdn": msisdn,
-            "msisdn": source_msisdn or source_name,
+            "msisdn": from_string,
             "product": product,
         }
 
