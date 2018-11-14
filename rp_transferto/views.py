@@ -6,7 +6,7 @@ from sidekick.utils import clean_msisdn
 
 from .models import MsisdnInformation
 from .utils import TransferToClient, TransferToClient2
-from .tasks import topup_data, buy_product_take_action
+from .tasks import topup_data, buy_product_take_action, buy_airtime_take_action
 
 
 class Ping(APIView):
@@ -131,3 +131,28 @@ class BuyProductTakeAction(APIView):
             flow_start=flow_start,
         )
         return JsonResponse({"info_txt": "buy_product_take_action"})
+
+
+class BuyAirtimeTakeAction(APIView):
+    def get(self, request, airtime_amount, msisdn, *args, **kwargs):
+        flow_uuid_key = "flow_uuid"
+        user_uuid_key = "user_uuid"
+        data = dict(request.GET.dict())
+
+        flow_start = request.GET.get(flow_uuid_key, False)
+        if flow_start:
+            del data[flow_uuid_key]
+        user_uuid = request.GET.get(user_uuid_key, False)
+        if user_uuid:
+            del data[user_uuid_key]
+        # remaining variables will be coerced from key:value mapping
+        # which represents variable on rapidpro to update: variable from response
+
+        buy_airtime_take_action.delay(
+            clean_msisdn(msisdn),
+            airtime_amount,
+            user_uuid=user_uuid,
+            values_to_update=data,
+            flow_start=flow_start,
+        )
+        return JsonResponse({"info_txt": "buy_airtime_take_action"})

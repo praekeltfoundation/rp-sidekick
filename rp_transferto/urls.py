@@ -37,4 +37,9 @@ urlpatterns = [
         views.BuyProductTakeAction.as_view(),
         name="buy_product_take_action",
     ),
+    path(
+        "buy/airtime/<int:airtime_amount>/<str:msisdn>/",
+        views.BuyAirtimeTakeAction.as_view(),
+        name="buy_airtime_take_action",
+    ),
 ]
