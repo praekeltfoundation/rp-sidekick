@@ -1,6 +1,7 @@
 import json
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import EmailMessage
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
@@ -140,13 +141,35 @@ class BuyProductTakeAction(Task):
 
         log.info(json.dumps(purchase_result, indent=2))
 
-        if user_uuid:
-            take_action(
+        if purchase_result["status"] != "0":
+            subject = "FAILURE: {}".format(self.name)
+            message = (
+                "{}\n"
+                "-------\n"
+                "user_uuid:{}\n"
+                "values_to_update:{}\n"
+                "flow_start:{}"
+            ).format(
+                json.dumps(purchase_result, indent=2),
                 user_uuid,
-                values_to_update=values_to_update,
-                call_result=purchase_result,
-                flow_start=flow_start,
+                json.dumps(values_to_update, indent=2),
+                flow_start,
             )
+            from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
+            recipients = (
+                "nathan@praekelt.org"  # TODO: link to org user in future
+            )
+            email = EmailMessage(subject, message, from_string, [recipients])
+            email.send()
+
+        else:
+            if user_uuid:
+                take_action(
+                    user_uuid,
+                    values_to_update=values_to_update,
+                    call_result=purchase_result,
+                    flow_start=flow_start,
+                )
 
 
 class BuyAirtimeTakeAction(Task):
