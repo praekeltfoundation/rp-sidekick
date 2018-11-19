@@ -3,8 +3,13 @@ VERSIONS
 
 Next Release
 ------------
+
+1.0.13
+------------
 * TransferTo: refactored task functionality into to take_action function - updates RapidPro fields and/or starts another flow
 * TransferTo: add endpoint which purchases airtime, then updates RapidPro state with new take_action function
+* Sidekick: add email functionality in settings
+* TransferTo: send email on TransferTo failure task; buy_product_take_action
 
 1.0.13
 ------------
