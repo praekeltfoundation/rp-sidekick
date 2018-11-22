@@ -4,7 +4,11 @@ VERSIONS
 Next Release
 ------------
 
-1.0.13
+1.0.15
+------------
+* TransferTo: added hacky fallback method for product purchase and take action task
+
+1.0.14
 ------------
 * TransferTo: refactored task functionality into to take_action function - updates RapidPro fields and/or starts another flow
 * TransferTo: add endpoint which purchases airtime, then updates RapidPro state with new take_action function
