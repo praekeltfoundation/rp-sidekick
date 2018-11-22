@@ -1,5 +1,6 @@
 import json
 from django.conf import settings
+from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMessage
 
@@ -142,13 +143,77 @@ class BuyProductTakeAction(Task):
         log.info(json.dumps(purchase_result, indent=2))
 
         if purchase_result["status"] != "0":
+            # HANDLE USE CASE FOR 100MB in ZAR
+            if purchase_result["status"] == "1000204" and product_id in [
+                1194,
+                1601,
+                1630,
+            ]:
+                log.info("{} failed, attempting fallback".format(product_id))
+                remaining_options = [1194, 1601, 1630]
+                remaining_options.remove(product_id)
+
+                for option in remaining_options:
+                    log.info(
+                        json.dumps(
+                            dict(
+                                name=self.name,
+                                msisdn=msisdn,
+                                product_id=option,
+                                user_uuid=user_uuid,
+                                values_to_update=values_to_update,
+                                flow_start=flow_start,
+                            ),
+                            indent=2,
+                        )
+                    )
+                    retry_purchase_result = new_client.topup_data(
+                        msisdn, option, simulate=False
+                    )
+                    log.info(json.dumps(retry_purchase_result, indent=2))
+                    if retry_purchase_result["status"] == "0":
+                        if user_uuid:
+                            take_action(
+                                user_uuid,
+                                values_to_update=values_to_update,
+                                call_result=retry_purchase_result,
+                                flow_start=flow_start,
+                            )
+                        return None
+                subject = "FAILURE WITH RETRIES: {} {}".format(
+                    self.name, timezone.now()
+                )
+                message = (
+                    "{}\n"
+                    "-------\n"
+                    "user_uuid: {}\n"
+                    "values_to_update:{}\n"
+                    "flow_start: {}\n"
+                    "also tried: {}"
+                ).format(
+                    json.dumps(purchase_result, indent=2),
+                    user_uuid,
+                    json.dumps(values_to_update, indent=2),
+                    flow_start,
+                    remaining_options,
+                )
+                from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
+                recipients = (
+                    "nathan@praekelt.org"  # TODO: link to org user in future
+                )
+                email = EmailMessage(
+                    subject, message, from_string, [recipients]
+                )
+                email.send()
+                return None
+
             subject = "FAILURE: {}".format(self.name)
             message = (
                 "{}\n"
                 "-------\n"
-                "user_uuid:{}\n"
+                "user_uuid: {}\n"
                 "values_to_update:{}\n"
-                "flow_start:{}"
+                "flow_start: {}"
             ).format(
                 json.dumps(purchase_result, indent=2),
                 user_uuid,
