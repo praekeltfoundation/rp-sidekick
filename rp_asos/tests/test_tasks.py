@@ -94,6 +94,21 @@ class MockRedCapPatients(object):
                         "post_op_field_2": "value",
                     }
                 ]
+        elif "'2018-01-09'" in filter_logic or "'2018-01-08'" in filter_logic:
+            # test_get_reminders_empty_screening_record
+            if "screening_tool" in forms:
+                return [
+                    {
+                        "record_id": "1",
+                        "asos2_eligible": "5",
+                        "day1": "",
+                        "day2": "",
+                        "day3": "",
+                        "day4": "",
+                        "day5": "",
+                        "redcap_data_access_group": "my_test_hospital",
+                    }
+                ]
         elif "'2018-02-20'" in filter_logic or "'2018-02-19'" in filter_logic:
             # test_get_reminders_no_screening_record
             if "screening_tool" in forms:
@@ -513,6 +528,24 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         check_messages = defaultdict(lambda: defaultdict(list))
         check_messages[hospital][date].append(
             "No screening records found.(2018-02-20)"
+        )
+
+        self.assertEqual(messages, check_messages)
+
+    def test_get_reminders_empty_screening_record(self):
+        hospital = self.create_hospital()
+
+        date = datetime.date(2018, 1, 9)
+        screening_client = MockRedCapPatients()
+        patient_client = MockRedCapPatients()
+
+        messages = patient_data_check.get_reminders_for_date(
+            date, self.project, screening_client, patient_client, {}
+        )
+
+        check_messages = defaultdict(lambda: defaultdict(list))
+        check_messages[hospital][date].append(
+            "No screening records found.(2018-01-09)"
         )
 
         self.assertEqual(messages, check_messages)
