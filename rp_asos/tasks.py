@@ -192,9 +192,12 @@ class PatientDataCheck(BaseTask):
                 if d["redcap_data_access_group"] == hospital.data_access_group
             ]
 
-            if hospital_screening_records:
+            if (
+                hospital_screening_records
+                and hospital_screening_records[0][screening_field]
+            ):
                 patient_count = int(
-                    hospital_screening_records[0][screening_field] or "0"
+                    hospital_screening_records[0][screening_field]
                 )
 
                 # Check count
