@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.0.16
+------------
+* ASOS: Fixed notification for empty screening record.
+
 1.0.15
 ------------
 * TransferTo: added hacky fallback method for product purchase and take action task
