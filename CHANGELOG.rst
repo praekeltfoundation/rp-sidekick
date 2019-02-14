@@ -4,6 +4,11 @@ VERSIONS
 Next Release
 ------------
 
+1.0.17
+------------
+* TransferTo: Added error code to responses where TransferToClient returns an error
+
+
 1.0.16
 ------------
 * ASOS: Fixed notification for empty screening record.
