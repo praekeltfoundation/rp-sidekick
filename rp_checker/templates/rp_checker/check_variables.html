@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+    <div class="container">
+        {% crispy form %}
+    </div>
+
+    <div class="container" style="padding: 15px">
+        {% if table %}
+            {{ table|safe }}
+        {% endif %}
+    </div>
+{% endblock %}

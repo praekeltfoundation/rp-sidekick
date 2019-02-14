@@ -11,6 +11,7 @@ urlpatterns = [
     path("redcap/", include("rp_redcap.urls"), name="rp_redcap"),
     path("asos/", include("rp_asos.urls"), name="rp_asos"),
     path("transferto/", include("rp_transferto.urls"), name="rp_transferto"),
+    path("check/", include("rp_checker.urls"), name="rp_checker"),
     path(
         "docs/api/",
         include_docs_urls(

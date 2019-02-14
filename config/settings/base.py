@@ -37,10 +37,12 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "djcelery",
     "django_extensions",
+    "crispy_forms",
     "sidekick",
     "rp_asos",
     "rp_redcap",
     "rp_transferto",
+    "rp_checker",
 ]
 
 MIDDLEWARE = [
@@ -188,3 +190,4 @@ EMAIL_PORT = env.int("EMAIL_PORT", 25)
 EMAIL_SUBJECT_PREFIX = env.str("EMAIL_SUBJECT_PREFIX", "[Django]")
 
 RABBITMQ_MANAGEMENT_INTERFACE = env.str("RABBITMQ_MANAGEMENT_INTERFACE", "")
+CRISPY_TEMPLATE_PACK = "bootstrap4"
