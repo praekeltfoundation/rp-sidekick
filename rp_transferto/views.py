@@ -9,6 +9,24 @@ from .utils import TransferToClient, TransferToClient2
 from .tasks import topup_data, buy_product_take_action, buy_airtime_take_action
 
 
+def process_status_code(info):
+    """
+    returns a JsonResponse object with status updated to reflect info
+
+    For more detail on possible  TransferTo error codes, see
+    section "9.0 Standard API Errors" in https://shop.transferto.com/shop/v3/doc/TransferTo_API.pdf
+
+    @param info: dict containing key "error_code"
+    @returns: JsonResponse object with status updated to reflect "error_code"
+    @raises keyError: if "error_code" is not contained within info dict
+    """
+    error_code = info["error_code"]
+    if error_code not in ["0", 0]:
+        return JsonResponse(info, status=400)
+    # default to 200 status code
+    return JsonResponse(info)
+
+
 class Ping(APIView):
     def get(self, request, *args, **kwargs):
         client = TransferToClient(

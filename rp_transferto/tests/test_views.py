@@ -2,8 +2,13 @@ import json
 
 from mock import patch
 from unittest.mock import MagicMock
+
+from pytest import raises
+
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.test import TestCase
 
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -11,6 +16,7 @@ from rest_framework.test import APITestCase, APIClient
 
 from sidekick.utils import clean_msisdn
 
+from rp_transferto.views import process_status_code
 from rp_transferto.models import MsisdnInformation
 from rp_transferto.tasks import topup_data
 from rp_transferto.utils import TransferToClient, TransferToClient2
@@ -38,6 +44,23 @@ fake_get_country_services = MagicMock(
     return_value=GET_COUNTRY_SERVICES_RESPONSE_DICT
 )
 fake_delay = MagicMock({"info_txt": "top_up_data"})
+
+
+class TestTransferToFunctions(TestCase):
+    def test_process_status_code_400(self):
+        result = process_status_code({"error_code": 101})
+        self.assertEqual(type(result), JsonResponse)
+        self.assertEqual(result.status_code, 400)
+
+    def test_process_status_code_200(self):
+        result = process_status_code({"error_code": 0})
+        self.assertEqual(type(result), JsonResponse)
+        self.assertEqual(result.status_code, 200)
+
+    def test_process_status_code_exception(self):
+        with raises(KeyError) as exception_info:
+            process_status_code({"errorCode": 0})
+        self.assertEqual(exception_info.value.__str__(), "'error_code'")
 
 
 class TestTransferToViews(APITestCase):
