@@ -32,7 +32,7 @@ class Ping(APIView):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        return JsonResponse(client.ping())
+        return process_status_code(client.ping())
 
 
 class MsisdnInfo(APIView):
@@ -53,13 +53,14 @@ class MsisdnInfo(APIView):
             cleaned_msisdn = clean_msisdn(msisdn)
             info = client.get_misisdn_info(cleaned_msisdn)
             MsisdnInformation.objects.create(data=info, msisdn=cleaned_msisdn)
-            return JsonResponse(info)
-        cached_result = dict(
-            MsisdnInformation.objects.filter(msisdn=clean_msisdn(msisdn))
-            .latest()
-            .data
-        )
-        return JsonResponse(cached_result)
+        # get cached result
+        else:
+            info = dict(
+                MsisdnInformation.objects.filter(msisdn=clean_msisdn(msisdn))
+                .latest()
+                .data
+            )
+        return process_status_code(info)
 
 
 class ReserveId(APIView):
@@ -67,7 +68,7 @@ class ReserveId(APIView):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        return JsonResponse(client.reserve_id())
+        return process_status_code(client.reserve_id())
 
 
 class GetCountries(APIView):
@@ -75,7 +76,7 @@ class GetCountries(APIView):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        return JsonResponse(client.get_countries())
+        return process_status_code(client.get_countries())
 
 
 class GetOperators(APIView):
@@ -83,7 +84,7 @@ class GetOperators(APIView):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        return JsonResponse(client.get_operators(country_id))
+        return process_status_code(client.get_operators(country_id))
 
 
 class GetOperatorAirtimeProducts(APIView):
@@ -91,7 +92,9 @@ class GetOperatorAirtimeProducts(APIView):
         client = TransferToClient(
             settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
         )
-        return JsonResponse(client.get_operator_airtime_products(operator_id))
+        return process_status_code(
+            client.get_operator_airtime_products(operator_id)
+        )
 
 
 class GetOperatorProducts(APIView):
