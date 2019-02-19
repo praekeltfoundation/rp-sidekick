@@ -2,6 +2,7 @@
 
 While RapidPro does provide an integration with TransferTo to release airtime, it does not allow for the remuneration of data. This application more faithfully represents the REST API that TransferTo makes available and abstracts away the authentication.
 
+### Synchronous Endpoints
 - `Ping`: check that our authentication to TransferTo is working
 - `MsisdnInfo`: get information about an MSISDN
 - `ReserveId`: get ID for a purchase transaction in the future
@@ -12,7 +13,9 @@ While RapidPro does provide an integration with TransferTo to release airtime, i
 - `GetCountryServices`: get services available in a particular country
 - `TopUpData`: an endpoint that immediately returns a 200 status code and then starts a Celery task to get information about a number, send the reward and update the necessary fields in RapidPro.
 
-## Sidekick Endpoints
+### Asyncronous Endpoints
+These endpoints will queue the request to TransferTo using celery. They will immediately respond with a 200 response code once the task is queued, preventing any timeouts on RapidPro. Use the `flow_uuid_key` arg to get the tasks to start the participant on a new flow, assuming that it works according to plan.
+
 - `BuyProductTakeAction`: this endpoint allows the user to
     - purchase a product for a particular msisdn
     - [optional] update a rapidpro contact's fields based on the response

@@ -3,24 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-RapidPro Sidekick's documentation
-=================================
-
-.. include:: badges.rst
-
-Sidekick Django Web Application for Rapidpro - used to extend the functionality of Rapidpro.
+.. include:: ../README.rst
+.. include:: ../CHANGELOG.rst
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   apps/redcap.rst
+   readme
+   apps/sidekick.md
+   apps/asos.rst
+   apps/redcap.md
+   apps/transferto.md
 
    ways-of-working.md
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   changelog
