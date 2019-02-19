@@ -18,29 +18,24 @@ def health(request):
 def send_wa_template_message(request):
     data = request.GET.dict()
 
-    required_params = [
-        "org_id",
-        "wa_id",
-        "namespace",
-        "element_name",
-        "message",
+    required_params = ["org_id", "wa_id", "namespace", "element_name"]
+
+    missing_params = [key for key in required_params if key not in data]
+    if missing_params:
+        return JsonResponse(
+            {"error": "Missing fields: {}".format(", ".join(missing_params))},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    localizable_params = [
+        {"default": clean_message(data[_key])}
+        for _key in sorted([key for key in data.keys() if key.isdigit()])
     ]
-    for field in required_params:
-        if field not in data:
-            return JsonResponse(
-                {
-                    "error": "Required fields: {}".format(
-                        ", ".join(required_params)
-                    )
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
     org_id = data["org_id"]
     wa_id = data["wa_id"]
     namespace = data["namespace"]
     element_name = data["element_name"]
-    message = clean_message(data["message"])
 
     try:
         org = Organization.objects.get(id=org_id)
@@ -66,7 +61,7 @@ def send_wa_template_message(request):
                     "namespace": namespace,
                     "element_name": element_name,
                     "language": {"policy": "fallback", "code": "en_US"},
-                    "localizable_params": [{"default": message}],
+                    "localizable_params": localizable_params,
                 },
             }
         ),
