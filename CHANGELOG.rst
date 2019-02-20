@@ -3,8 +3,12 @@ VERSIONS
 
 Next Release
 ------------
+
+1.1.0
+------------
 * Sidekick: Fixed document structure and updated docs
 * Sidekick: updated WA templated message endpoint to accept multiple localizable params
+* BREAKING: any flows that call the /send_template/ endpoints must change the param `message=` to `0=`
 
 1.0.17
 ------------
