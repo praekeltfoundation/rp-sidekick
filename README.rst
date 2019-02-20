@@ -19,7 +19,8 @@ Rapidpro Sidekick
     :target: https://hub.docker.com/r/praekeltfoundation/rp-sidekick/tags/
     :alt: Docker Automated build
 
-Sidekick Django Web Application for Rapidpro - used to extend the functionality of Rapidpro.
+Sidekick is a Django application which provides additional functionality to RapidPro through RapidPro’s webhooks within flow, as well as using RP’s REST API to initiate flows, update contact fields etc.
+In some respects it functions much like setting up serverless functions to handle webhooks and return responses. However there are some additional benefits to using a Django application, primarily User authentication and management, as well as management of RapidPro Orgs.
 
 ------------------
 Local installation

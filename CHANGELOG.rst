@@ -3,6 +3,8 @@ VERSIONS
 
 Next Release
 ------------
+* Sidekick: Fixed document structure and updated docs
+* Sidekick: updated WA templated message endpoint to accept multiple localizable params
 
 1.0.17
 ------------
