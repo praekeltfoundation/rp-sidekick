@@ -100,7 +100,8 @@ class CheckContactView(APIView):
         )
         if not (200 <= result.status_code and result.status_code < 300):
             return JsonResponse(
-                json.loads(result.content), status=result.status_code
+                {"error": result.content.decode("utf-8")},
+                status=result.status_code,
             )
 
         return JsonResponse(
