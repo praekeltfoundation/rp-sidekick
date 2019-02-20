@@ -3,7 +3,9 @@ import json
 from os import environ
 from urllib.parse import urljoin
 from django.http import JsonResponse
+
 from rest_framework import status
+from rest_framework.views import APIView
 
 from .models import Organization
 from .utils import clean_message
@@ -68,3 +70,39 @@ def send_wa_template_message(request):
     )
 
     return JsonResponse(json.loads(result.content), status=result.status_code)
+
+
+class CheckContactView(APIView):
+    """
+    Accepts Org id and msisdn
+    Checks the Turn API to see if the contact is valid
+    Returns a JsonResponse containing status as valid/invalid
+    """
+
+    def get(self, request, org_id, msisdn, *args, **kwargs):
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(
+                {"error": "Organization not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        headers = {
+            "Authorization": "Bearer {}".format(org.engage_token),
+            "Content-Type": "application/json",
+        }
+
+        result = requests.post(
+            urljoin(org.engage_url, "v1/contacts"),
+            headers=headers,
+            data=json.dumps({"blocking": "wait", "contacts": [msisdn]}),
+        )
+        if not (200 <= result.status_code and result.status_code < 300):
+            return JsonResponse(
+                json.loads(result.content), status=result.status_code
+            )
+
+        return JsonResponse(
+            json.loads(result.content)["contacts"][0], status=status.HTTP_200_OK
+        )

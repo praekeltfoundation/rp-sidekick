@@ -1,6 +1,9 @@
 # RP Sidekick
 The default Sidekick Module exists to provide shareable components across the various django applications, in particular the Org and User management. It also provides some miscellaneous functionality, in particular, the ability to send WhatsApp templated messages
 
+## Check WhatsApp Endpoint
+This endpoint, served at `/check_contact/<org_id>/<msisdn>/` serves as a wrapper for a single request to the [Turn contact check endpoint](https://whatsapp.praekelt.org/docs/index.html#contacts).
+
 ## WhatsApp Template Endpoint
 RapidPro does not yet provide first-class support for [WhatsApp templates](https://whatsapp.praekelt.org/docs/index.html#templated-messages), which means that they need to be sent via Sidekick, using a Webhook within RapidPro.
 
