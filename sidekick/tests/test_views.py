@@ -273,6 +273,34 @@ class TestCheckContactView(SidekickAPITestCase):
         self.assertTrue("status" in content)
         self.assertEquals(content["status"], "invalid")
 
+    @responses.activate
+    def test_wa_check_contact_error(self):
+        # set up
+        org = self.mk_org()
+        telephone_number = "+27820000001"
+
+        responses.add(
+            responses.POST,
+            "{}/v1/contacts".format(FAKE_ENGAGE_URL),
+            "Invalid WhatsApp Token",
+            status=status.HTTP_403_FORBIDDEN,
+            match_querystring=True,
+        )
+
+        # get result
+        response = self.api_client.get(
+            reverse(
+                "check_contact",
+                kwargs={"org_id": org.id, "msisdn": telephone_number},
+            )
+        )
+
+        # inspect response from Sidekick
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        content = json.loads(response.content)
+        self.assertTrue("error" in content)
+        self.assertEquals(content["error"], "Invalid WhatsApp Token")
+
     def test_wa_check_contact_no_org(self):
         # get result
         response = self.api_client.get(
