@@ -6,6 +6,11 @@ Next Release
 * Sidekick: Fixed document structure and updated docs
 * Sidekick: updated WA templated message endpoint to accept multiple localizable params
 
+1.0.17
+------------
+* TransferTo: Added error code to responses where TransferToClient returns an error
+
+
 1.0.16
 ------------
 * ASOS: Fixed notification for empty screening record.
