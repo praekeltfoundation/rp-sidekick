@@ -101,7 +101,7 @@ class UtilsTests(TestCase):
         )
 
     @responses.activate
-    def test_get_whatsapp_contact_exists(self):
+    def test_get_whatsapp_contact_id_exists(self):
         org = self.create_org()
 
         responses.add(
@@ -120,7 +120,7 @@ class UtilsTests(TestCase):
         )
 
         self.assertEqual(
-            utils.get_whatsapp_contact(org, "+27820001001"), "27820001001"
+            utils.get_whatsapp_contact_id(org, "+27820001001"), "27820001001"
         )
         request = responses.calls[-1].request
         self.assertEqual(request.headers["Authorization"], "Bearer test-token")
@@ -130,7 +130,7 @@ class UtilsTests(TestCase):
         )
 
     @responses.activate
-    def test_get_whatsapp_contact_not_exists(self):
+    def test_get_whatsapp_contact_id_not_exists(self):
         org = self.create_org()
 
         responses.add(
@@ -140,7 +140,9 @@ class UtilsTests(TestCase):
             status=200,
         )
 
-        self.assertEqual(utils.get_whatsapp_contact(org, "+27820001001"), None)
+        self.assertEqual(
+            utils.get_whatsapp_contact_id(org, "+27820001001"), None
+        )
         request = responses.calls[-1].request
         self.assertEqual(request.headers["Authorization"], "Bearer test-token")
         self.assertEqual(
@@ -149,29 +151,29 @@ class UtilsTests(TestCase):
         )
 
     @responses.activate
-    @patch("sidekick.utils.get_whatsapp_contact")
+    @patch("sidekick.utils.get_whatsapp_contact_id")
     def test_update_rapidpro_whatsapp_urn_no_wa_id(
-        self, mock_get_whatsapp_contact
+        self, mock_get_whatsapp_contact_id
     ):
         msisdn = "+27820001001"
         org = self.create_org()
 
-        mock_get_whatsapp_contact.return_value = None
+        mock_get_whatsapp_contact_id.return_value = None
 
         utils.update_rapidpro_whatsapp_urn(org, msisdn)
 
         self.assertEqual(len(responses.calls), 0)
-        mock_get_whatsapp_contact.assert_called_with(org, msisdn)
+        mock_get_whatsapp_contact_id.assert_called_with(org, msisdn)
 
     @responses.activate
-    @patch("sidekick.utils.get_whatsapp_contact")
+    @patch("sidekick.utils.get_whatsapp_contact_id")
     def test_update_rapidpro_whatsapp_existing_contact_new_wa(
-        self, mock_get_whatsapp_contact
+        self, mock_get_whatsapp_contact_id
     ):
         org = self.create_org()
         msisdn = "+27820001001"
 
-        mock_get_whatsapp_contact.return_value = msisdn.replace("+", "")
+        mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
 
         self.mock_rapidpro_contact_get(msisdn)
         self.mock_rapidpro_contact_post(
@@ -193,14 +195,14 @@ class UtilsTests(TestCase):
         )
 
     @responses.activate
-    @patch("sidekick.utils.get_whatsapp_contact")
+    @patch("sidekick.utils.get_whatsapp_contact_id")
     def test_update_rapidpro_whatsapp_existing_contact_and_wa(
-        self, mock_get_whatsapp_contact
+        self, mock_get_whatsapp_contact_id
     ):
         org = self.create_org()
         msisdn = "+27820001001"
 
-        mock_get_whatsapp_contact.return_value = msisdn.replace("+", "")
+        mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
 
         self.mock_rapidpro_contact_get(msisdn, wa_id=msisdn.replace("+", ""))
         self.mock_rapidpro_contact_post(
@@ -212,14 +214,14 @@ class UtilsTests(TestCase):
         self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
-    @patch("sidekick.utils.get_whatsapp_contact")
+    @patch("sidekick.utils.get_whatsapp_contact_id")
     def test_update_rapidpro_whatsapp_new_contact_and_wa(
-        self, mock_get_whatsapp_contact
+        self, mock_get_whatsapp_contact_id
     ):
         org = self.create_org()
         msisdn = "+27820001001"
 
-        mock_get_whatsapp_contact.return_value = msisdn.replace("+", "")
+        mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
 
         self.mock_rapidpro_contact_get(msisdn, count=0)
         self.mock_rapidpro_contact_post(msisdn, wa_id=msisdn.replace("+", ""))
