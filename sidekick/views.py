@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 
 from .models import Organization
-from .utils import clean_message
+from .utils import clean_message, get_whatsapp_contacts
 
 
 def health(request):
@@ -88,22 +88,16 @@ class CheckContactView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        headers = {
-            "Authorization": "Bearer {}".format(org.engage_token),
-            "Content-Type": "application/json",
-        }
-
-        result = requests.post(
-            urljoin(org.engage_url, "v1/contacts"),
-            headers=headers,
-            data=json.dumps({"blocking": "wait", "contacts": [msisdn]}),
-        )
-        if not (200 <= result.status_code and result.status_code < 300):
+        turn_response = get_whatsapp_contacts(org, [msisdn])
+        if not (
+            200 <= turn_response.status_code and turn_response.status_code < 300
+        ):
             return JsonResponse(
-                {"error": result.content.decode("utf-8")},
-                status=result.status_code,
+                {"error": turn_response.content.decode("utf-8")},
+                status=turn_response.status_code,
             )
 
         return JsonResponse(
-            json.loads(result.content)["contacts"][0], status=status.HTTP_200_OK
+            json.loads(turn_response.content)["contacts"][0],
+            status=status.HTTP_200_OK,
         )
