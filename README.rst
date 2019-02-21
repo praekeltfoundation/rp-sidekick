@@ -1,6 +1,10 @@
 =================
 Rapidpro Sidekick
 =================
+.. image:: https://travis-ci.com/praekeltfoundation/rp-sidekick.svg?branch=develop
+    :target: https://travis-ci.com/praekeltfoundation/rp-sidekick
+    :alt: Build Passing/Failing on TravisCI.com
+
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
     :alt: Code Style: Black
