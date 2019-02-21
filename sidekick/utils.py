@@ -24,24 +24,30 @@ def clean_msisdn(msisdn):
     return msisdn.replace("+", "")
 
 
-def get_whatsapp_contact(org, msisdn):
+def get_whatsapp_contact_id(org, msisdn):
     """
     Returns the WhatsApp ID for the given MSISDN
     """
+    turn_response = get_whatsapp_contacts(org, [msisdn])
+    turn_response.raise_for_status()
+    return turn_response.json()["contacts"][0].get("wa_id")
+
+
+def get_whatsapp_contacts(org, msisdns):
+    """
+    Returns the Turn response for a given list of MSISDNs
+    """
     distribution = pkg_resources.get_distribution("rp-sidekick")
 
-    response = requests.post(
+    return requests.post(
         urllib_parse.urljoin(org.engage_url, "/v1/contacts"),
-        json={"blocking": "wait", "contacts": [msisdn]},
+        json={"blocking": "wait", "contacts": msisdns},
         headers={
-            "Authorization": "Bearer %s" % (org.engage_token,),
+            "Authorization": "Bearer {}".format(org.engage_token),
             "User-Agent": "rp-sidekick/{}".format(distribution.version),
+            "Content-Type": "application/json",
         },
     )
-    response.raise_for_status()
-    whatsapp_id = response.json()["contacts"][0].get("wa_id")
-
-    return whatsapp_id
 
 
 def update_rapidpro_whatsapp_urn(org, msisdn):
@@ -51,7 +57,7 @@ def update_rapidpro_whatsapp_urn(org, msisdn):
     """
     client = TembaClient(org.url, org.token)
 
-    whatsapp_id = get_whatsapp_contact(org, msisdn)
+    whatsapp_id = get_whatsapp_contact_id(org, msisdn)
 
     if whatsapp_id:
         contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
