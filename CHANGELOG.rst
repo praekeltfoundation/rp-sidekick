@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+
+1.2.0
+------------
 * Sidekick: Added a check contact endpoint for WhatsApp
 
 1.1.0
