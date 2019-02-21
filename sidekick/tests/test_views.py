@@ -68,7 +68,7 @@ class SidekickAPITestCase(APITestCase):
 
 
 class TestSendTemplateView(SidekickAPITestCase):
-    def add_whatsapp_messages_200_response(self, responses):
+    def add_whatsapp_messages_200_response(self):
         """
         Keep things DRY by reusing this snippet when testing WA response
         """
@@ -86,7 +86,7 @@ class TestSendTemplateView(SidekickAPITestCase):
     @responses.activate
     def test_send_wa_template_message_success_no_params(self):
         org = self.mk_org()
-        self.add_whatsapp_messages_200_response(responses)
+        self.add_whatsapp_messages_200_response()
 
         params = {
             "org_id": org.id,
@@ -118,7 +118,7 @@ class TestSendTemplateView(SidekickAPITestCase):
     @responses.activate
     def test_send_wa_template_message_success_params(self):
         org = self.mk_org()
-        self.add_whatsapp_messages_200_response(responses)
+        self.add_whatsapp_messages_200_response()
 
         params = {
             "org_id": org.id,
