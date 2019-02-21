@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.2.1
+------------
+* Reformat with updated black package
+
 1.2.0
 ------------
 * Sidekick: Added a check contact endpoint for WhatsApp
