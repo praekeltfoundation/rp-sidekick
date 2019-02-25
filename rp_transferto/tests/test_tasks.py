@@ -92,8 +92,8 @@ class TestFunctions(TestCase):
 
 @patch("temba_client.v2.TembaClient.update_contact")
 @patch("temba_client.v2.TembaClient.get_contacts")
-@patch("rp_transferto.utils.TransferToClient2.topup_data")
-@patch("rp_transferto.utils.TransferToClient2.get_operator_products")
+@patch("rp_transferto.utils.TransferToClient.topup_data")
+@patch("rp_transferto.utils.TransferToClient.get_operator_products")
 @patch("rp_transferto.utils.TransferToClient.get_misisdn_info")
 class TestTopupDataTask(TestCase):
     def test_successsful_run(
@@ -182,7 +182,7 @@ class TestTopupDataTask(TestCase):
 
 class TestBuyProductTakeActionTask(TestCase):
     @patch("rp_transferto.tasks.take_action")
-    @patch("rp_transferto.utils.TransferToClient2.topup_data")
+    @patch("rp_transferto.utils.TransferToClient.topup_data")
     def test_successsful_run_simple(self, fake_topup_data, fake_take_action):
         fake_topup_data.return_value = POST_TOPUP_DATA_RESPONSE
         self.assertFalse(fake_topup_data.called)
@@ -197,7 +197,7 @@ class TestBuyProductTakeActionTask(TestCase):
         self.assertFalse(fake_take_action.called)
 
     @patch("rp_transferto.tasks.take_action")
-    @patch("rp_transferto.utils.TransferToClient2.topup_data")
+    @patch("rp_transferto.utils.TransferToClient.topup_data")
     def test_successsful_run_update_fields(
         self, fake_topup_data, fake_take_action
     ):
@@ -231,7 +231,7 @@ class TestBuyProductTakeActionTask(TestCase):
         )
 
     @patch("rp_transferto.tasks.take_action")
-    @patch("rp_transferto.utils.TransferToClient2.topup_data")
+    @patch("rp_transferto.utils.TransferToClient.topup_data")
     def test_successsful_run_start_flow(
         self, fake_topup_data, fake_take_action
     ):

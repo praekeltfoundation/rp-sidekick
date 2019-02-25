@@ -6,9 +6,11 @@ import base64
 
 
 class TransferToClient:
-    def __init__(self, login, token):
+    def __init__(self, login, token, apikey, apisecret):
         self.login = login
         self.token = token
+        self.apikey = apikey
+        self.apisecret = apisecret
         self.url = "https://airtime.transferto.com/cgi-bin/shop/topup"
 
     def _convert_response_body(self, body_text):
@@ -113,12 +115,6 @@ class TransferToClient:
             keyword_args["reserve_id"] = reserve_id
 
         return self._make_transferto_request(**keyword_args)
-
-
-class TransferToClient2:
-    def __init__(self, apikey, apisecret):
-        self.apikey = apikey
-        self.apisecret = apisecret
 
     def _make_transferto_api_request(self, url, body=None):
         nonce = int(time.time() * 1000000)

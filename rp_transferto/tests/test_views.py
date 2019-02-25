@@ -19,7 +19,7 @@ from sidekick.utils import clean_msisdn
 from rp_transferto.views import process_status_code
 from rp_transferto.models import MsisdnInformation
 from rp_transferto.tasks import topup_data
-from rp_transferto.utils import TransferToClient, TransferToClient2
+from rp_transferto.utils import TransferToClient
 from .constants import (
     PING_RESPONSE_DICT,
     MSISDN_INFO_RESPONSE_DICT,
@@ -189,7 +189,7 @@ class TestTransferToViews(APITestCase):
         self.assertTrue(fake_get_operator_airtime_products.called)
 
     @patch.object(
-        TransferToClient2, "get_operator_products", fake_get_operator_products
+        TransferToClient, "get_operator_products", fake_get_operator_products
     )
     def test_get_operator_products_view(self):
         self.assertFalse(fake_get_operator_products.called)
@@ -203,7 +203,7 @@ class TestTransferToViews(APITestCase):
         self.assertTrue(fake_get_operator_products.called)
 
     @patch.object(
-        TransferToClient2, "get_country_services", fake_get_country_services
+        TransferToClient, "get_country_services", fake_get_country_services
     )
     def test_get_country_services_view(self):
         self.assertFalse(fake_get_country_services.called)
