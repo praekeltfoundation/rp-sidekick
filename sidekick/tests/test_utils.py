@@ -6,18 +6,13 @@ from django.utils import timezone
 from mock import patch
 
 from sidekick import utils
-from sidekick.models import Organization
+
+from .utils import create_org
 
 
 class UtilsTests(TestCase):
-    def create_org(self):
-        return Organization.objects.create(
-            name="Test Organization",
-            url="http://localhost:8002/",
-            token="REPLACEME",
-            engage_url="http://whatsapp/",
-            engage_token="test-token",
-        )
+    def setUp(self):
+        self.org = create_org()
 
     def mock_rapidpro_contact_get(self, msisdn, count=1, wa_id=None):
         urns = ["tel:{}".format(msisdn)]
@@ -102,8 +97,6 @@ class UtilsTests(TestCase):
 
     @responses.activate
     def test_get_whatsapp_contact_id_exists(self):
-        org = self.create_org()
-
         responses.add(
             method=responses.POST,
             url="http://whatsapp/v1/contacts",
@@ -120,7 +113,8 @@ class UtilsTests(TestCase):
         )
 
         self.assertEqual(
-            utils.get_whatsapp_contact_id(org, "+27820001001"), "27820001001"
+            utils.get_whatsapp_contact_id(self.org, "+27820001001"),
+            "27820001001",
         )
         request = responses.calls[-1].request
         self.assertEqual(request.headers["Authorization"], "Bearer test-token")
@@ -131,8 +125,6 @@ class UtilsTests(TestCase):
 
     @responses.activate
     def test_get_whatsapp_contact_id_not_exists(self):
-        org = self.create_org()
-
         responses.add(
             method=responses.POST,
             url="http://whatsapp/v1/contacts",
@@ -141,7 +133,7 @@ class UtilsTests(TestCase):
         )
 
         self.assertEqual(
-            utils.get_whatsapp_contact_id(org, "+27820001001"), None
+            utils.get_whatsapp_contact_id(self.org, "+27820001001"), None
         )
         request = responses.calls[-1].request
         self.assertEqual(request.headers["Authorization"], "Bearer test-token")
@@ -156,21 +148,19 @@ class UtilsTests(TestCase):
         self, mock_get_whatsapp_contact_id
     ):
         msisdn = "+27820001001"
-        org = self.create_org()
 
         mock_get_whatsapp_contact_id.return_value = None
 
-        utils.update_rapidpro_whatsapp_urn(org, msisdn)
+        utils.update_rapidpro_whatsapp_urn(self.org, msisdn)
 
         self.assertEqual(len(responses.calls), 0)
-        mock_get_whatsapp_contact_id.assert_called_with(org, msisdn)
+        mock_get_whatsapp_contact_id.assert_called_with(self.org, msisdn)
 
     @responses.activate
     @patch("sidekick.utils.get_whatsapp_contact_id")
     def test_update_rapidpro_whatsapp_existing_contact_new_wa(
         self, mock_get_whatsapp_contact_id
     ):
-        org = self.create_org()
         msisdn = "+27820001001"
 
         mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
@@ -180,7 +170,7 @@ class UtilsTests(TestCase):
             msisdn, uuid="123", wa_id=msisdn.replace("+", "")
         )
 
-        utils.update_rapidpro_whatsapp_urn(org, "+27820001001")
+        utils.update_rapidpro_whatsapp_urn(self.org, "+27820001001")
 
         self.assertEqual(len(responses.calls), 2)
         request = responses.calls[-1].request
@@ -199,7 +189,6 @@ class UtilsTests(TestCase):
     def test_update_rapidpro_whatsapp_existing_contact_and_wa(
         self, mock_get_whatsapp_contact_id
     ):
-        org = self.create_org()
         msisdn = "+27820001001"
 
         mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
@@ -209,7 +198,7 @@ class UtilsTests(TestCase):
             msisdn, uuid="123", wa_id=msisdn.replace("+", "")
         )
 
-        utils.update_rapidpro_whatsapp_urn(org, "+27820001001")
+        utils.update_rapidpro_whatsapp_urn(self.org, "+27820001001")
 
         self.assertEqual(len(responses.calls), 1)
 
@@ -218,7 +207,6 @@ class UtilsTests(TestCase):
     def test_update_rapidpro_whatsapp_new_contact_and_wa(
         self, mock_get_whatsapp_contact_id
     ):
-        org = self.create_org()
         msisdn = "+27820001001"
 
         mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
@@ -226,7 +214,7 @@ class UtilsTests(TestCase):
         self.mock_rapidpro_contact_get(msisdn, count=0)
         self.mock_rapidpro_contact_post(msisdn, wa_id=msisdn.replace("+", ""))
 
-        utils.update_rapidpro_whatsapp_urn(org, "+27820001001")
+        utils.update_rapidpro_whatsapp_urn(self.org, "+27820001001")
 
         self.assertEqual(len(responses.calls), 2)
         request = responses.calls[-1].request

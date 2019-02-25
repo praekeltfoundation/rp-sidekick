@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework.authtoken.models import Token
 
-from ..models import Organization
+from .utils import create_org
 
 
 FAKE_ENGAGE_URL = "http://localhost:8005"
@@ -57,14 +57,7 @@ class SidekickAPITestCase(APITestCase):
         self.token = token.key
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + self.token)
 
-    def mk_org(self):
-        return Organization.objects.create(
-            name="Test Organization",
-            url="http://localhost:8002/",
-            token="REPLACEME",
-            engage_url=FAKE_ENGAGE_URL,
-            engage_token="REPLACEME",
-        )
+        self.org = create_org(engage_url=FAKE_ENGAGE_URL)
 
 
 class TestSendTemplateView(SidekickAPITestCase):
@@ -85,11 +78,10 @@ class TestSendTemplateView(SidekickAPITestCase):
 
     @responses.activate
     def test_send_wa_template_message_success_no_params(self):
-        org = self.mk_org()
         self.add_whatsapp_messages_200_response()
 
         params = {
-            "org_id": org.id,
+            "org_id": self.org.id,
             "wa_id": "1234",
             "namespace": "test.namespace",
             "element_name": "el",
@@ -117,11 +109,10 @@ class TestSendTemplateView(SidekickAPITestCase):
 
     @responses.activate
     def test_send_wa_template_message_success_params(self):
-        org = self.mk_org()
         self.add_whatsapp_messages_200_response()
 
         params = {
-            "org_id": org.id,
+            "org_id": self.org.id,
             "wa_id": "1234",
             "namespace": "test.namespace",
             "element_name": "el",
@@ -170,9 +161,8 @@ class TestSendTemplateView(SidekickAPITestCase):
         self.assertEquals(content["error"], "Organization not found")
 
     def test_send_wa_template_message_missing_params(self):
-        org = self.mk_org()
         params = {
-            "org_id": org.id,
+            "org_id": self.org.id,
             "wa_id": "1234",
             "namespace": "test.namespace",
             #  missing param:
@@ -192,7 +182,6 @@ class TestCheckContactView(SidekickAPITestCase):
     @responses.activate
     def test_wa_check_contact_valid(self):
         # set up
-        org = self.mk_org()
         telephone_number = "+27820000001"
 
         responses.add(
@@ -215,7 +204,7 @@ class TestCheckContactView(SidekickAPITestCase):
         response = self.api_client.get(
             reverse(
                 "check_contact",
-                kwargs={"org_id": org.id, "msisdn": telephone_number},
+                kwargs={"org_id": self.org.id, "msisdn": telephone_number},
             )
         )
 
@@ -237,7 +226,6 @@ class TestCheckContactView(SidekickAPITestCase):
     @responses.activate
     def test_wa_check_contact_invalid(self):
         # set up
-        org = self.mk_org()
         telephone_number = "+27820000001"
 
         responses.add(
@@ -254,7 +242,7 @@ class TestCheckContactView(SidekickAPITestCase):
         response = self.api_client.get(
             reverse(
                 "check_contact",
-                kwargs={"org_id": org.id, "msisdn": telephone_number},
+                kwargs={"org_id": self.org.id, "msisdn": telephone_number},
             )
         )
 
@@ -276,7 +264,6 @@ class TestCheckContactView(SidekickAPITestCase):
     @responses.activate
     def test_wa_check_contact_error(self):
         # set up
-        org = self.mk_org()
         telephone_number = "+27820000001"
 
         responses.add(
@@ -291,7 +278,7 @@ class TestCheckContactView(SidekickAPITestCase):
         response = self.api_client.get(
             reverse(
                 "check_contact",
-                kwargs={"org_id": org.id, "msisdn": telephone_number},
+                kwargs={"org_id": self.org.id, "msisdn": telephone_number},
             )
         )
 
@@ -305,7 +292,8 @@ class TestCheckContactView(SidekickAPITestCase):
         # get result
         response = self.api_client.get(
             reverse(
-                "check_contact", kwargs={"org_id": 99, "msisdn": "16315551003"}
+                "check_contact",
+                kwargs={"org_id": self.org.id + 1, "msisdn": "16315551003"},
             )
         )
 
