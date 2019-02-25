@@ -9,12 +9,14 @@ from freezegun import freeze_time
 from pytest import raises
 from unittest import TestCase
 
-from rp_transferto.utils import TransferToClient, TransferToClient2
+from rp_transferto.utils import TransferToClient
 
 
 class TestTransferToClient(TestCase):
     def setUp(self):
-        self.client = TransferToClient("fake_login", "fake_token")
+        self.client = TransferToClient(
+            "fake_login", "fake_token", "fake_apikey", "fake_apisecret"
+        )
 
     def test_convert_response_body(self):
         """
@@ -47,48 +49,42 @@ class TestTransferToClient(TestCase):
         self.assertDictEqual(output, expected_output)
 
     def test_ping(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.ping()
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.ping()
 
         mock.assert_called_once_with(action="ping")
 
     def test_get_misisdn_info(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.get_misisdn_info("+27820000001")
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.get_misisdn_info("+27820000001")
 
         mock.assert_called_once_with(
             action="msisdn_info", destination_msisdn="+27820000001"
         )
 
     def test_reserve_id(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.reserve_id()
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.reserve_id()
 
         mock.assert_called_once_with(action="reserve_id")
 
     def test_get_countries(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.get_countries()
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.get_countries()
 
         mock.assert_called_once_with(action="pricelist", info_type="countries")
 
     def test_get_operators(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.get_operators(111)
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.get_operators(111)
 
         mock.assert_called_once_with(
             action="pricelist", info_type="country", content=111
         )
 
     def test_get_operator_airtime_products(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.get_operator_airtime_products(111)
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.get_operator_airtime_products(111)
 
         mock.assert_called_once_with(
             action="pricelist", info_type="operator", content=111
@@ -112,9 +108,10 @@ class TestTransferToClient(TestCase):
         )
 
     def test_make_topup_1(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.make_topup("+27820000001", 10, from_string="+27820000002")
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.make_topup(
+                "+27820000001", 10, from_string="+27820000002"
+            )
 
         mock.assert_called_once_with(
             action="topup",
@@ -124,9 +121,8 @@ class TestTransferToClient(TestCase):
         )
 
     def test_make_topup_2(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.make_topup("+27820000001", 10, from_string="john")
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.make_topup("+27820000001", 10, from_string="john")
 
         mock.assert_called_once_with(
             action="topup",
@@ -136,9 +132,8 @@ class TestTransferToClient(TestCase):
         )
 
     def test_make_topup_3(self):
-        client = TransferToClient("fake_login", "fake_token")
-        with patch.object(client, "_make_transferto_request") as mock:
-            client.make_topup(
+        with patch.object(self.client, "_make_transferto_request") as mock:
+            self.client.make_topup(
                 "+27820000001", 10, from_string="+27820000002", reserve_id=1234
             )
 
@@ -149,11 +144,6 @@ class TestTransferToClient(TestCase):
             msisdn="+27820000002",
             reserve_id=1234,
         )
-
-
-class TestTransferToClient2(TestCase):
-    def setUp(self):
-        self.client = TransferToClient2("fake_apikey", "fake_apisecret")
 
     def _check_headers(self, headers, time):
         """
@@ -220,9 +210,8 @@ class TestTransferToClient2(TestCase):
 
     def test_get_operator_products(self):
         fake_operator_id = 99
-        client = TransferToClient2("fake_apikey", "fake_apisecret")
-        with patch.object(client, "_make_transferto_api_request") as mock:
-            client.get_operator_products(fake_operator_id)
+        with patch.object(self.client, "_make_transferto_api_request") as mock:
+            self.client.get_operator_products(fake_operator_id)
 
         mock.assert_called_once_with(
             "https://api.transferto.com/v1.1/operators/{}/products".format(
@@ -232,9 +221,8 @@ class TestTransferToClient2(TestCase):
 
     def test_get_country_services(self):
         fake_country_id = 99
-        client = TransferToClient2("fake_apikey", "fake_apisecret")
-        with patch.object(client, "_make_transferto_api_request") as mock:
-            client.get_country_services(fake_country_id)
+        with patch.object(self.client, "_make_transferto_api_request") as mock:
+            self.client.get_country_services(fake_country_id)
 
         mock.assert_called_once_with(
             "https://api.transferto.com/v1.1/countries/{}/services".format(
@@ -249,9 +237,8 @@ class TestTransferToClient2(TestCase):
         test_product_id = "123456"
         external_id_frozen_time = "946684800000000"
 
-        client = TransferToClient2("fake_apikey", "fake_apisecret")
-        with patch.object(client, "_make_transferto_api_request") as mock:
-            client.topup_data(test_msisdn, test_product_id)
+        with patch.object(self.client, "_make_transferto_api_request") as mock:
+            self.client.topup_data(test_msisdn, test_product_id)
 
         mock.assert_called_once_with(
             "https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
@@ -288,9 +275,8 @@ class TestTransferToClient2(TestCase):
         test_product_id = "123456"
         external_id_frozen_time = "946684800000000"
 
-        client = TransferToClient2("fake_apikey", "fake_apisecret")
-        with patch.object(client, "_make_transferto_api_request") as mock:
-            client.topup_data(test_msisdn, test_product_id, simulate=True)
+        with patch.object(self.client, "_make_transferto_api_request") as mock:
+            self.client.topup_data(test_msisdn, test_product_id, simulate=True)
 
         mock.assert_called_once_with(
             "https://api.transferto.com/v1.1/transactions/fixed_value_recharges",

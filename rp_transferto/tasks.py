@@ -10,7 +10,7 @@ from celery.utils.log import get_task_logger
 from sidekick.utils import clean_msisdn
 
 from .models import MsisdnInformation
-from .utils import TransferToClient, TransferToClient2
+from .utils import TransferToClient
 from temba_client.v2 import TembaClient
 
 
@@ -49,11 +49,11 @@ class TopupData(Task):
     name = "rp_transferto.tasks.topup_data"
 
     def run(self, msisdn, user_uuid, recharge_value, *args, **kwargs):
-        default_client = TransferToClient(
-            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
-        )
-        new_client = TransferToClient2(
-            settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
+        client = TransferToClient(
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         # get msisdn number info
         try:
@@ -63,7 +63,7 @@ class TopupData(Task):
             # use dict to make a copy of the info
             operator_id_info = dict(msisdn_object.data)
         except ObjectDoesNotExist:
-            operator_id_info = default_client.get_misisdn_info(msisdn)
+            operator_id_info = client.get_misisdn_info(msisdn)
 
         log.info(json.dumps(operator_id_info, indent=2))
 
@@ -71,7 +71,7 @@ class TopupData(Task):
         operator_id = int(operator_id_info["operatorid"])
 
         # check the product available and id
-        available_products = new_client.get_operator_products(operator_id)
+        available_products = client.get_operator_products(operator_id)
         log.info(json.dumps(available_products, indent=2))
 
         # TODO: refactor
@@ -87,7 +87,7 @@ class TopupData(Task):
         log.info("product_id: {}".format(product_id))
         log.info("product_description: {}".format(product_description))
 
-        topup_result = new_client.topup_data(msisdn, product_id, simulate=False)
+        topup_result = client.topup_data(msisdn, product_id, simulate=False)
 
         log.info(json.dumps(topup_result, indent=2))
 
@@ -133,12 +133,13 @@ class BuyProductTakeAction(Task):
                 indent=2,
             )
         )
-        new_client = TransferToClient2(
-            settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
+        client = TransferToClient(
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
-        purchase_result = new_client.topup_data(
-            msisdn, product_id, simulate=False
-        )
+        purchase_result = client.topup_data(msisdn, product_id, simulate=False)
 
         log.info(json.dumps(purchase_result, indent=2))
 
@@ -167,7 +168,7 @@ class BuyProductTakeAction(Task):
                             indent=2,
                         )
                     )
-                    retry_purchase_result = new_client.topup_data(
+                    retry_purchase_result = client.topup_data(
                         msisdn, option, simulate=False
                     )
                     log.info(json.dumps(retry_purchase_result, indent=2))
@@ -263,7 +264,10 @@ class BuyAirtimeTakeAction(Task):
             )
         )
         transferto_client = TransferToClient(
-            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         topup_result = transferto_client.make_topup(
             msisdn, airtime_amount, from_string

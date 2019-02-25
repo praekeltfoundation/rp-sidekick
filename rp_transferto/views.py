@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from sidekick.utils import clean_msisdn
 
 from .models import MsisdnInformation
-from .utils import TransferToClient, TransferToClient2
+from .utils import TransferToClient
 from .tasks import topup_data, buy_product_take_action, buy_airtime_take_action
 
 
@@ -30,7 +30,10 @@ def process_status_code(info):
 class Ping(APIView):
     def get(self, request, *args, **kwargs):
         client = TransferToClient(
-            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         return process_status_code(client.ping())
 
@@ -48,7 +51,10 @@ class MsisdnInfo(APIView):
             ).exists()
         ):
             client = TransferToClient(
-                settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+                settings.TRANSFERTO_LOGIN,
+                settings.TRANSFERTO_TOKEN,
+                settings.TRANSFERTO_APIKEY,
+                settings.TRANSFERTO_APISECRET,
             )
             cleaned_msisdn = clean_msisdn(msisdn)
             info = client.get_misisdn_info(cleaned_msisdn)
@@ -66,7 +72,10 @@ class MsisdnInfo(APIView):
 class ReserveId(APIView):
     def get(self, request, *args, **kwargs):
         client = TransferToClient(
-            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         return process_status_code(client.reserve_id())
 
@@ -74,7 +83,10 @@ class ReserveId(APIView):
 class GetCountries(APIView):
     def get(self, request, *args, **kwargs):
         client = TransferToClient(
-            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         return process_status_code(client.get_countries())
 
@@ -82,7 +94,10 @@ class GetCountries(APIView):
 class GetOperators(APIView):
     def get(self, request, country_id, *args, **kwargs):
         client = TransferToClient(
-            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         return process_status_code(client.get_operators(country_id))
 
@@ -90,7 +105,10 @@ class GetOperators(APIView):
 class GetOperatorAirtimeProducts(APIView):
     def get(self, request, operator_id, *args, **kwargs):
         client = TransferToClient(
-            settings.TRANSFERTO_LOGIN, settings.TRANSFERTO_TOKEN
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         return process_status_code(
             client.get_operator_airtime_products(operator_id)
@@ -99,8 +117,11 @@ class GetOperatorAirtimeProducts(APIView):
 
 class GetOperatorProducts(APIView):
     def get(self, request, operator_id, *args, **kwargs):
-        client = TransferToClient2(
-            settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
+        client = TransferToClient(
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         resp = client.get_operator_products(operator_id)
         return JsonResponse(resp)
@@ -108,8 +129,11 @@ class GetOperatorProducts(APIView):
 
 class GetCountryServices(APIView):
     def get(self, request, country_id, *args, **kwargs):
-        client = TransferToClient2(
-            settings.TRANSFERTO_APIKEY, settings.TRANSFERTO_APISECRET
+        client = TransferToClient(
+            settings.TRANSFERTO_LOGIN,
+            settings.TRANSFERTO_TOKEN,
+            settings.TRANSFERTO_APIKEY,
+            settings.TRANSFERTO_APISECRET,
         )
         resp = client.get_country_services(country_id)
         return JsonResponse(resp)
