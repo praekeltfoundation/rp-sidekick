@@ -2,6 +2,8 @@ from mock import patch
 from unittest.mock import MagicMock
 from django.test import TestCase
 
+from sidekick.tests.utils import create_org
+
 from rp_transferto.tasks import (
     topup_data,
     buy_product_take_action,
@@ -10,6 +12,7 @@ from rp_transferto.tasks import (
 )
 from rp_transferto.models import MsisdnInformation
 
+from .utils import create_transferto_account
 from .constants import (
     MSISDN_INFO_RESPONSE_DICT,
     GET_PRODUCTS_RESPONSE_DICT,
@@ -19,6 +22,9 @@ from .constants import (
 
 
 class TestFunctions(TestCase):
+    def setUp(self):
+        self.org = create_org()
+
     @patch("temba_client.v2.TembaClient.update_contact")
     def test_take_action_update_fields(self, fake_update_contact):
         user_uuid = "3333-abc"
@@ -28,7 +34,9 @@ class TestFunctions(TestCase):
             "rp_0001_01_transferto_product_desc": "product_desc",
         }
         call_result = POST_TOPUP_DATA_RESPONSE
-        take_action(user_uuid, values_to_update, call_result, flow_start=None)
+        take_action(
+            self.org, user_uuid, values_to_update, call_result, flow_start=None
+        )
         fake_update_contact.assert_called_with(
             user_uuid,
             fields={
@@ -49,7 +57,7 @@ class TestFunctions(TestCase):
         user_uuid = "3333-abc"
         flow_uuid = "123412341234"
 
-        take_action(user_uuid, flow_start=flow_uuid)
+        take_action(self.org, user_uuid, flow_start=flow_uuid)
 
         fake_create_flow_start.assert_called_with(
             flow_uuid, contacts=[user_uuid], restart_participants=True
@@ -69,7 +77,11 @@ class TestFunctions(TestCase):
         flow_uuid = "123412341234"
         call_result = POST_TOPUP_DATA_RESPONSE
         take_action(
-            user_uuid, values_to_update, call_result, flow_start=flow_uuid
+            self.org,
+            user_uuid,
+            values_to_update,
+            call_result,
+            flow_start=flow_uuid,
         )
         fake_update_contact.assert_called_with(
             user_uuid,
@@ -96,6 +108,10 @@ class TestFunctions(TestCase):
 @patch("rp_transferto.utils.TransferToClient.get_operator_products")
 @patch("rp_transferto.utils.TransferToClient.get_misisdn_info")
 class TestTopupDataTask(TestCase):
+    def setUp(self):
+        self.org = create_org()
+        self.transferto_account = create_transferto_account(org=self.org)
+
     def test_successsful_run(
         self,
         fake_get_misisdn_info,
@@ -121,12 +137,13 @@ class TestTopupDataTask(TestCase):
         self.assertFalse(fake_update_contact.called)
 
         # create test variables
+        org_id = self.org.id
         msisdn = "+27820000000"
         user_uuid = "1234-abc"
         recharge_value = "1GB"
 
         # run the task
-        topup_data(msisdn, user_uuid, recharge_value)
+        topup_data(org_id, msisdn, user_uuid, recharge_value)
 
         # check that functions were called
         self.assertTrue(fake_get_misisdn_info.called)
@@ -160,6 +177,7 @@ class TestTopupDataTask(TestCase):
         self.assertFalse(fake_update_contact.called)
 
         # create test variables
+        org_id = self.org.id
         msisdn = "+27820000000"
         user_uuid = "1234-abc"
         recharge_value = "1GB"
@@ -169,7 +187,7 @@ class TestTopupDataTask(TestCase):
         )
 
         # run the task
-        topup_data(msisdn, user_uuid, recharge_value)
+        topup_data(org_id, msisdn, user_uuid, recharge_value)
 
         # check that external call was NOT made
         self.assertFalse(fake_get_misisdn_info.called)
@@ -181,6 +199,10 @@ class TestTopupDataTask(TestCase):
 
 
 class TestBuyProductTakeActionTask(TestCase):
+    def setUp(self):
+        self.org = create_org()
+        self.transferto_account = create_transferto_account(org=self.org)
+
     @patch("rp_transferto.tasks.take_action")
     @patch("rp_transferto.utils.TransferToClient.topup_data")
     def test_successsful_run_simple(self, fake_topup_data, fake_take_action):
@@ -190,7 +212,7 @@ class TestBuyProductTakeActionTask(TestCase):
 
         msisdn = "+27820000001"
         product_id = 111
-        buy_product_take_action(msisdn, product_id)
+        buy_product_take_action(self.org.id, msisdn, product_id)
 
         self.assertTrue(fake_topup_data.called)
         fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
@@ -215,6 +237,7 @@ class TestBuyProductTakeActionTask(TestCase):
         }
 
         buy_product_take_action(
+            self.org.id,
             msisdn,
             product_id,
             user_uuid=user_uuid,
@@ -224,6 +247,7 @@ class TestBuyProductTakeActionTask(TestCase):
         fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
         self.assertTrue(fake_take_action.called)
         fake_take_action.assert_called_with(
+            self.org,
             user_uuid,
             values_to_update=values_to_update,
             call_result=POST_TOPUP_DATA_RESPONSE,
@@ -245,12 +269,17 @@ class TestBuyProductTakeActionTask(TestCase):
         flow_uuid = "123412341234"
 
         buy_product_take_action(
-            msisdn, product_id, user_uuid=user_uuid, flow_start=flow_uuid
+            self.org.id,
+            msisdn,
+            product_id,
+            user_uuid=user_uuid,
+            flow_start=flow_uuid,
         )
 
         fake_topup_data.assert_called_with(msisdn, product_id, simulate=False)
         self.assertTrue(fake_take_action.called)
         fake_take_action.assert_called_with(
+            self.org,
             user_uuid,
             values_to_update={},
             call_result=POST_TOPUP_DATA_RESPONSE,
@@ -259,6 +288,10 @@ class TestBuyProductTakeActionTask(TestCase):
 
 
 class TestBuyAirtimeTakeAction(TestCase):
+    def setUp(self):
+        self.org = create_org()
+        self.transferto_account = create_transferto_account(org=self.org)
+
     @patch("rp_transferto.tasks.take_action")
     @patch("rp_transferto.utils.TransferToClient.make_topup")
     def test_successsful_run_simple(self, fake_make_topup, fake_take_action):
@@ -269,7 +302,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         msisdn = "+27820000001"
         product_id = 111
         from_string = "bob"
-        buy_airtime_take_action(msisdn, product_id, from_string)
+        buy_airtime_take_action(self.org.id, msisdn, product_id, from_string)
 
         fake_make_topup.assert_called_with(msisdn, product_id, from_string)
         self.assertFalse(fake_take_action.called)
@@ -294,6 +327,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         }
 
         buy_airtime_take_action(
+            self.org.id,
             msisdn,
             product_id,
             from_string,
@@ -304,6 +338,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         fake_make_topup.assert_called_with(msisdn, product_id, from_string)
         self.assertTrue(fake_take_action.called)
         fake_take_action.assert_called_with(
+            self.org,
             user_uuid,
             values_to_update=values_to_update,
             call_result=TOPUP_RESPONSE_DICT,
@@ -326,6 +361,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         flow_uuid = "123412341234"
 
         buy_airtime_take_action(
+            self.org.id,
             msisdn,
             product_id,
             from_string,
@@ -336,6 +372,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         fake_make_topup.assert_called_with(msisdn, product_id, from_string)
         self.assertTrue(fake_take_action.called)
         fake_take_action.assert_called_with(
+            self.org,
             user_uuid,
             values_to_update={},
             call_result=TOPUP_RESPONSE_DICT,
