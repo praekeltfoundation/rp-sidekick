@@ -5,29 +5,37 @@ from . import views
 urlpatterns = [
     path("<int:org_id>/ping/", views.Ping.as_view(), name="ping"),
     path(
-        "msisdn_info/<str:msisdn>/",
+        "<int:org_id>/msisdn_info/<str:msisdn>/",
         views.MsisdnInfo.as_view(),
         name="msisdn_info",
     ),
-    path("reserve_id/", views.ReserveId.as_view(), name="reserve_id"),
-    path("get_countries/", views.GetCountries.as_view(), name="get_countries"),
+    path(
+        "<int:org_id>/reserve_id/", views.ReserveId.as_view(), name="reserve_id"
+    ),
+    path(
+        "<int:org_id>/get_countries/",
+        views.GetCountries.as_view(),
+        name="get_countries",
+    ),
     path(
         "<int:org_id>/get_operators/<int:country_id>/",
         views.GetOperators.as_view(),
         name="get_operators",
     ),
     path(
-        "get_products/<int:operator_id>/",
+        # failing
+        "<int:org_id>/get_products/<int:operator_id>/",
         views.GetOperatorProducts.as_view(),
         name="get_operator_products",
     ),
     path(
-        "get_products/airtime/<int:operator_id>/",
+        "<int:org_id>/get_products/airtime/<int:operator_id>/",
         views.GetOperatorAirtimeProducts.as_view(),
         name="get_operator_airtime_products",
     ),
     path(
-        "get_country_services/<int:country_id>/",
+        # failing
+        "<int:org_id>/get_country_services/<int:country_id>/",
         views.GetCountryServices.as_view(),
         name="get_country_services",
     ),
