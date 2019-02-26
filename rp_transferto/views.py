@@ -1,8 +1,12 @@
 from django.conf import settings
 from django.http import JsonResponse
+
 from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.permissions import BasePermission
 
 from sidekick.utils import clean_msisdn
+from sidekick.models import Organization
 
 from .models import MsisdnInformation
 from .utils import TransferToClient
@@ -27,15 +31,37 @@ def process_status_code(info):
     return JsonResponse(info)
 
 
-class Ping(APIView):
+class BelongsToOrg(BasePermission):
+    pass
+
+
+class TransferToView(APIView):
+    func_name = None
+
     def get(self, request, *args, **kwargs):
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
-        )
-        return process_status_code(client.ping())
+        # check that org exists
+        # check that request belongs to org
+        # check that org has TransferTo account
+        org_id = kwargs["org_id"]
+
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(data={}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            client = org.transferto_account.first().get_transferto_client()
+        except AttributeError:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
+        return process_status_code(getattr(client, self.func_name)())
+
+
+class Ping(TransferToView):
+    func_name = "ping"
 
 
 class MsisdnInfo(APIView):
