@@ -15,11 +15,14 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase, APIClient
 
 from sidekick.utils import clean_msisdn
+from sidekick.tests.utils import create_org
 
 from rp_transferto.views import process_status_code
 from rp_transferto.models import MsisdnInformation
 from rp_transferto.tasks import topup_data
 from rp_transferto.utils import TransferToClient
+
+from .utils import create_transferto_account
 from .constants import (
     PING_RESPONSE_DICT,
     MSISDN_INFO_RESPONSE_DICT,
@@ -63,6 +66,60 @@ class TestTransferToFunctions(TestCase):
         self.assertEqual(exception_info.value.__str__(), "'error_code'")
 
 
+class TestTransferToViewsAbstract(APITestCase):
+    def setUp(self):
+        self.api_client = APIClient()
+
+        self.user = User.objects.create_user(
+            "username", "testuser@example.com", "password"
+        )
+        token = Token.objects.create(user=self.user)
+        self.token = token.key
+
+        self.api_client.credentials(HTTP_AUTHORIZATION="Token " + self.token)
+
+        self.org = create_org()
+        self.org.users.add(self.user)
+
+        self.transferto_account = create_transferto_account(org=self.org)
+
+    @patch.object(TransferToClient, "ping", fake_ping)
+    def test_ping_view_user_does_not_belong_to_org(self):
+        self.org.users.remove(self.user)
+
+        self.assertFalse(fake_ping.called)
+        response = self.api_client.get(
+            reverse("ping", kwargs={"org_id": self.org.id})
+        )
+        # check status
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        # check response body
+        self.assertEqual(json.loads(response.content), {})
+        # check whether function was called
+        self.assertFalse(fake_ping.called)
+
+    @patch.object(TransferToClient, "ping", fake_ping)
+    def test_ping_view_org_does_not_exist(self):
+        self.assertFalse(fake_ping.called)
+        response = self.api_client.get(
+            reverse("ping", kwargs={"org_id": self.org.id + 1})
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(json.loads(response.content), {})
+        self.assertFalse(fake_ping.called)
+
+    @patch.object(TransferToClient, "ping", fake_ping)
+    def test_ping_view_org_does_not_have_transferto_account(self):
+        self.transferto_account.delete()
+        self.assertFalse(fake_ping.called)
+        response = self.api_client.get(
+            reverse("ping", kwargs={"org_id": self.org.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(json.loads(response.content), {})
+        self.assertFalse(fake_ping.called)
+
+
 class TestTransferToViews(APITestCase):
     def setUp(self):
         self.api_client = APIClient()
@@ -72,12 +129,20 @@ class TestTransferToViews(APITestCase):
         )
         token = Token.objects.create(user=self.user)
         self.token = token.key
+
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + self.token)
 
+        self.org = create_org()
+        self.org.users.add(self.user)
+
+        self.transferto_account = create_transferto_account(org=self.org)
+
     @patch.object(TransferToClient, "ping", fake_ping)
-    def test_ping_view(self):
+    def test_ping_view_success(self):
         self.assertFalse(fake_ping.called)
-        response = self.api_client.get(reverse("ping"))
+        response = self.api_client.get(
+            reverse("ping", kwargs={"org_id": self.org.id})
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(json.loads(response.content), PING_RESPONSE_DICT)
         self.assertTrue(fake_ping.called)
