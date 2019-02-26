@@ -12,7 +12,7 @@ urlpatterns = [
     path("reserve_id/", views.ReserveId.as_view(), name="reserve_id"),
     path("get_countries/", views.GetCountries.as_view(), name="get_countries"),
     path(
-        "get_operators/<int:country_id>/",
+        "<int:org_id>/get_operators/<int:country_id>/",
         views.GetOperators.as_view(),
         name="get_operators",
     ),

@@ -226,7 +226,10 @@ class TestTransferToViews(APITestCase):
     def test_get_operators_view(self):
         self.assertFalse(fake_get_operators.called)
         response = self.api_client.get(
-            reverse("get_operators", kwargs={"country_id": 111})
+            reverse(
+                "get_operators",
+                kwargs={"country_id": 111, "org_id": self.org.id},
+            )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
