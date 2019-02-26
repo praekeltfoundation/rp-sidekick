@@ -36,7 +36,8 @@ class BelongsToOrg(BasePermission):
 
 
 class TransferToView(APIView):
-    func_name = None
+    client_method_name = None
+    args_for_client_method = None
 
     def get(self, request, *args, **kwargs):
         # check that org exists
@@ -57,11 +58,18 @@ class TransferToView(APIView):
         except AttributeError:
             return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
 
-        return process_status_code(getattr(client, self.func_name)())
+        if self.args_for_client_method:
+            kwargs_for_client = {
+                key: kwargs[key] for key in self.args_for_client_method
+            }
+            return process_status_code(
+                getattr(client, self.client_method_name)(**kwargs_for_client)
+            )
+        return process_status_code(getattr(client, self.client_method_name)())
 
 
 class Ping(TransferToView):
-    func_name = "ping"
+    client_method_name = "ping"
 
 
 class MsisdnInfo(APIView):
@@ -117,15 +125,9 @@ class GetCountries(APIView):
         return process_status_code(client.get_countries())
 
 
-class GetOperators(APIView):
-    def get(self, request, country_id, *args, **kwargs):
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
-        )
-        return process_status_code(client.get_operators(country_id))
+class GetOperators(TransferToView):
+    client_method_name = "get_operators"
+    args_for_client_method = ["country_id"]
 
 
 class GetOperatorAirtimeProducts(APIView):
