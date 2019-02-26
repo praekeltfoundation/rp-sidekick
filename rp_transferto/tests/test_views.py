@@ -155,7 +155,10 @@ class TestTransferToViews(APITestCase):
         self.assertEqual(MsisdnInformation.objects.count(), 0)
         self.assertFalse(fake_get_misisdn_info.called)
         response = self.api_client.get(
-            reverse("msisdn_info", kwargs={"msisdn": "+27820000001"})
+            reverse(
+                "msisdn_info",
+                kwargs={"msisdn": "+27820000001", "org_id": self.org.id},
+            )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -174,7 +177,9 @@ class TestTransferToViews(APITestCase):
         self.assertEqual(MsisdnInformation.objects.count(), 1)
         self.assertFalse(fake_get_misisdn_info.called)
         response = self.api_client.get(
-            reverse("msisdn_info", kwargs={"msisdn": msisdn})
+            reverse(
+                "msisdn_info", kwargs={"msisdn": msisdn, "org_id": self.org.id}
+            )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -194,7 +199,10 @@ class TestTransferToViews(APITestCase):
         self.assertFalse(fake_get_misisdn_info.called)
         response = self.api_client.get(
             "{}?no_cache=True".format(
-                reverse("msisdn_info", kwargs={"msisdn": msisdn})
+                reverse(
+                    "msisdn_info",
+                    kwargs={"msisdn": msisdn, "org_id": self.org.id},
+                )
             )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -207,7 +215,9 @@ class TestTransferToViews(APITestCase):
     @patch.object(TransferToClient, "reserve_id", fake_reserve_id)
     def test_reserve_id_view(self):
         self.assertFalse(fake_reserve_id.called)
-        response = self.api_client.get(reverse("reserve_id"))
+        response = self.api_client.get(
+            reverse("reserve_id", kwargs={"org_id": self.org.id})
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(json.loads(response.content), RESERVE_ID_RESPONSE_DICT)
         self.assertTrue(fake_reserve_id.called)
@@ -215,7 +225,9 @@ class TestTransferToViews(APITestCase):
     @patch.object(TransferToClient, "get_countries", fake_get_countries)
     def test_get_countries_view(self):
         self.assertFalse(fake_get_countries.called)
-        response = self.api_client.get(reverse("get_countries"))
+        response = self.api_client.get(
+            reverse("get_countries", kwargs={"org_id": self.org.id})
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             json.loads(response.content), GET_COUNTRIES_RESPONSE_DICT
@@ -246,7 +258,8 @@ class TestTransferToViews(APITestCase):
         self.assertFalse(fake_get_operator_airtime_products.called)
         response = self.api_client.get(
             reverse(
-                "get_operator_airtime_products", kwargs={"operator_id": 222}
+                "get_operator_airtime_products",
+                kwargs={"operator_id": 222, "org_id": self.org.id},
             )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -262,7 +275,10 @@ class TestTransferToViews(APITestCase):
     def test_get_operator_products_view(self):
         self.assertFalse(fake_get_operator_products.called)
         response = self.api_client.get(
-            reverse("get_operator_products", kwargs={"operator_id": 222})
+            reverse(
+                "get_operator_products",
+                kwargs={"operator_id": 222, "org_id": self.org.id},
+            )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -276,7 +292,10 @@ class TestTransferToViews(APITestCase):
     def test_get_country_services_view(self):
         self.assertFalse(fake_get_country_services.called)
         response = self.api_client.get(
-            reverse("get_country_services", kwargs={"country_id": 222})
+            reverse(
+                "get_country_services",
+                kwargs={"country_id": 222, "org_id": self.org.id},
+            )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(

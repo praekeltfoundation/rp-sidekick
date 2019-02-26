@@ -1,15 +1,12 @@
-from django.conf import settings
 from django.http import JsonResponse
 
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.permissions import BasePermission
 
 from sidekick.utils import clean_msisdn
 from sidekick.models import Organization
 
 from .models import MsisdnInformation
-from .utils import TransferToClient
 from .tasks import topup_data, buy_product_take_action, buy_airtime_take_action
 
 
@@ -29,10 +26,6 @@ def process_status_code(info):
         return JsonResponse(info, status=400)
     # default to 200 status code
     return JsonResponse(info)
-
-
-class BelongsToOrg(BasePermission):
-    pass
 
 
 class TransferToView(APIView):
@@ -62,10 +55,14 @@ class TransferToView(APIView):
             kwargs_for_client = {
                 key: kwargs[key] for key in self.args_for_client_method
             }
-            return process_status_code(
-                getattr(client, self.client_method_name)(**kwargs_for_client)
+            response = getattr(client, self.client_method_name)(
+                **kwargs_for_client
             )
-        return process_status_code(getattr(client, self.client_method_name)())
+        else:
+            response = getattr(client, self.client_method_name)()
+        if "error_code" in response:
+            return process_status_code(response)
+        return JsonResponse(response)
 
 
 class Ping(TransferToView):
@@ -73,7 +70,18 @@ class Ping(TransferToView):
 
 
 class MsisdnInfo(APIView):
-    def get(self, request, msisdn, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
+        org_id = kwargs["org_id"]
+        msisdn = kwargs["msisdn"]
+
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(data={}, status=status.HTTP_401_UNAUTHORIZED)
+
         use_cache = (
             request.GET.get("no_cache", False)
             and request.GET.get("no_cache").lower() == "true"
@@ -84,12 +92,11 @@ class MsisdnInfo(APIView):
                 msisdn=clean_msisdn(msisdn)
             ).exists()
         ):
-            client = TransferToClient(
-                settings.TRANSFERTO_LOGIN,
-                settings.TRANSFERTO_TOKEN,
-                settings.TRANSFERTO_APIKEY,
-                settings.TRANSFERTO_APISECRET,
-            )
+            try:
+                client = org.transferto_account.first().get_transferto_client()
+            except AttributeError:
+                return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
             cleaned_msisdn = clean_msisdn(msisdn)
             info = client.get_misisdn_info(cleaned_msisdn)
             MsisdnInformation.objects.create(data=info, msisdn=cleaned_msisdn)
@@ -103,26 +110,12 @@ class MsisdnInfo(APIView):
         return process_status_code(info)
 
 
-class ReserveId(APIView):
-    def get(self, request, *args, **kwargs):
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
-        )
-        return process_status_code(client.reserve_id())
+class ReserveId(TransferToView):
+    client_method_name = "reserve_id"
 
 
-class GetCountries(APIView):
-    def get(self, request, *args, **kwargs):
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
-        )
-        return process_status_code(client.get_countries())
+class GetCountries(TransferToView):
+    client_method_name = "get_countries"
 
 
 class GetOperators(TransferToView):
@@ -130,41 +123,21 @@ class GetOperators(TransferToView):
     args_for_client_method = ["country_id"]
 
 
-class GetOperatorAirtimeProducts(APIView):
-    def get(self, request, operator_id, *args, **kwargs):
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
-        )
-        return process_status_code(
-            client.get_operator_airtime_products(operator_id)
-        )
+class GetOperatorAirtimeProducts(TransferToView):
+    client_method_name = "get_operator_airtime_products"
+    args_for_client_method = ["operator_id"]
 
 
-class GetOperatorProducts(APIView):
-    def get(self, request, operator_id, *args, **kwargs):
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
-        )
-        resp = client.get_operator_products(operator_id)
-        return JsonResponse(resp)
+# failing
+class GetOperatorProducts(TransferToView):
+    client_method_name = "get_operator_products"
+    args_for_client_method = ["operator_id"]
 
 
-class GetCountryServices(APIView):
-    def get(self, request, country_id, *args, **kwargs):
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
-        )
-        resp = client.get_country_services(country_id)
-        return JsonResponse(resp)
+# failing
+class GetCountryServices(TransferToView):
+    client_method_name = "get_country_services"
+    args_for_client_method = ["country_id"]
 
 
 class TopUpData(APIView):
