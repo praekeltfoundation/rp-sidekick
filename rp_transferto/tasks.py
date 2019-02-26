@@ -1,5 +1,6 @@
 import json
-from django.conf import settings
+import pkg_resources
+
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMessage
@@ -8,29 +9,27 @@ from celery.task import Task
 from celery.utils.log import get_task_logger
 
 from sidekick.utils import clean_msisdn
+from sidekick.models import Organization
 
 from .models import MsisdnInformation
-from .utils import TransferToClient
-from temba_client.v2 import TembaClient
 
 
 log = get_task_logger(__name__)
 
 
 def take_action(
-    user_uuid, values_to_update=None, call_result=None, flow_start=None
+    org, user_uuid, values_to_update=None, call_result=None, flow_start=None
 ):
     """
     Update rapidpro contact and/or start a user on a flow
 
+    :parma obj org: Organization object
     :param str user_uuid: contact UUID in RapidPro
     :param dict values_to_update: key-value mapping which represents variable_on_rapidpro_to_update:variable_from_response
     :param dict call_result: response from transferto call
     :param str flow_start: flow UUID in RapidPro
     """
-    rapidpro_client = TembaClient(
-        settings.RAPIDPRO_URL, settings.RAPIDPRO_TOKEN
-    )
+    rapidpro_client = org.get_rapidpro_client()
 
     if values_to_update and call_result:
         fields = {}
@@ -48,12 +47,10 @@ def take_action(
 class TopupData(Task):
     name = "rp_transferto.tasks.topup_data"
 
-    def run(self, msisdn, user_uuid, recharge_value, *args, **kwargs):
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
+    def run(self, org_id, msisdn, user_uuid, recharge_value, *args, **kwargs):
+        org = Organization.objects.get(id=org_id)
+        transferto_client = (
+            org.transferto_account.first().get_transferto_client()
         )
         # get msisdn number info
         try:
@@ -63,7 +60,7 @@ class TopupData(Task):
             # use dict to make a copy of the info
             operator_id_info = dict(msisdn_object.data)
         except ObjectDoesNotExist:
-            operator_id_info = client.get_misisdn_info(msisdn)
+            operator_id_info = transferto_client.get_misisdn_info(msisdn)
 
         log.info(json.dumps(operator_id_info, indent=2))
 
@@ -71,7 +68,9 @@ class TopupData(Task):
         operator_id = int(operator_id_info["operatorid"])
 
         # check the product available and id
-        available_products = client.get_operator_products(operator_id)
+        available_products = transferto_client.get_operator_products(
+            operator_id
+        )
         log.info(json.dumps(available_products, indent=2))
 
         # TODO: refactor
@@ -87,7 +86,9 @@ class TopupData(Task):
         log.info("product_id: {}".format(product_id))
         log.info("product_description: {}".format(product_description))
 
-        topup_result = client.topup_data(msisdn, product_id, simulate=False)
+        topup_result = transferto_client.topup_data(
+            msisdn, product_id, simulate=False
+        )
 
         log.info(json.dumps(topup_result, indent=2))
 
@@ -95,9 +96,7 @@ class TopupData(Task):
 
         # update RapidPro with those values
 
-        rapidpro_client = TembaClient(
-            settings.RAPIDPRO_URL, settings.RAPIDPRO_TOKEN
-        )
+        rapidpro_client = org.get_rapidpro_client()
 
         fields = {
             "mcl_uag_data_topup_status": topup_result["status"],
@@ -114,16 +113,24 @@ class BuyProductTakeAction(Task):
 
     def run(
         self,
+        org_id,
         msisdn,
         product_id,
         user_uuid=None,
         values_to_update={},
         flow_start=None,
     ):
+        """
+        Note: operates under the assumption that org_id is valid and has transferto account
+        """
         log.info(
             json.dumps(
                 dict(
+                    sidekick_version=pkg_resources.get_distribution(
+                        "rp-sidekick"
+                    ).version,
                     name=self.name,
+                    org_id=org_id,
                     msisdn=msisdn,
                     product_id=product_id,
                     user_uuid=user_uuid,
@@ -133,13 +140,14 @@ class BuyProductTakeAction(Task):
                 indent=2,
             )
         )
-        client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
+        org = Organization.objects.get(id=org_id)
+        transferto_client = (
+            org.transferto_account.first().get_transferto_client()
         )
-        purchase_result = client.topup_data(msisdn, product_id, simulate=False)
+
+        purchase_result = transferto_client.topup_data(
+            msisdn, product_id, simulate=False
+        )
 
         log.info(json.dumps(purchase_result, indent=2))
 
@@ -168,13 +176,14 @@ class BuyProductTakeAction(Task):
                             indent=2,
                         )
                     )
-                    retry_purchase_result = client.topup_data(
+                    retry_purchase_result = transferto_client.topup_data(
                         msisdn, option, simulate=False
                     )
                     log.info(json.dumps(retry_purchase_result, indent=2))
                     if retry_purchase_result["status"] == "0":
                         if user_uuid:
                             take_action(
+                                org,
                                 user_uuid,
                                 values_to_update=values_to_update,
                                 call_result=retry_purchase_result,
@@ -231,6 +240,7 @@ class BuyProductTakeAction(Task):
         else:
             if user_uuid:
                 take_action(
+                    org,
                     user_uuid,
                     values_to_update=values_to_update,
                     call_result=purchase_result,
@@ -243,6 +253,7 @@ class BuyAirtimeTakeAction(Task):
 
     def run(
         self,
+        org_id,
         msisdn,
         airtime_amount,
         from_string,
@@ -250,10 +261,17 @@ class BuyAirtimeTakeAction(Task):
         values_to_update={},
         flow_start=None,
     ):
+        """
+        Note: operates under the assumption that org_id is valid and has transferto account
+        """
         log.info(
             json.dumps(
                 dict(
+                    sidekick_version=pkg_resources.get_distribution(
+                        "rp-sidekick"
+                    ).version,
                     name=self.name,
+                    org_id=org_id,
                     msisdn=msisdn,
                     airtime_amount=airtime_amount,
                     user_uuid=user_uuid,
@@ -263,12 +281,11 @@ class BuyAirtimeTakeAction(Task):
                 indent=2,
             )
         )
-        transferto_client = TransferToClient(
-            settings.TRANSFERTO_LOGIN,
-            settings.TRANSFERTO_TOKEN,
-            settings.TRANSFERTO_APIKEY,
-            settings.TRANSFERTO_APISECRET,
+        org = Organization.objects.get(id=org_id)
+        transferto_client = (
+            org.transferto_account.first().get_transferto_client()
         )
+
         topup_result = transferto_client.make_topup(
             msisdn, airtime_amount, from_string
         )
@@ -277,6 +294,7 @@ class BuyAirtimeTakeAction(Task):
 
         if user_uuid:
             take_action(
+                org,
                 user_uuid,
                 values_to_update=values_to_update,
                 call_result=topup_result,
