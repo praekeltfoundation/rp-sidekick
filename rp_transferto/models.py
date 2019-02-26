@@ -5,6 +5,9 @@ from django.contrib.postgres.fields import JSONField
 from django.db import models
 
 from sidekick.utils import clean_msisdn
+from sidekick.models import Organization
+
+from .utils import TransferToClient
 
 
 class MsisdnInformation(models.Model):
@@ -35,3 +38,24 @@ class MsisdnInformation(models.Model):
 
     class Meta:
         get_latest_by = "timestamp"
+
+
+class TransferToAccount(models.Model):
+    login = models.CharField(max_length=200, null=False, blank=False)
+    token = models.CharField(max_length=200, null=False, blank=False)
+    apikey = models.CharField(max_length=200, null=False, blank=False)
+    apisecret = models.CharField(max_length=200, null=False, blank=False)
+    org = models.ForeignKey(
+        Organization,
+        related_name="transferto_account",
+        null=False,
+        on_delete=models.CASCADE,
+    )
+
+    def get_transferto_client(self):
+        return TransferToClient(
+            self.login, self.token, self.apikey, self.apisecret
+        )
+
+    def __str__(self):
+        return self.login
