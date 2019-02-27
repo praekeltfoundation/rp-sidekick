@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.3.0
+------------
+* TransferTo: allow multiple transferto accounts
+
 1.2.1
 ------------
 * Reformat with updated black package
