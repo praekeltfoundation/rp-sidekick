@@ -39,14 +39,18 @@ urlpatterns = [
         views.GetCountryServices.as_view(),
         name="get_country_services",
     ),
-    path("top_up_data/", views.TopUpData.as_view(), name="top_up_data"),
     path(
-        "buy/<int:product_id>/<str:msisdn>/",
+        "<int:org_id>/top_up_data/",
+        views.TopUpData.as_view(),
+        name="top_up_data",
+    ),
+    path(
+        "<int:org_id>/buy/<int:product_id>/<str:msisdn>/",
         views.BuyProductTakeAction.as_view(),
         name="buy_product_take_action",
     ),
     path(
-        "buy/airtime/<int:airtime_amount>/<str:msisdn>/from/<str:from_string>/",
+        "<int:org_id>/buy/airtime/<int:airtime_amount>/<str:msisdn>/from/<str:from_string>/",
         views.BuyAirtimeTakeAction.as_view(),
         name="buy_airtime_take_action",
     ),

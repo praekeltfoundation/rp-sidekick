@@ -308,7 +308,7 @@ class TestTransferToViews(APITestCase):
         self.assertFalse(fake_delay.called)
         response = self.api_client.get(
             "{base_url}?msisdn={msisdn}&user_uuid={user_uuid}&data_amount={data_amount}".format(
-                base_url=reverse("top_up_data"),
+                base_url=reverse("top_up_data", kwargs={"org_id": self.org.id}),
                 msisdn="+27820000000",
                 user_uuid="abc-1234",
                 data_amount="100MB",
@@ -331,7 +331,11 @@ class TestTransferToViews(APITestCase):
         response = self.api_client.get(
             reverse(
                 "buy_product_take_action",
-                kwargs={"msisdn": msisdn, "product_id": product_id},
+                kwargs={
+                    "org_id": self.org.id,
+                    "msisdn": msisdn,
+                    "product_id": product_id,
+                },
             )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -340,6 +344,7 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_product_take_action"},
         )
         fake_buy_product_take_action.assert_called_with(
+            self.org.id,
             clean_msisdn(msisdn),
             product_id,
             flow_start=False,
@@ -369,7 +374,11 @@ class TestTransferToViews(APITestCase):
         ).format(
             base_url=reverse(
                 "buy_product_take_action",
-                kwargs={"msisdn": msisdn, "product_id": product_id},
+                kwargs={
+                    "org_id": self.org.id,
+                    "msisdn": msisdn,
+                    "product_id": product_id,
+                },
             ),
             user_uuid=user_uuid,
         )
@@ -382,6 +391,7 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_product_take_action"},
         )
         fake_buy_product_take_action.assert_called_with(
+            self.org.id,
             clean_msisdn(msisdn),
             product_id,
             flow_start=False,
@@ -403,7 +413,11 @@ class TestTransferToViews(APITestCase):
         ).format(
             base_url=reverse(
                 "buy_product_take_action",
-                kwargs={"msisdn": msisdn, "product_id": product_id},
+                kwargs={
+                    "org_id": self.org.id,
+                    "msisdn": msisdn,
+                    "product_id": product_id,
+                },
             ),
             user_uuid=user_uuid,
             flow_uuid=flow_uuid,
@@ -417,6 +431,7 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_product_take_action"},
         )
         fake_buy_product_take_action.assert_called_with(
+            self.org.id,
             clean_msisdn(msisdn),
             product_id,
             flow_start=flow_uuid,
@@ -437,6 +452,7 @@ class TestTransferToViews(APITestCase):
             reverse(
                 "buy_airtime_take_action",
                 kwargs={
+                    "org_id": self.org.id,
                     "msisdn": msisdn,
                     "airtime_amount": airtime_amount,
                     "from_string": from_string,
@@ -449,6 +465,7 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
+            self.org.id,
             clean_msisdn(msisdn),
             airtime_amount,
             from_string,
@@ -481,6 +498,7 @@ class TestTransferToViews(APITestCase):
             base_url=reverse(
                 "buy_airtime_take_action",
                 kwargs={
+                    "org_id": self.org.id,
                     "msisdn": msisdn,
                     "airtime_amount": airtime_amount,
                     "from_string": from_string,
@@ -497,6 +515,7 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
+            self.org.id,
             clean_msisdn(msisdn),
             airtime_amount,
             from_string,
@@ -521,6 +540,7 @@ class TestTransferToViews(APITestCase):
             base_url=reverse(
                 "buy_airtime_take_action",
                 kwargs={
+                    "org_id": self.org.id,
                     "msisdn": msisdn,
                     "airtime_amount": airtime_amount,
                     "from_string": from_string,
@@ -538,6 +558,7 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
+            self.org.id,
             clean_msisdn(msisdn),
             airtime_amount,
             from_string,

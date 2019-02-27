@@ -142,20 +142,40 @@ class GetCountryServices(TransferToView):
 
 class TopUpData(APIView):
     def get(self, request, *args, **kwargs):
+        org_id = kwargs["org_id"]
+
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(data={}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            # check that there is a valid  TransferTo Account attached
+            org.transferto_account.first().get_transferto_client()
+        except AttributeError:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
         data = request.GET.dict()
         msisdn = data["msisdn"]
         user_uuid = data["user_uuid"]
         data_amount = data["data_amount"]
 
-        # msisdn, user_uuid, amount
-        # e.g. "+27827620000", "4a1b8cc8-905c-4c44-8bd2-dee3c4a3e2d1", "100MB"
-        topup_data.delay(msisdn, user_uuid, data_amount)
+        # org_id, msisdn, user_uuid, amount
+        # e.g. 1, "+27827620000", "4a1b8cc8-905c-4c44-8bd2-dee3c4a3e2d1", "100MB"
+        topup_data.delay(org_id, msisdn, user_uuid, data_amount)
 
         return JsonResponse({"info_txt": "top_up_data"})
 
 
 class BuyProductTakeAction(APIView):
-    def get(self, request, product_id, msisdn, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
+        org_id = kwargs["org_id"]
+        product_id = kwargs["product_id"]
+        msisdn = kwargs["msisdn"]
+
         flow_uuid_key = "flow_uuid"
         user_uuid_key = "user_uuid"
         data = dict(request.GET.dict())
@@ -170,6 +190,7 @@ class BuyProductTakeAction(APIView):
         # which represents variable on rapidpro to update: variable from response
 
         buy_product_take_action.delay(
+            org_id,
             clean_msisdn(msisdn),
             product_id,
             user_uuid=user_uuid,
@@ -180,9 +201,26 @@ class BuyProductTakeAction(APIView):
 
 
 class BuyAirtimeTakeAction(APIView):
-    def get(
-        self, request, airtime_amount, msisdn, from_string, *args, **kwargs
-    ):
+    def get(self, request, *args, **kwargs):
+        org_id = kwargs["org_id"]
+        airtime_amount = kwargs["airtime_amount"]
+        msisdn = kwargs["msisdn"]
+        from_string = kwargs["from_string"]
+
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(data={}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            # check that there is a valid  TransferTo Account attached
+            org.transferto_account.first().get_transferto_client()
+        except AttributeError:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
         flow_uuid_key = "flow_uuid"
         user_uuid_key = "user_uuid"
         data = dict(request.GET.dict())
@@ -197,6 +235,7 @@ class BuyAirtimeTakeAction(APIView):
         # which represents variable on rapidpro to update: variable from response
 
         buy_airtime_take_action.delay(
+            org_id,
             clean_msisdn(msisdn),
             airtime_amount,
             from_string,
