@@ -2,6 +2,8 @@
 
 While RapidPro does provide an integration with TransferTo to release airtime, it does not allow for the remuneration of data. This application more faithfully represents the REST API that TransferTo makes available and abstracts away the authentication.
 
+A TransferTo account belongs to an Ogranization. You must pass in the organization id in the url path and the token used for authentication must belong to a user that belongs to the necessary organization. Set up the organization and transferto account in the django admin.
+
 ### Synchronous Endpoints
 - `Ping`: check that our authentication to TransferTo is working
 - `MsisdnInfo`: get information about an MSISDN
