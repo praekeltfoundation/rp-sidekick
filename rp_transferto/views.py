@@ -128,13 +128,11 @@ class GetOperatorAirtimeProducts(TransferToView):
     args_for_client_method = ["operator_id"]
 
 
-# failing
 class GetOperatorProducts(TransferToView):
     client_method_name = "get_operator_products"
     args_for_client_method = ["operator_id"]
 
 
-# failing
 class GetCountryServices(TransferToView):
     client_method_name = "get_country_services"
     args_for_client_method = ["country_id"]
