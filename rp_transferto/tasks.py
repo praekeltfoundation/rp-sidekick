@@ -2,6 +2,7 @@ import json
 import pkg_resources
 
 from django.utils import timezone
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMessage
 
@@ -287,6 +288,27 @@ class BuyAirtimeTakeAction(Task):
         )
 
         log.info(json.dumps(topup_result, indent=2))
+
+        if topup_result["error_code"] not in ["0", 0]:
+            # check that settings are there for email
+            if (
+                hasattr(settings, "EMAIL_HOST_PASSWORD")
+                and hasattr(settings, "EMAIL_HOST_USER")
+                and settings.EMAIL_HOST_PASSWORD != ""
+                and settings.EMAIL_HOST_USER != ""
+                and org.point_of_contact
+            ):
+                message = "ERROR: Unexpected Result From TransferTo\n{}".format(
+                    json.dumps(topup_result, indent=2)
+                )
+                EmailMessage(
+                    subject="FAILURE: {}".format(self.name),
+                    body=message,
+                    from_email="celery@rp-sidekick.prd.mhealthengagementlab.org",
+                    to=[org.point_of_contact],
+                ).send()
+                return None
+            raise Exception("Error From TransferTo")
 
         if user_uuid:
             take_action(
