@@ -11,6 +11,7 @@ class Organization(models.Model):
     users = models.ManyToManyField(User, related_name="org_users")
     engage_url = models.URLField(max_length=200, null=True)
     engage_token = models.CharField(max_length=1000, null=True)
+    point_of_contact = models.EmailField(null=True)
 
     def __str__(self):
         return self.name

@@ -1,6 +1,17 @@
 # RP Sidekick
 The default Sidekick Module exists to provide shareable components across the various django applications, in particular the Org and User management. It also provides some miscellaneous functionality, in particular, the ability to send WhatsApp templated messages
 
+## Orgs
+Sidekick provides an Organization model, to manage and match an Org within RapidPro. This is used as a building block for the rest of the functionality that the framework provides, for example it can be linked to
+
+- `name` - name given to the Org on Sidekick. We recommend giving it the same name as the RapidPro Org.
+- `url` - the url of the RapidPro instance that the Org belongs to.
+- `token` - the auth token for a RapidPro user, to get API access to the RP Org. Note that this needs active amangement as the user in question could destroy and recreate their token on RapidPro, rendering much of the functionality of Sidekick useless until this is updated.
+- `users` - this links the Django user model. Sidekick does not currently use the Django permissions framework and so belonging to an Org provides default access to all applications.
+- `engage_url` - the URL of the service used for WhatsApp messaging.
+- `engage_token` - the auth token for the WhatsApp service.
+- `point_of_contact` - an email address to surface any immediate issues.
+
 ## Check WhatsApp Endpoint
 This endpoint, served at `/check_contact/<org_id>/<msisdn>/` serves as a wrapper for a single request to the [Turn contact check endpoint](https://whatsapp.praekelt.org/docs/index.html#contacts).
 
