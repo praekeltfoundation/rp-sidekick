@@ -65,6 +65,13 @@ TOPUP_RESPONSE_DICT = {
     "cid3": "",
 }
 
+TOPUP_ERROR_RESPONSE_DICT = {
+    "transactionid": "",
+    "destination_msisdn": "82000001",
+    "authentication_key": "1551943066245252",
+    "error_code": "101",
+    "error_txt": "Destination MSISDN out of range",
+}
 
 GET_COUNTRIES_RESPONSE_DICT = {
     "country": "Afghanistan,Albania,Anguilla,Antigua and Barbuda,Argentina,Armenia,Aruba",

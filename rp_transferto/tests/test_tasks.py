@@ -1,6 +1,9 @@
+from pytest import raises
 from mock import patch
 from unittest.mock import MagicMock
+
 from django.test import TestCase
+from django.test.utils import override_settings
 
 from sidekick.tests.utils import create_org
 
@@ -18,6 +21,7 @@ from .constants import (
     GET_PRODUCTS_RESPONSE_DICT,
     POST_TOPUP_DATA_RESPONSE,
     TOPUP_RESPONSE_DICT,
+    TOPUP_ERROR_RESPONSE_DICT,
 )
 
 
@@ -380,3 +384,80 @@ class TestBuyAirtimeTakeAction(TestCase):
             call_result=TOPUP_RESPONSE_DICT,
             flow_start=flow_uuid,
         )
+
+    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
+    @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
+    @patch("django.core.mail.EmailMessage.send")
+    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_unsuccesssful_run_email(
+        self, fake_make_topup, fake_take_action, fake_send
+    ):
+        fake_make_topup.return_value = TOPUP_ERROR_RESPONSE_DICT
+        self.org.point_of_contact = "test@example.org"
+        self.org.save()
+
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_take_action.called)
+        self.assertFalse(fake_send.called)
+
+        msisdn = TOPUP_ERROR_RESPONSE_DICT["destination_msisdn"]
+        airtime_amount = 333
+        from_string = "bob"
+        user_uuid = "3333-abc"
+        values_to_update = {
+            "rp_0001_01_transferto_status": "status",
+            "rp_0001_01_transferto_status_message": "status_message",
+            "rp_0001_01_transferto_product_desc": "product_desc",
+        }
+
+        buy_airtime_take_action(
+            self.org.id,
+            msisdn,
+            airtime_amount,
+            from_string,
+            user_uuid=user_uuid,
+            values_to_update=values_to_update,
+        )
+
+        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
+        self.assertTrue(fake_send.called)
+        self.assertFalse(fake_take_action.called)
+
+    @override_settings(EMAIL_HOST_USER=None)
+    @patch("django.core.mail.EmailMessage.send")
+    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_unsuccesssful_run_exception(
+        self, fake_make_topup, fake_take_action, fake_send
+    ):
+        fake_make_topup.return_value = TOPUP_ERROR_RESPONSE_DICT
+
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_take_action.called)
+        self.assertFalse(fake_send.called)
+
+        msisdn = TOPUP_ERROR_RESPONSE_DICT["destination_msisdn"]
+        airtime_amount = 333
+        from_string = "bob"
+        user_uuid = "3333-abc"
+        values_to_update = {
+            "rp_0001_01_transferto_status": "status",
+            "rp_0001_01_transferto_status_message": "status_message",
+            "rp_0001_01_transferto_product_desc": "product_desc",
+        }
+
+        with raises(Exception) as exception:
+            buy_airtime_take_action(
+                self.org.id,
+                msisdn,
+                airtime_amount,
+                from_string,
+                user_uuid=user_uuid,
+                values_to_update=values_to_update,
+            )
+
+        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
+        self.assertFalse(fake_send.called)
+        self.assertFalse(fake_take_action.called)
+        self.assertEqual(exception.value.__str__(), "Error From TransferTo")
