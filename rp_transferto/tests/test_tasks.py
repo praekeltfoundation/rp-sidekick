@@ -300,11 +300,13 @@ class TestBuyAirtimeTakeAction(TestCase):
         self.assertFalse(fake_take_action.called)
 
         msisdn = "+27820000001"
-        product_id = 111
+        airtime_amount = 111
         from_string = "bob"
-        buy_airtime_take_action(self.org.id, msisdn, product_id, from_string)
+        buy_airtime_take_action(
+            self.org.id, msisdn, airtime_amount, from_string
+        )
 
-        fake_make_topup.assert_called_with(msisdn, product_id, from_string)
+        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
         self.assertFalse(fake_take_action.called)
 
     @patch("rp_transferto.tasks.take_action")
@@ -317,7 +319,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         self.assertFalse(fake_take_action.called)
 
         msisdn = "+27820000001"
-        product_id = 333
+        airtime_amount = 333
         from_string = "bob"
         user_uuid = "3333-abc"
         values_to_update = {
@@ -329,13 +331,13 @@ class TestBuyAirtimeTakeAction(TestCase):
         buy_airtime_take_action(
             self.org.id,
             msisdn,
-            product_id,
+            airtime_amount,
             from_string,
             user_uuid=user_uuid,
             values_to_update=values_to_update,
         )
 
-        fake_make_topup.assert_called_with(msisdn, product_id, from_string)
+        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
         self.assertTrue(fake_take_action.called)
         fake_take_action.assert_called_with(
             self.org,
@@ -355,7 +357,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         self.assertFalse(fake_take_action.called)
 
         msisdn = "+27820006000"
-        product_id = 444
+        airtime_amount = 444
         from_string = "bob"
         user_uuid = "4444-abc"
         flow_uuid = "123412341234"
@@ -363,13 +365,13 @@ class TestBuyAirtimeTakeAction(TestCase):
         buy_airtime_take_action(
             self.org.id,
             msisdn,
-            product_id,
+            airtime_amount,
             from_string,
             user_uuid=user_uuid,
             flow_start=flow_uuid,
         )
 
-        fake_make_topup.assert_called_with(msisdn, product_id, from_string)
+        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
         self.assertTrue(fake_take_action.called)
         fake_take_action.assert_called_with(
             self.org,
