@@ -208,11 +208,8 @@ class BuyProductTakeAction(Task):
                     remaining_options,
                 )
                 from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
-                recipients = (
-                    "nathan@praekelt.org"  # TODO: link to org user in future
-                )
                 email = EmailMessage(
-                    subject, message, from_string, [recipients]
+                    subject, message, from_string, [org.point_of_contact]
                 )
                 email.send()
                 return None
@@ -231,10 +228,9 @@ class BuyProductTakeAction(Task):
                 flow_start,
             )
             from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
-            recipients = (
-                "nathan@praekelt.org"  # TODO: link to org user in future
+            email = EmailMessage(
+                subject, message, from_string, [org.point_of_contact]
             )
-            email = EmailMessage(subject, message, from_string, [recipients])
             email.send()
 
         else:
