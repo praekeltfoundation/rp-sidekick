@@ -465,10 +465,10 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
-            self.org.id,
-            clean_msisdn(msisdn),
-            airtime_amount,
-            from_string,
+            org_id=self.org.id,
+            msisdn=clean_msisdn(msisdn),
+            airtime_amount=airtime_amount,
+            from_string=from_string,
             flow_start=False,
             user_uuid=False,
             values_to_update={},
@@ -515,10 +515,10 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
-            self.org.id,
-            clean_msisdn(msisdn),
-            airtime_amount,
-            from_string,
+            org_id=self.org.id,
+            msisdn=clean_msisdn(msisdn),
+            airtime_amount=airtime_amount,
+            from_string=from_string,
             flow_start=False,
             user_uuid=user_uuid,
             values_to_update=values_to_update,
@@ -558,10 +558,10 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
-            self.org.id,
-            clean_msisdn(msisdn),
-            airtime_amount,
-            from_string,
+            org_id=self.org.id,
+            msisdn=clean_msisdn(msisdn),
+            airtime_amount=airtime_amount,
+            from_string=from_string,
             flow_start=flow_uuid,
             user_uuid=user_uuid,
             values_to_update={},
