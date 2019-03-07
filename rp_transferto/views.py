@@ -233,10 +233,10 @@ class BuyAirtimeTakeAction(APIView):
         # which represents variable on rapidpro to update: variable from response
 
         buy_airtime_take_action.delay(
-            org_id,
-            clean_msisdn(msisdn),
-            airtime_amount,
-            from_string,
+            org_id=org_id,
+            msisdn=clean_msisdn(msisdn),
+            airtime_amount=airtime_amount,
+            from_string=from_string,
             user_uuid=user_uuid,
             values_to_update=data,
             flow_start=flow_start,
