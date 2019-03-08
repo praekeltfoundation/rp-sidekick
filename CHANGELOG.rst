@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.3.2
+------------
+* Bug Fix: fix sentry setup which was not pulling through the env variable correctly
+
 1.3.1
 ------------
 * TransferTo: prevent BuyAirtimeTakeAction task from continuing if there is an error from TransferTo
