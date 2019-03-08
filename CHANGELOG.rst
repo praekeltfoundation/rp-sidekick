@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.3.1
+------------
+* TransferTo: prevent BuyAirtimeTakeAction task from continuing if there is an error from TransferTo
+
 1.3.0
 ------------
 * TransferTo: allow multiple transferto accounts
