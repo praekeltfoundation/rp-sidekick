@@ -261,23 +261,19 @@ class BuyAirtimeTakeAction(Task):
         """
         Note: operates under the assumption that org_id is valid and has transferto account
         """
-        log.info(
-            json.dumps(
-                dict(
-                    sidekick_version=pkg_resources.get_distribution(
-                        "rp-sidekick"
-                    ).version,
-                    name=self.name,
-                    org_id=org_id,
-                    msisdn=msisdn,
-                    airtime_amount=airtime_amount,
-                    user_uuid=user_uuid,
-                    values_to_update=values_to_update,
-                    flow_start=flow_start,
-                ),
-                indent=2,
-            )
+        task_info = dict(
+            sidekick_version=pkg_resources.get_distribution(
+                "rp-sidekick"
+            ).version,
+            name=self.name,
+            org_id=org_id,
+            msisdn=msisdn,
+            airtime_amount=airtime_amount,
+            user_uuid=user_uuid,
+            values_to_update=values_to_update,
+            flow_start=flow_start,
         )
+        log.info(json.dumps(task_info, indent=2))
         org = Organization.objects.get(id=org_id)
         transferto_client = (
             org.transferto_account.first().get_transferto_client()
@@ -298,8 +294,13 @@ class BuyAirtimeTakeAction(Task):
                 and settings.EMAIL_HOST_USER != ""
                 and org.point_of_contact
             ):
-                message = "ERROR: Unexpected Result From TransferTo\n{}".format(
-                    json.dumps(topup_result, indent=2)
+                message = (
+                    "ERROR: Unexpected Result From TransferTo\n"
+                    "Task Info: {}\n"
+                    "TransferTo Result: {}"
+                ).format(
+                    json.dumps(task_info, indent=2),
+                    json.dumps(topup_result, indent=2),
                 )
                 EmailMessage(
                     subject="FAILURE: {}".format(self.name),
