@@ -1,4 +1,5 @@
 import json
+import pkg_resources
 
 from django.utils import timezone
 from django.contrib.postgres.fields import JSONField
@@ -59,3 +60,82 @@ class TransferToAccount(models.Model):
 
     def __str__(self):
         return self.login
+
+
+class TopupAttempt(models.Model):
+    sidekick_version = models.CharField(max_length=50, null=False, blank=False)
+    msisdn = models.CharField(max_length=30, null=False, blank=False)
+    from_string = models.CharField(max_length=200, null=False)
+    amount = models.IntegerField(null=False, blank=False)
+    response = JSONField(null=True)
+    rapidpro_user_uuid = models.CharField(max_length=200, null=True)
+    CREATED = "C"
+    WAITING = "W"
+    SUCEEDED = "S"
+    FAILED = "F"
+    STATUSES = (
+        (CREATED, "CREATED"),
+        (WAITING, "WAITING"),
+        (SUCEEDED, "SUCEEDED"),
+        (FAILED, "FAILED"),
+    )
+    status = models.CharField(max_length=1, choices=STATUSES, default=CREATED)
+    org = models.ForeignKey(
+        Organization,
+        related_name="topup_attempts",
+        null=False,
+        on_delete=models.CASCADE,
+    )
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    def make_request(self):
+        transferto_client = (
+            self.org.transferto_account.first().get_transferto_client()
+        )
+
+        self.status = self.WAITING
+        topup_result = transferto_client.make_topup(
+            self.msisdn, self.amount, self.from_string
+        )
+
+        self.response = topup_result
+        self.save()
+
+    def save(self, *args, **kwargs):
+        # throw an exception if there is no org or transferto account
+        self.org.transferto_account.first().get_transferto_client()
+
+        # update status based on response field
+        if isinstance(self.response, dict):
+            if "error_code" in self.response and self.response[
+                "error_code"
+            ] in ["0", 0]:
+                self.status = self.SUCEEDED
+            else:
+                self.status = self.FAILED
+
+        self.sidekick_version = pkg_resources.get_distribution(
+            "rp-sidekick"
+        ).version
+        self.msisdn = clean_msisdn(self.msisdn)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return json.dumps(
+            {
+                "id": self.id,
+                "sidekick_version": self.sidekick_version,
+                "msisdn": self.msisdn,
+                "from_string": self.from_string,
+                "amount": self.amount,
+                "response": self.response,
+                "rapidpro_user_uuid": self.rapidpro_user_uuid,
+                "org": self.org.name,
+                "timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "status": self.status,
+            },
+            indent=2,
+        )
+
+    class Meta:
+        get_latest_by = "timestamp"
