@@ -12,7 +12,7 @@ from celery.utils.log import get_task_logger
 from sidekick.utils import clean_msisdn
 from sidekick.models import Organization
 
-from .models import MsisdnInformation
+from .models import MsisdnInformation, TopupAttempt
 
 
 log = get_task_logger(__name__)
@@ -248,75 +248,47 @@ class BuyProductTakeAction(Task):
 class BuyAirtimeTakeAction(Task):
     name = "rp_transferto.tasks.buy_airtime_take_action"
 
-    def run(
-        self,
-        org_id,
-        msisdn,
-        airtime_amount,
-        from_string,
-        user_uuid=None,
-        values_to_update={},
-        flow_start=None,
-    ):
+    def run(self, topup_attempt_id, values_to_update={}, flow_start=None):
         """
         Note: operates under the assumption that org_id is valid and has transferto account
         """
-        task_info = dict(
-            sidekick_version=pkg_resources.get_distribution(
-                "rp-sidekick"
-            ).version,
-            name=self.name,
-            org_id=org_id,
-            msisdn=msisdn,
-            airtime_amount=airtime_amount,
-            user_uuid=user_uuid,
-            values_to_update=values_to_update,
-            flow_start=flow_start,
-        )
-        log.info(json.dumps(task_info, indent=2))
-        org = Organization.objects.get(id=org_id)
-        transferto_client = (
-            org.transferto_account.first().get_transferto_client()
-        )
+        topup_attempt = TopupAttempt.objects.get(id=topup_attempt_id)
+        log.info("{}\n{}".format(self.name, topup_attempt.__str__()))
 
-        topup_result = transferto_client.make_topup(
-            msisdn, airtime_amount, from_string
-        )
+        topup_attempt.make_request()
 
-        log.info(json.dumps(topup_result, indent=2))
+        topup_attempt.refresh_from_db()
+        log.info(json.dumps(topup_attempt.response, indent=2))
 
-        if topup_result["error_code"] not in ["0", 0]:
+        if topup_attempt.status == TopupAttempt.FAILED:
             # check that settings are there for email
             if (
                 hasattr(settings, "EMAIL_HOST_PASSWORD")
                 and hasattr(settings, "EMAIL_HOST_USER")
                 and settings.EMAIL_HOST_PASSWORD != ""
                 and settings.EMAIL_HOST_USER != ""
-                and org.point_of_contact
+                and topup_attempt.org.point_of_contact
             ):
                 message = (
                     "ERROR: Unexpected Result From TransferTo\n"
-                    "Task Info: {}\n"
-                    "TransferTo Result: {}"
-                ).format(
-                    json.dumps(task_info, indent=2),
-                    json.dumps(topup_result, indent=2),
-                )
+                    "Task Name: {}"
+                    "Topup Attempt:\n{}\n"
+                ).format(self.name, topup_attempt.__str__())
                 EmailMessage(
                     subject="FAILURE: {}".format(self.name),
                     body=message,
                     from_email="celery@rp-sidekick.prd.mhealthengagementlab.org",
-                    to=[org.point_of_contact],
+                    to=[topup_attempt.org.point_of_contact],
                 ).send()
                 return None
             raise Exception("Error From TransferTo")
 
-        if user_uuid:
+        if topup_attempt.rapidpro_user_uuid:
             take_action(
-                org,
-                user_uuid,
+                topup_attempt.org,
+                topup_attempt.rapidpro_user_uuid,
                 values_to_update=values_to_update,
-                call_result=topup_result,
+                call_result=topup_attempt.response,
                 flow_start=flow_start,
             )
 
