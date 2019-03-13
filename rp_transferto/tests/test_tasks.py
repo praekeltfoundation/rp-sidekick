@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 from django.test import TestCase
 from django.test.utils import override_settings
 
+from sidekick.utils import clean_msisdn
 from sidekick.tests.utils import create_org
 
 from rp_transferto.tasks import (
@@ -13,7 +14,7 @@ from rp_transferto.tasks import (
     buy_airtime_take_action,
     take_action,
 )
-from rp_transferto.models import MsisdnInformation
+from rp_transferto.models import MsisdnInformation, TopupAttempt
 
 from .utils import create_transferto_account
 from .constants import (
@@ -306,11 +307,17 @@ class TestBuyAirtimeTakeAction(TestCase):
         msisdn = "+27820000001"
         airtime_amount = 111
         from_string = "bob"
-        buy_airtime_take_action(
-            self.org.id, msisdn, airtime_amount, from_string
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
         )
+        buy_airtime_take_action(topup_attempt.id)
 
-        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
         self.assertFalse(fake_take_action.called)
 
     @patch("rp_transferto.tasks.take_action")
@@ -326,6 +333,14 @@ class TestBuyAirtimeTakeAction(TestCase):
         airtime_amount = 333
         from_string = "bob"
         user_uuid = "3333-abc"
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
+            rapidpro_user_uuid=user_uuid,
+        )
+
         values_to_update = {
             "rp_0001_01_transferto_status": "status",
             "rp_0001_01_transferto_status_message": "status_message",
@@ -333,15 +348,12 @@ class TestBuyAirtimeTakeAction(TestCase):
         }
 
         buy_airtime_take_action(
-            self.org.id,
-            msisdn,
-            airtime_amount,
-            from_string,
-            user_uuid=user_uuid,
-            values_to_update=values_to_update,
+            topup_attempt.id, values_to_update=values_to_update
         )
 
-        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
         self.assertTrue(fake_take_action.called)
         fake_take_action.assert_called_with(
             self.org,
@@ -364,18 +376,21 @@ class TestBuyAirtimeTakeAction(TestCase):
         airtime_amount = 444
         from_string = "bob"
         user_uuid = "4444-abc"
-        flow_uuid = "123412341234"
-
-        buy_airtime_take_action(
-            self.org.id,
-            msisdn,
-            airtime_amount,
-            from_string,
-            user_uuid=user_uuid,
-            flow_start=flow_uuid,
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
+            rapidpro_user_uuid=user_uuid,
         )
 
-        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
+        flow_uuid = "123412341234"
+
+        buy_airtime_take_action(topup_attempt.id, flow_start=flow_uuid)
+
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
         self.assertTrue(fake_take_action.called)
         fake_take_action.assert_called_with(
             self.org,
@@ -405,6 +420,14 @@ class TestBuyAirtimeTakeAction(TestCase):
         airtime_amount = 333
         from_string = "bob"
         user_uuid = "3333-abc"
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
+            rapidpro_user_uuid=user_uuid,
+        )
+
         values_to_update = {
             "rp_0001_01_transferto_status": "status",
             "rp_0001_01_transferto_status_message": "status_message",
@@ -412,15 +435,12 @@ class TestBuyAirtimeTakeAction(TestCase):
         }
 
         buy_airtime_take_action(
-            self.org.id,
-            msisdn,
-            airtime_amount,
-            from_string,
-            user_uuid=user_uuid,
-            values_to_update=values_to_update,
+            topup_attempt.id, values_to_update=values_to_update
         )
 
-        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
         self.assertTrue(fake_send.called)
         self.assertFalse(fake_take_action.called)
 
@@ -441,6 +461,14 @@ class TestBuyAirtimeTakeAction(TestCase):
         airtime_amount = 333
         from_string = "bob"
         user_uuid = "3333-abc"
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
+            rapidpro_user_uuid=user_uuid,
+        )
+
         values_to_update = {
             "rp_0001_01_transferto_status": "status",
             "rp_0001_01_transferto_status_message": "status_message",
@@ -449,15 +477,12 @@ class TestBuyAirtimeTakeAction(TestCase):
 
         with raises(Exception) as exception:
             buy_airtime_take_action(
-                self.org.id,
-                msisdn,
-                airtime_amount,
-                from_string,
-                user_uuid=user_uuid,
-                values_to_update=values_to_update,
+                topup_attempt.id, values_to_update=values_to_update
             )
 
-        fake_make_topup.assert_called_with(msisdn, airtime_amount, from_string)
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
         self.assertFalse(fake_send.called)
         self.assertFalse(fake_take_action.called)
         self.assertEqual(exception.value.__str__(), "Error From TransferTo")
