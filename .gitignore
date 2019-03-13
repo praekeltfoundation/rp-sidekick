@@ -187,3 +187,4 @@ local.py
 /static/
 /media/
 client_id.json
+pip-wheel-metadata/*
