@@ -233,3 +233,21 @@ class UtilsTests(TestCase):
 
     def test_clean_msisdn_2(self):
         self.assertEqual(utils.clean_msisdn("2782653"), "2782653")
+
+    def test_get_flow_url_1(self):
+        base_url = "https://textit.io"
+        flow_uuid = "1234-asdf"
+        test_org = create_org(url=base_url)
+        self.assertEqual(
+            utils.get_flow_url(test_org, flow_uuid),
+            "{}/flow/editor/{}".format(base_url, flow_uuid),
+        )
+
+    def test_get_flow_url_2(self):
+        base_url = "https://textit.io/"
+        flow_uuid = "1234-asdf"
+        test_org = create_org(url=base_url)
+        self.assertEqual(
+            utils.get_flow_url(test_org, flow_uuid),
+            "{}flow/editor/{}".format(base_url, flow_uuid),
+        )

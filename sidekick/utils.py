@@ -1,6 +1,7 @@
 import requests
 from django.utils import timezone
 from six.moves import urllib_parse
+from urllib.parse import urljoin
 from temba_client.v2 import TembaClient
 import pkg_resources
 
@@ -69,3 +70,7 @@ def update_rapidpro_whatsapp_urn(org, msisdn):
                 client.update_contact(contact=contact.uuid, urns=urns)
         else:
             client.create_contact(urns=urns)
+
+
+def get_flow_url(org, flow_uuid):
+    return urljoin(urljoin(org.url, "/flow/editor/"), flow_uuid)
