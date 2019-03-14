@@ -6,7 +6,7 @@ from rest_framework import status
 from sidekick.utils import clean_msisdn
 from sidekick.models import Organization
 
-from .models import MsisdnInformation
+from .models import MsisdnInformation, TopupAttempt
 from .tasks import topup_data, buy_product_take_action, buy_airtime_take_action
 
 
@@ -232,12 +232,16 @@ class BuyAirtimeTakeAction(APIView):
         # remaining variables will be coerced from key:value mapping
         # which represents variable on rapidpro to update: variable from response
 
-        buy_airtime_take_action.delay(
-            org_id=org_id,
-            msisdn=clean_msisdn(msisdn),
-            airtime_amount=airtime_amount,
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
             from_string=from_string,
-            user_uuid=user_uuid,
+            amount=airtime_amount,
+            org=org,
+            rapidpro_user_uuid=user_uuid,
+        )
+
+        buy_airtime_take_action.delay(
+            topup_attempt_id=topup_attempt.id,
             values_to_update=data,
             flow_start=flow_start,
         )

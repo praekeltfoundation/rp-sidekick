@@ -22,6 +22,8 @@ from rp_transferto.models import MsisdnInformation
 from rp_transferto.tasks import topup_data
 from rp_transferto.utils import TransferToClient
 
+from ..models import TopupAttempt
+
 from .utils import create_transferto_account
 from .constants import (
     PING_RESPONSE_DICT,
@@ -465,13 +467,9 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
-            org_id=self.org.id,
-            msisdn=clean_msisdn(msisdn),
-            airtime_amount=airtime_amount,
-            from_string=from_string,
-            flow_start=False,
-            user_uuid=False,
+            topup_attempt_id=TopupAttempt.objects.last().id,
             values_to_update={},
+            flow_start=False,
         )
 
     @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
@@ -515,12 +513,8 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
-            org_id=self.org.id,
-            msisdn=clean_msisdn(msisdn),
-            airtime_amount=airtime_amount,
-            from_string=from_string,
+            topup_attempt_id=TopupAttempt.objects.last().id,
             flow_start=False,
-            user_uuid=user_uuid,
             values_to_update=values_to_update,
         )
 
@@ -558,11 +552,7 @@ class TestTransferToViews(APITestCase):
             {"info_txt": "buy_airtime_take_action"},
         )
         fake_buy_airtime_take_action.assert_called_with(
-            org_id=self.org.id,
-            msisdn=clean_msisdn(msisdn),
-            airtime_amount=airtime_amount,
-            from_string=from_string,
+            topup_attempt_id=TopupAttempt.objects.last().id,
             flow_start=flow_uuid,
-            user_uuid=user_uuid,
             values_to_update={},
         )
