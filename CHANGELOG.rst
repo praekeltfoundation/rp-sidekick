@@ -3,6 +3,8 @@ VERSIONS
 
 Next Release
 ------------
+* TransferTo: keep a record of topup requests to transferto with TopupAttempt model
+* TransferTo: start the participant on another rapidpro flow, if the request to TransferTo failed or was rejected in BuyAirtimeTakeAction task
 
 1.3.2
 ------------

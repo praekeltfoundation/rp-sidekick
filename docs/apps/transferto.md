@@ -25,7 +25,8 @@ These endpoints will queue the request to TransferTo using celery. They will imm
 
 - `BuyAirtimeTakeAction`: this endpoint allows the user to
     - purchase airtime for a particular msisdn
-    - [optional] update a rapidpro contact's fields based on the response
-    - [optional] start the participant on another rapidpro flow, once the task has been completed.
+    - (optional) update a rapidpro contact's fields based on the response
+    - (optional) start the participant on another rapidpro flow, if the request to TransferTo was successful
+    - (optional) start the participant on another rapidpro flow, if the request to TransferTo failed or was rejected
 
     ! Note that the 'from' argument should not be longer than 15 characters as TransferTo will truncate the characters in the SMS that it sends.
