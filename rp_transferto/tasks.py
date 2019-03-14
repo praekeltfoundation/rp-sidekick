@@ -5,11 +5,12 @@ from django.utils import timezone
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
 
-from sidekick.utils import clean_msisdn
+from sidekick.utils import clean_msisdn, get_flow_url
 from sidekick.models import Organization
 
 from .models import MsisdnInformation, TopupAttempt
@@ -43,6 +44,41 @@ def take_action(
         rapidpro_client.create_flow_start(
             flow_start, contacts=[user_uuid], restart_participants=True
         )
+
+
+def update_values(org, user_uuid, values_to_update, transferto_response):
+    """
+    Update rapidpro contact and/or start a user on a flow
+
+    :parma obj org: Organization object
+    :param str user_uuid: contact UUID in RapidPro
+    :param dict values_to_update: key-value mapping which represents variable_on_rapidpro_to_update:variable_from_response
+    :param dict transferto_response: response from transferto call
+    """
+    rapidpro_client = org.get_rapidpro_client()
+
+    fields = {}
+    for (rapidpro_field, transferto_field) in values_to_update.items():
+        fields[rapidpro_field] = transferto_response.get(
+            transferto_field, "NONE"
+        )
+
+    rapidpro_client.update_contact(user_uuid, fields=fields)
+
+
+def start_flow(org, user_uuid, flow_uuid):
+    """
+    Start rapidpro contact  on a flow
+
+    :parma obj org: Organization object
+    :param str user_uuid: contact UUID in RapidPro
+    :param str flow_uuid: flow UUID in RapidPro
+    """
+    rapidpro_client = org.get_rapidpro_client()
+
+    rapidpro_client.create_flow_start(
+        flow_uuid, contacts=[user_uuid], restart_participants=True
+    )
 
 
 class TopupData(Task):
@@ -248,9 +284,16 @@ class BuyProductTakeAction(Task):
 class BuyAirtimeTakeAction(Task):
     name = "rp_transferto.tasks.buy_airtime_take_action"
 
-    def run(self, topup_attempt_id, values_to_update={}, flow_start=None):
+    def run(
+        self,
+        topup_attempt_id,
+        values_to_update={},
+        flow_start=None,
+        fail_flow_start=None,
+    ):
         """
-        Note: operates under the assumption that org_id is valid and has transferto account
+        Note: operates under the assumption that TopupAttempt has been created
+        but make_request has not been called
         """
         topup_attempt = TopupAttempt.objects.get(id=topup_attempt_id)
         log.info("{}\n{}".format(self.name, topup_attempt.__str__()))
@@ -260,37 +303,127 @@ class BuyAirtimeTakeAction(Task):
         topup_attempt.refresh_from_db()
         log.info(json.dumps(topup_attempt.response, indent=2))
 
-        if topup_attempt.status == TopupAttempt.FAILED:
-            # check that settings are there for email
-            if (
+        # take action
+        topup_attempt_failed = topup_attempt.status == TopupAttempt.FAILED
+        should_update_fields = (
+            values_to_update and topup_attempt.rapidpro_user_uuid
+        )
+        should_start_success_flow = (
+            topup_attempt.status == TopupAttempt.SUCEEDED
+            and flow_start
+            and topup_attempt.rapidpro_user_uuid
+        )
+        should_start_fail_flow = (
+            topup_attempt.status == TopupAttempt.FAILED
+            and fail_flow_start
+            and topup_attempt.rapidpro_user_uuid
+        )
+
+        if should_update_fields:
+            try:
+                update_values(
+                    org=topup_attempt.org,
+                    user_uuid=topup_attempt.rapidpro_user_uuid,
+                    values_to_update=values_to_update,
+                    transferto_response=topup_attempt.response,
+                )
+                update_fields_successful = True
+                update_fields_exception = None
+            except Exception as e:
+                update_fields_successful = False
+                update_fields_exception = e
+
+        if should_start_success_flow:
+            try:
+                start_flow(
+                    org=topup_attempt.org,
+                    user_uuid=topup_attempt.rapidpro_user_uuid,
+                    flow_uuid=flow_start,
+                )
+                success_flow_started = True
+                success_flow_started_exception = None
+            except Exception as e:
+                success_flow_started = False
+                success_flow_started_exception = e
+
+        if should_start_fail_flow:
+            try:
+                start_flow(
+                    org=topup_attempt.org,
+                    user_uuid=topup_attempt.rapidpro_user_uuid,
+                    flow_uuid=fail_flow_start,
+                )
+                fail_flow_started = True
+                fail_flow_started_exception = None
+            except Exception as e:
+                fail_flow_started = False
+                fail_flow_started_exception = e
+
+        # report errors
+        if (
+            topup_attempt_failed
+            or (should_update_fields and not update_fields_successful)
+            or (should_start_success_flow and not success_flow_started)
+            or (should_start_fail_flow and not fail_flow_started)
+        ):
+            can_send_email = (
                 hasattr(settings, "EMAIL_HOST_PASSWORD")
                 and hasattr(settings, "EMAIL_HOST_USER")
                 and settings.EMAIL_HOST_PASSWORD != ""
                 and settings.EMAIL_HOST_USER != ""
                 and topup_attempt.org.point_of_contact
-            ):
-                message = (
-                    "ERROR: Unexpected Result From TransferTo\n"
-                    "Task Name: {}"
-                    "Topup Attempt:\n{}\n"
-                ).format(self.name, topup_attempt.__str__())
+            )
+            if can_send_email:
+                context = {
+                    "task_name": self.name,
+                    "topup_attempt": topup_attempt.__str__(),
+                    "values_to_update": json.dumps(values_to_update, indent=2),
+                    "flow_start": get_flow_url(topup_attempt.org, flow_start)
+                    if flow_start
+                    else None,
+                    "fail_flow_start": get_flow_url(
+                        topup_attempt.org, fail_flow_start
+                    )
+                    if fail_flow_start
+                    else None,
+                    "should_update_fields": should_update_fields,
+                    "should_start_success_flow": should_start_success_flow,
+                    "should_start_fail_flow": should_start_fail_flow,
+                }
+                if should_update_fields:
+                    context.update(
+                        {
+                            "update_fields_successful": update_fields_successful,
+                            "update_fields_exception": update_fields_exception,
+                        }
+                    )
+
+                if should_start_success_flow:
+                    context.update(
+                        {
+                            "success_flow_started": success_flow_started,
+                            "success_flow_started_exception": success_flow_started_exception,
+                        }
+                    )
+
+                if should_start_fail_flow:
+                    context.update(
+                        {
+                            "fail_flow_started": fail_flow_started,
+                            "fail_flow_started_exception": fail_flow_started_exception,
+                        }
+                    )
                 EmailMessage(
                     subject="FAILURE: {}".format(self.name),
-                    body=message,
+                    body=render_to_string(
+                        "rp_transferto/topup_airtime_take_action_email.html",
+                        context,
+                    ),
                     from_email="celery@rp-sidekick.prd.mhealthengagementlab.org",
                     to=[topup_attempt.org.point_of_contact],
                 ).send()
-                return None
-            raise Exception("Error From TransferTo")
-
-        if topup_attempt.rapidpro_user_uuid:
-            take_action(
-                topup_attempt.org,
-                topup_attempt.rapidpro_user_uuid,
-                values_to_update=values_to_update,
-                call_result=topup_attempt.response,
-                flow_start=flow_start,
-            )
+            else:
+                raise Exception("Error From TransferTo")
 
 
 topup_data = TopupData()
