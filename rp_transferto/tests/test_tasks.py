@@ -297,12 +297,16 @@ class TestBuyAirtimeTakeAction(TestCase):
         self.org = create_org()
         self.transferto_account = create_transferto_account(org=self.org)
 
-    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
     @patch("rp_transferto.utils.TransferToClient.make_topup")
-    def test_successsful_run_simple(self, fake_make_topup, fake_take_action):
+    def test_successsful_run_simple(
+        self, fake_make_topup, fake_start_flow, fake_update_values
+    ):
         fake_make_topup.return_value = TOPUP_RESPONSE_DICT
         self.assertFalse(fake_make_topup.called)
-        self.assertFalse(fake_take_action.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
 
         msisdn = "+27820000001"
         airtime_amount = 111
@@ -318,16 +322,19 @@ class TestBuyAirtimeTakeAction(TestCase):
         fake_make_topup.assert_called_with(
             clean_msisdn(msisdn), airtime_amount, from_string
         )
-        self.assertFalse(fake_take_action.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
 
-    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
     @patch("rp_transferto.utils.TransferToClient.make_topup")
     def test_successsful_run_update_fields(
-        self, fake_make_topup, fake_take_action
+        self, fake_make_topup, fake_start_flow, fake_update_values
     ):
         fake_make_topup.return_value = TOPUP_RESPONSE_DICT
         self.assertFalse(fake_make_topup.called)
-        self.assertFalse(fake_take_action.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
 
         msisdn = "+27820000001"
         airtime_amount = 333
@@ -354,23 +361,25 @@ class TestBuyAirtimeTakeAction(TestCase):
         fake_make_topup.assert_called_with(
             clean_msisdn(msisdn), airtime_amount, from_string
         )
-        self.assertTrue(fake_take_action.called)
-        fake_take_action.assert_called_with(
-            self.org,
-            user_uuid,
+        self.assertFalse(fake_start_flow.called)
+        self.assertTrue(fake_update_values.called)
+        fake_update_values.assert_called_with(
+            org=self.org,
+            user_uuid=user_uuid,
             values_to_update=values_to_update,
-            call_result=TOPUP_RESPONSE_DICT,
-            flow_start=None,
+            transferto_response=TOPUP_RESPONSE_DICT,
         )
 
-    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
     @patch("rp_transferto.utils.TransferToClient.make_topup")
     def test_successsful_run_start_flow(
-        self, fake_make_topup, fake_take_action
+        self, fake_make_topup, fake_start_flow, fake_update_values
     ):
         fake_make_topup.return_value = TOPUP_RESPONSE_DICT
         self.assertFalse(fake_make_topup.called)
-        self.assertFalse(fake_take_action.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
 
         msisdn = "+27820006000"
         airtime_amount = 444
@@ -391,29 +400,71 @@ class TestBuyAirtimeTakeAction(TestCase):
         fake_make_topup.assert_called_with(
             clean_msisdn(msisdn), airtime_amount, from_string
         )
-        self.assertTrue(fake_take_action.called)
-        fake_take_action.assert_called_with(
-            self.org,
-            user_uuid,
-            values_to_update={},
-            call_result=TOPUP_RESPONSE_DICT,
-            flow_start=flow_uuid,
+        self.assertFalse(fake_update_values.called)
+        self.assertTrue(fake_start_flow.called)
+        fake_start_flow.assert_called_with(
+            org=self.org, user_uuid=user_uuid, flow_uuid=flow_uuid
         )
+
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_unsuccesssful_run_start_fail_flow(
+        self, fake_make_topup, fake_start_flow, fake_update_values
+    ):
+        fake_make_topup.return_value = TOPUP_ERROR_RESPONSE_DICT
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
+
+        msisdn = "+27820006000"
+        airtime_amount = 444
+        from_string = "bob"
+        user_uuid = "4444-abc"
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
+            rapidpro_user_uuid=user_uuid,
+        )
+
+        flow_uuid = "123412341234"
+        fail_flow_uuid = "098709870987"
+
+        with raises(Exception) as exception:
+            buy_airtime_take_action(
+                topup_attempt.id,
+                flow_start=flow_uuid,
+                fail_flow_start=fail_flow_uuid,
+            )
+
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
+        self.assertFalse(fake_update_values.called)
+        self.assertTrue(fake_start_flow.called)
+        fake_start_flow.assert_called_with(
+            org=self.org, user_uuid=user_uuid, flow_uuid=fail_flow_uuid
+        )
+        self.assertEqual(exception.value.__str__(), "Error From TransferTo")
 
     @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
     @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
     @patch("django.core.mail.EmailMessage.send")
-    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
     @patch("rp_transferto.utils.TransferToClient.make_topup")
     def test_unsuccesssful_run_email(
-        self, fake_make_topup, fake_take_action, fake_send
+        self, fake_make_topup, fake_start_flow, fake_update_values, fake_send
     ):
         fake_make_topup.return_value = TOPUP_ERROR_RESPONSE_DICT
         self.org.point_of_contact = "test@example.org"
         self.org.save()
 
         self.assertFalse(fake_make_topup.called)
-        self.assertFalse(fake_take_action.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
         self.assertFalse(fake_send.called)
 
         msisdn = TOPUP_ERROR_RESPONSE_DICT["destination_msisdn"]
@@ -434,27 +485,39 @@ class TestBuyAirtimeTakeAction(TestCase):
             "rp_0001_01_transferto_product_desc": "product_desc",
         }
 
+        flow_uuid = "123412341234"
+
         buy_airtime_take_action(
-            topup_attempt.id, values_to_update=values_to_update
+            topup_attempt.id,
+            values_to_update=values_to_update,
+            flow_start=flow_uuid,
         )
 
         fake_make_topup.assert_called_with(
             clean_msisdn(msisdn), airtime_amount, from_string
         )
+        fake_update_values.assert_called_with(
+            org=self.org,
+            user_uuid=user_uuid,
+            values_to_update=values_to_update,
+            transferto_response=TOPUP_ERROR_RESPONSE_DICT,
+        )
+        self.assertFalse(fake_start_flow.called)
         self.assertTrue(fake_send.called)
-        self.assertFalse(fake_take_action.called)
 
     @override_settings(EMAIL_HOST_USER=None)
     @patch("django.core.mail.EmailMessage.send")
-    @patch("rp_transferto.tasks.take_action")
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
     @patch("rp_transferto.utils.TransferToClient.make_topup")
     def test_unsuccesssful_run_exception(
-        self, fake_make_topup, fake_take_action, fake_send
+        self, fake_make_topup, fake_start_flow, fake_update_values, fake_send
     ):
         fake_make_topup.return_value = TOPUP_ERROR_RESPONSE_DICT
 
         self.assertFalse(fake_make_topup.called)
-        self.assertFalse(fake_take_action.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
         self.assertFalse(fake_send.called)
 
         msisdn = TOPUP_ERROR_RESPONSE_DICT["destination_msisdn"]
@@ -474,15 +537,178 @@ class TestBuyAirtimeTakeAction(TestCase):
             "rp_0001_01_transferto_status_message": "status_message",
             "rp_0001_01_transferto_product_desc": "product_desc",
         }
+        flow_uuid = "123412341234"
+        fail_flow_uuid = "098709870987"
 
         with raises(Exception) as exception:
             buy_airtime_take_action(
-                topup_attempt.id, values_to_update=values_to_update
+                topup_attempt.id,
+                values_to_update=values_to_update,
+                flow_start=flow_uuid,
+                fail_flow_start=fail_flow_uuid,
             )
 
         fake_make_topup.assert_called_with(
             clean_msisdn(msisdn), airtime_amount, from_string
         )
         self.assertFalse(fake_send.called)
-        self.assertFalse(fake_take_action.called)
+        fake_start_flow.assert_called_with(
+            org=self.org, user_uuid=user_uuid, flow_uuid=fail_flow_uuid
+        )
+        fake_update_values.assert_called_with(
+            org=self.org,
+            user_uuid=user_uuid,
+            values_to_update=values_to_update,
+            transferto_response=TOPUP_ERROR_RESPONSE_DICT,
+        )
         self.assertEqual(exception.value.__str__(), "Error From TransferTo")
+
+    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
+    @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
+    @patch("django.core.mail.EmailMessage.send")
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_successsful_run_start_flow_throw_exception2(
+        self, fake_make_topup, fake_start_flow, fake_update_values, fake_send
+    ):
+        self.org.point_of_contact = "test@example.org"
+        self.org.save()
+
+        fake_make_topup.return_value = TOPUP_RESPONSE_DICT
+        fake_start_flow.side_effect = Exception("something is wrong")
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
+
+        msisdn = "+27820006000"
+        airtime_amount = 444
+        from_string = "bob"
+        user_uuid = "4444-abc"
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
+            rapidpro_user_uuid=user_uuid,
+        )
+
+        flow_uuid = "123412341234"
+
+        buy_airtime_take_action(topup_attempt.id, flow_start=flow_uuid)
+
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
+        self.assertFalse(fake_update_values.called)
+        self.assertTrue(fake_start_flow.called)
+        fake_start_flow.assert_called_with(
+            org=self.org, user_uuid=user_uuid, flow_uuid=flow_uuid
+        )
+        self.assertTrue(fake_send.called)
+
+    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
+    @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
+    @patch("django.core.mail.EmailMessage.send")
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_successsful_run_start_flow_throw_exception(
+        self, fake_make_topup, fake_start_flow, fake_update_values, fake_send
+    ):
+        self.org.point_of_contact = "test@example.org"
+        self.org.save()
+
+        fake_make_topup.return_value = TOPUP_RESPONSE_DICT
+        fake_start_flow.side_effect = Exception("something is wrong")
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
+
+        msisdn = "+27820006000"
+        airtime_amount = 444
+        from_string = "bob"
+        user_uuid = "4444-abc"
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
+            rapidpro_user_uuid=user_uuid,
+        )
+
+        flow_uuid = "123412341234"
+
+        buy_airtime_take_action(topup_attempt.id, flow_start=flow_uuid)
+
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
+        self.assertFalse(fake_update_values.called)
+        self.assertTrue(fake_start_flow.called)
+        fake_start_flow.assert_called_with(
+            org=self.org, user_uuid=user_uuid, flow_uuid=flow_uuid
+        )
+        self.assertTrue(fake_send.called)
+
+    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
+    @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
+    @patch("django.core.mail.EmailMessage.send")
+    @patch("rp_transferto.tasks.update_values")
+    @patch("rp_transferto.tasks.start_flow")
+    @patch("rp_transferto.utils.TransferToClient.make_topup")
+    def test_unsuccesssful_run_start_flow_throw_exception(
+        self, fake_make_topup, fake_start_flow, fake_update_values, fake_send
+    ):
+        self.org.point_of_contact = "test@example.org"
+        self.org.save()
+
+        fake_make_topup.return_value = TOPUP_ERROR_RESPONSE_DICT
+        fake_update_values.side_effect = Exception("something goes wrong")
+        fake_start_flow.side_effect = Exception("something is wrong")
+        self.assertFalse(fake_make_topup.called)
+        self.assertFalse(fake_start_flow.called)
+        self.assertFalse(fake_update_values.called)
+
+        msisdn = "+27820006000"
+        airtime_amount = 444
+        from_string = "bob"
+        user_uuid = "4444-abc"
+        topup_attempt = TopupAttempt.objects.create(
+            msisdn=msisdn,
+            from_string=from_string,
+            amount=airtime_amount,
+            org=self.org,
+            rapidpro_user_uuid=user_uuid,
+        )
+
+        values_to_update = {
+            "rp_0001_01_transferto_status": "status",
+            "rp_0001_01_transferto_status_message": "status_message",
+            "rp_0001_01_transferto_product_desc": "product_desc",
+        }
+
+        flow_uuid = "123412341234"
+        fail_flow_uuid = "098709870987"
+
+        buy_airtime_take_action(
+            topup_attempt.id,
+            values_to_update=values_to_update,
+            flow_start=flow_uuid,
+            fail_flow_start=fail_flow_uuid,
+        )
+
+        fake_make_topup.assert_called_with(
+            clean_msisdn(msisdn), airtime_amount, from_string
+        )
+        fake_update_values.assert_called_with(
+            org=self.org,
+            user_uuid=user_uuid,
+            values_to_update=values_to_update,
+            transferto_response=TOPUP_ERROR_RESPONSE_DICT,
+        )
+        self.assertTrue(fake_start_flow.called)
+        fake_start_flow.assert_called_with(
+            org=self.org, user_uuid=user_uuid, flow_uuid=fail_flow_uuid
+        )
+        self.assertTrue(fake_send.called)

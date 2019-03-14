@@ -1,0 +1,21 @@
+Task Name: {{task_name}}
+Topup Attempt:
+{{topup_attempt | safe}}
+Values to Update:
+{{values_to_update | safe}}
+Flow to Start if Topup Successful: {{flow_start}}
+Flow to Start if Topup Failed: {{fail_flow_start}}
+
+TOPUP: {% if topup_attempt_failed %}FAILED{% else %}SUCCEEDED{% endif %}
+
+SHOULD UPDATE FIELDS: {{should_update_fields}}
+{% if should_update_fields %}status: {% if update_fields_successful %}SUCCEEDED{% else %}FAILED
+exception: {{update_fields_exception | safe}}{% endif %}{% endif %}
+
+SHOULD START SUCCESS FLOW: {{should_start_success_flow}}
+{% if should_start_success_flow %}status: {% if success_flow_started %}SUCCEEDED{% else %}FAILED
+exception: {{success_flow_started_exception | safe}}{% endif %}{% endif %}
+
+SHOULD START FAILURE FLOW: {{should_start_fail_flow}}
+{% if should_start_fail_flow %}status: {% if fail_flow_started %}SUCCEEDED{% else %}FAILED
+exception: {{fail_flow_started_exception | safe}}{% endif %}{% endif %}
