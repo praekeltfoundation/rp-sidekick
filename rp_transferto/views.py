@@ -221,6 +221,7 @@ class BuyAirtimeTakeAction(APIView):
 
         flow_uuid_key = "flow_uuid"
         user_uuid_key = "user_uuid"
+        fail_flow_uuid_key = "fail_flow_start"
         data = dict(request.GET.dict())
 
         flow_start = request.GET.get(flow_uuid_key, False)
@@ -229,6 +230,9 @@ class BuyAirtimeTakeAction(APIView):
         user_uuid = request.GET.get(user_uuid_key, False)
         if user_uuid:
             del data[user_uuid_key]
+        fail_flow_start = request.GET.get(fail_flow_uuid_key, False)
+        if fail_flow_start:
+            del data[fail_flow_uuid_key]
         # remaining variables will be coerced from key:value mapping
         # which represents variable on rapidpro to update: variable from response
 
@@ -244,5 +248,6 @@ class BuyAirtimeTakeAction(APIView):
             topup_attempt_id=topup_attempt.id,
             values_to_update=data,
             flow_start=flow_start,
+            fail_flow_start=fail_flow_start,
         )
         return JsonResponse({"info_txt": "buy_airtime_take_action"})
