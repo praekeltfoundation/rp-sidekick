@@ -410,9 +410,7 @@ class TestTransferToViews(APITestCase):
         user_uuid = "3333-abc"
         flow_uuid = "123412341234"
 
-        url = (
-            "{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}" ""
-        ).format(
+        url = ("{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}").format(
             base_url=reverse(
                 "buy_product_take_action",
                 kwargs={
@@ -470,6 +468,7 @@ class TestTransferToViews(APITestCase):
             topup_attempt_id=TopupAttempt.objects.last().id,
             values_to_update={},
             flow_start=False,
+            fail_flow_start=False,
         )
 
     @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
@@ -516,6 +515,7 @@ class TestTransferToViews(APITestCase):
             topup_attempt_id=TopupAttempt.objects.last().id,
             flow_start=False,
             values_to_update=values_to_update,
+            fail_flow_start=False,
         )
 
     @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
@@ -528,9 +528,7 @@ class TestTransferToViews(APITestCase):
         user_uuid = "3333-abc"
         flow_uuid = "123412341234"
 
-        url = (
-            "{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}" ""
-        ).format(
+        url = ("{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}").format(
             base_url=reverse(
                 "buy_airtime_take_action",
                 kwargs={
@@ -555,4 +553,45 @@ class TestTransferToViews(APITestCase):
             topup_attempt_id=TopupAttempt.objects.last().id,
             flow_start=flow_uuid,
             values_to_update={},
+            fail_flow_start=False,
+        )
+
+    @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
+    def test_buy_airtime_take_action_view_start_fail_flow(
+        self, fake_buy_airtime_take_action
+    ):
+        msisdn = "+27820006000"
+        airtime_amount = 444
+        from_string = "bob"
+        user_uuid = "3333-abc"
+        fail_flow_uuid = "123412341234"
+
+        url = (
+            "{base_url}?user_uuid={user_uuid}&fail_flow_start={fail_flow_uuid}"
+        ).format(
+            base_url=reverse(
+                "buy_airtime_take_action",
+                kwargs={
+                    "org_id": self.org.id,
+                    "msisdn": msisdn,
+                    "airtime_amount": airtime_amount,
+                    "from_string": from_string,
+                },
+            ),
+            user_uuid=user_uuid,
+            fail_flow_uuid=fail_flow_uuid,
+        )
+
+        response = self.api_client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            json.loads(response.content),
+            {"info_txt": "buy_airtime_take_action"},
+        )
+        fake_buy_airtime_take_action.assert_called_with(
+            topup_attempt_id=TopupAttempt.objects.last().id,
+            flow_start=False,
+            values_to_update={},
+            fail_flow_start=fail_flow_uuid,
         )
