@@ -1,10 +1,13 @@
 import json
 import pkg_resources
 
+from json2html import json2html
+
 from django.utils import timezone
+from django.utils.html import strip_tags
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, send_mail
 from django.template.loader import render_to_string
 
 from celery.task import Task
@@ -306,17 +309,27 @@ class BuyAirtimeTakeAction(Task):
         # take action
         topup_attempt_failed = topup_attempt.status == TopupAttempt.FAILED
         should_update_fields = (
-            values_to_update and topup_attempt.rapidpro_user_uuid
+            True
+            if (values_to_update and topup_attempt.rapidpro_user_uuid)
+            else False
         )
         should_start_success_flow = (
-            topup_attempt.status == TopupAttempt.SUCEEDED
-            and flow_start
-            and topup_attempt.rapidpro_user_uuid
+            True
+            if (
+                topup_attempt.status == TopupAttempt.SUCEEDED
+                and flow_start
+                and topup_attempt.rapidpro_user_uuid
+            )
+            else False
         )
         should_start_fail_flow = (
-            topup_attempt.status == TopupAttempt.FAILED
-            and fail_flow_start
-            and topup_attempt.rapidpro_user_uuid
+            True
+            if (
+                topup_attempt.status == TopupAttempt.FAILED
+                and fail_flow_start
+                and topup_attempt.rapidpro_user_uuid
+            )
+            else False
         )
 
         if should_update_fields:
@@ -375,9 +388,12 @@ class BuyAirtimeTakeAction(Task):
             )
             if can_send_email:
                 context = {
+                    "org_name": topup_attempt.org.name,
                     "task_name": self.name,
-                    "topup_attempt": topup_attempt.__str__(),
-                    "values_to_update": json.dumps(values_to_update, indent=2),
+                    "topup_attempt": json2html.convert(
+                        json.loads(topup_attempt.__str__())
+                    ),
+                    "values_to_update": json2html.convert(values_to_update),
                     "flow_start": get_flow_url(topup_attempt.org, flow_start)
                     if flow_start
                     else None,
@@ -413,15 +429,17 @@ class BuyAirtimeTakeAction(Task):
                             "fail_flow_started_exception": fail_flow_started_exception,
                         }
                     )
-                EmailMessage(
+                html_message = render_to_string(
+                    "rp_transferto/topup_airtime_take_action_email.html",
+                    context,
+                )
+                send_mail(
                     subject="FAILURE: {}".format(self.name),
-                    body=render_to_string(
-                        "rp_transferto/topup_airtime_take_action_email.html",
-                        context,
-                    ),
+                    message=strip_tags(html_message),
                     from_email="celery@rp-sidekick.prd.mhealthengagementlab.org",
-                    to=[topup_attempt.org.point_of_contact],
-                ).send()
+                    recipient_list=[topup_attempt.org.point_of_contact],
+                    html_message=html_message,
+                )
             else:
                 raise Exception("Error From TransferTo")
 

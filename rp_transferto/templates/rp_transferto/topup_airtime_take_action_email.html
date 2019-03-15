@@ -1,21 +1,28 @@
-Task Name: {{task_name}}
-Topup Attempt:
-{{topup_attempt | safe}}
-Values to Update:
-{{values_to_update | safe}}
-Flow to Start if Topup Successful: {{flow_start}}
-Flow to Start if Topup Failed: {{fail_flow_start}}
+<html>
+    <body>
+        <h2>Org Name: {{org_name}}</h2>
+        <p>Task Name: {{task_name}}</p>
 
-TOPUP: {% if topup_attempt_failed %}FAILED{% else %}SUCCEEDED{% endif %}
+        <h3>TOPUP: {% if topup_attempt_failed %}FAILED{% else %}SUCCEEDED{% endif %}</h3>
 
-SHOULD UPDATE FIELDS: {{should_update_fields}}
-{% if should_update_fields %}status: {% if update_fields_successful %}SUCCEEDED{% else %}FAILED
-exception: {{update_fields_exception | safe}}{% endif %}{% endif %}
+        <h3>SHOULD UPDATE FIELDS: {{should_update_fields}}</h3>
+        {% if should_update_fields %}<p>status: {% if update_fields_successful %}SUCCEEDED{% else %}FAILED<br/>
+        Exception: {{update_fields_exception | safe}}{% endif %}</p>{% endif %}
 
-SHOULD START SUCCESS FLOW: {{should_start_success_flow}}
-{% if should_start_success_flow %}status: {% if success_flow_started %}SUCCEEDED{% else %}FAILED
-exception: {{success_flow_started_exception | safe}}{% endif %}{% endif %}
+        <h3>SHOULD START SUCCESS FLOW: {{should_start_success_flow}}</h3>
+        {% if flow_start %}<p><a href="{{flow_start}}">Flow to Start if Topup Successful</a></p>{% endif %}
+        {% if should_start_success_flow %}<p>status: {% if success_flow_started %}SUCCEEDED{% else %}FAILED<br/>
+        Exception: {{success_flow_started_exception | safe}}{% endif %}</p>{% endif %}
 
-SHOULD START FAILURE FLOW: {{should_start_fail_flow}}
-{% if should_start_fail_flow %}status: {% if fail_flow_started %}SUCCEEDED{% else %}FAILED
-exception: {{fail_flow_started_exception | safe}}{% endif %}{% endif %}
+        <h3>SHOULD START FAILURE FLOW: {{should_start_fail_flow}}</h3>
+        {% if fail_flow_start %}<p><a href="{{fail_flow_start}}">Flow to Start if Topup Failed</a></p>{% endif %}
+        {% if should_start_fail_flow %}<p>status: {% if fail_flow_started %}SUCCEEDED{% else %}FAILED<br/>
+        Exception: {{fail_flow_started_exception | safe}}{% endif %}</p>{% endif %}
+
+        <h3>Topup Attempt:</h3>
+        {{topup_attempt | safe }}
+
+        <h3>Values to Update:</h3>
+        {{values_to_update | safe }}
+    </body>
+</html>
