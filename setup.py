@@ -17,6 +17,7 @@ setup(
         "django-environ==0.4.5",
         "django-extensions==2.1.0",
         "djangorestframework==3.8.2",
+        "json2html==1.2.1",
         "psycopg2==2.7.1",
         "rapidpro-python==2.4",
         "redis==2.10.6",
