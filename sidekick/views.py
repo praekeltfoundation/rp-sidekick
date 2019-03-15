@@ -47,6 +47,14 @@ def send_wa_template_message(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    if not org.users.filter(id=request.user.id).exists():
+        return JsonResponse(
+            data={
+                "error": "Authenticated user does not belong to specified Organization"
+            },
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
     headers = {
         "Authorization": "Bearer {}".format(org.engage_token),
         "Content-Type": "application/json",
@@ -86,6 +94,13 @@ class CheckContactView(APIView):
             return JsonResponse(
                 {"error": "Organization not found"},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(
+                data={
+                    "error": "Authenticated user does not belong to specified Organization"
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         turn_response = get_whatsapp_contacts(org, [msisdn])

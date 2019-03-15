@@ -58,6 +58,7 @@ class SidekickAPITestCase(APITestCase):
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + self.token)
 
         self.org = create_org(engage_url=FAKE_ENGAGE_URL)
+        self.org.users.add(self.user)
 
 
 class TestSendTemplateView(SidekickAPITestCase):
@@ -159,6 +160,27 @@ class TestSendTemplateView(SidekickAPITestCase):
         content = json.loads(response.content)
         self.assertTrue("error" in content)
         self.assertEquals(content["error"], "Organization not found")
+
+    def test_send_wa_template_message_does_not_belong_to_org(self):
+        self.org.users.remove(self.user)
+        params = {
+            "org_id": self.org.id,
+            "wa_id": "1234",
+            "namespace": "test.namespace",
+            "element_name": "el",
+            "0": "hey!",
+        }
+
+        url = "{}?{}".format(reverse("send_template"), urlencode(params))
+
+        response = self.api_client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        content = json.loads(response.content)
+        self.assertTrue("error" in content)
+        self.assertEquals(
+            content["error"],
+            "Authenticated user does not belong to specified Organization",
+        )
 
     def test_send_wa_template_message_missing_params(self):
         params = {
@@ -302,3 +324,22 @@ class TestCheckContactView(SidekickAPITestCase):
         content = json.loads(response.content)
         self.assertTrue("error" in content)
         self.assertEquals(content["error"], "Organization not found")
+
+    def test_wa_check_contact_does_not_belong_to_org(self):
+        self.org.users.remove(self.user)
+        # get result
+        response = self.api_client.get(
+            reverse(
+                "check_contact",
+                kwargs={"org_id": self.org.id, "msisdn": "16315551003"},
+            )
+        )
+
+        # inspect response from Sidekick
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        content = json.loads(response.content)
+        self.assertTrue("error" in content)
+        self.assertEquals(
+            content["error"],
+            "Authenticated user does not belong to specified Organization",
+        )
