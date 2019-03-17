@@ -17,67 +17,74 @@ def health(request):
     return JsonResponse({"id": app_id, "version": ver})
 
 
-def send_wa_template_message(request):
-    data = request.GET.dict()
+class SendWhatsAppTemplateMessageView(APIView):
+    def get(self, request, *args, **kwargs):
+        data = request.GET.dict()
 
-    required_params = ["org_id", "wa_id", "namespace", "element_name"]
+        required_params = ["org_id", "wa_id", "namespace", "element_name"]
 
-    missing_params = [key for key in required_params if key not in data]
-    if missing_params:
-        return JsonResponse(
-            {"error": "Missing fields: {}".format(", ".join(missing_params))},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    localizable_params = [
-        {"default": clean_message(data[_key])}
-        for _key in sorted([key for key in data.keys() if key.isdigit()])
-    ]
-
-    org_id = data["org_id"]
-    wa_id = data["wa_id"]
-    namespace = data["namespace"]
-    element_name = data["element_name"]
-
-    try:
-        org = Organization.objects.get(id=org_id)
-    except Organization.DoesNotExist:
-        return JsonResponse(
-            {"error": "Organization not found"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    if not org.users.filter(id=request.user.id).exists():
-        return JsonResponse(
-            data={
-                "error": "Authenticated user does not belong to specified Organization"
-            },
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
-
-    headers = {
-        "Authorization": "Bearer {}".format(org.engage_token),
-        "Content-Type": "application/json",
-    }
-
-    result = requests.post(
-        urljoin(org.engage_url, "v1/messages"),
-        headers=headers,
-        data=json.dumps(
-            {
-                "to": wa_id,
-                "type": "hsm",
-                "hsm": {
-                    "namespace": namespace,
-                    "element_name": element_name,
-                    "language": {"policy": "fallback", "code": "en_US"},
-                    "localizable_params": localizable_params,
+        missing_params = [key for key in required_params if key not in data]
+        if missing_params:
+            return JsonResponse(
+                {
+                    "error": "Missing fields: {}".format(
+                        ", ".join(missing_params)
+                    )
                 },
-            }
-        ),
-    )
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-    return JsonResponse(json.loads(result.content), status=result.status_code)
+        localizable_params = [
+            {"default": clean_message(data[_key])}
+            for _key in sorted([key for key in data.keys() if key.isdigit()])
+        ]
+
+        org_id = data["org_id"]
+        wa_id = data["wa_id"]
+        namespace = data["namespace"]
+        element_name = data["element_name"]
+
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(
+                {"error": "Organization not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(
+                data={
+                    "error": "Authenticated user does not belong to specified Organization"
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        headers = {
+            "Authorization": "Bearer {}".format(org.engage_token),
+            "Content-Type": "application/json",
+        }
+
+        result = requests.post(
+            urljoin(org.engage_url, "v1/messages"),
+            headers=headers,
+            data=json.dumps(
+                {
+                    "to": wa_id,
+                    "type": "hsm",
+                    "hsm": {
+                        "namespace": namespace,
+                        "element_name": element_name,
+                        "language": {"policy": "fallback", "code": "en_US"},
+                        "localizable_params": localizable_params,
+                    },
+                }
+            ),
+        )
+
+        return JsonResponse(
+            json.loads(result.content), status=result.status_code
+        )
 
 
 class CheckContactView(APIView):
