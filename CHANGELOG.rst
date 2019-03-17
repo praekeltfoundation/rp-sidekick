@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.4.2
+------------
+* TransferTo: fixed logic bugs in BuyAirtimeTakeAction task, causing nonsensical email reporting output and updated email formatting
+
 1.4.1
 ------------
 * Sidekick: fixed bug where authenticated requests could use different Turn accounts to check contacts and send templated messages
