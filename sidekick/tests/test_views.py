@@ -1,11 +1,13 @@
 import json
 import responses
+from mock import patch
 from os import environ
 from urllib.parse import urlencode
 
 from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db.utils import OperationalError
 from django.test.utils import override_settings
 
 from rest_framework import status
@@ -66,13 +68,14 @@ class DetailedHealthViewTest(APITestCase):
         )
 
     @responses.activate
-    def test_detailed_health_endpoint_not_stuck(self):
+    def test_detailed_health_endpoint_not_stuck_and_db_available(self):
         self.mock_queue_lookup()
 
         response = self.api_client.get(reverse("detailed-health"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.json()["queues"][0]["stuck"])
+        self.assertTrue(response.json()["db_available"])
 
     @responses.activate
     def test_detailed_health_endpoint_stuck(self):
@@ -92,6 +95,17 @@ class DetailedHealthViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["update"], "queues not checked")
         self.assertEqual(response.json()["queues"], [])
+
+    @patch("django.db.backends.postgresql.base.DatabaseWrapper.cursor")
+    @override_settings(RABBITMQ_MANAGEMENT_INTERFACE=False)
+    def test_db_connection_down(self, mock_cursor):
+        mock_cursor.side_effect = OperationalError()
+        response = self.api_client.get(reverse("detailed-health"))
+
+        self.assertEqual(
+            response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        self.assertFalse(response.json()["db_available"])
 
 
 class SidekickAPITestCase(APITestCase):
