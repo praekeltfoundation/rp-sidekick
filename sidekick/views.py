@@ -3,6 +3,8 @@ import json
 from os import environ
 from urllib.parse import urljoin
 from django.conf import settings
+from django.db import connections
+from django.db.utils import OperationalError
 from django.http import JsonResponse
 
 from rest_framework import status
@@ -50,8 +52,16 @@ def detailed_health(request):
         message = "queues stuck"
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
+    db_available = True
+    try:
+        connections["default"].cursor()
+    except OperationalError:
+        db_available = False
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
     return JsonResponse(
-        {"update": message, "queues": queues}, status=status_code
+        {"update": message, "queues": queues, "db_available": db_available},
+        status=status_code,
     )
 
 
