@@ -8,6 +8,7 @@ omit = *migrations*,
        ./setup.py,
        ./config/*,
        *__init__*
+       *ve/*
 
 [report]
 show_missing = True

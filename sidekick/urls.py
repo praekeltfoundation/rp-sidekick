@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("health", views.health, name="health"),
+    path("health_details", views.detailed_health, name="detailed-health"),
     path(
         "send_template",
         views.SendWhatsAppTemplateMessageView.as_view(),

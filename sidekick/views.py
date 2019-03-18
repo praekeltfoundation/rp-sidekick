@@ -2,6 +2,7 @@ import requests
 import json
 from os import environ
 from urllib.parse import urljoin
+from django.conf import settings
 from django.http import JsonResponse
 
 from rest_framework import status
@@ -15,6 +16,43 @@ def health(request):
     app_id = environ.get("MARATHON_APP_ID", None)
     ver = environ.get("MARATHON_APP_VERSION", None)
     return JsonResponse({"id": app_id, "version": ver})
+
+
+def detailed_health(request):
+    queues = []
+    stuck = False
+
+    if settings.RABBITMQ_MANAGEMENT_INTERFACE:
+        message = "queues ok"
+        for queue in settings.CELERY_QUEUES:
+            queue_results = requests.get(
+                "{}{}".format(
+                    settings.RABBITMQ_MANAGEMENT_INTERFACE, queue.name
+                )
+            ).json()
+
+            details = {
+                "name": queue_results["name"],
+                "stuck": False,
+                "messages": queue_results.get("messages"),
+                "rate": queue_results["messages_details"]["rate"],
+            }
+            if details["messages"] > 0 and details["rate"] == 0:
+                stuck = True
+                details["stuck"] = True
+
+            queues.append(details)
+    else:
+        message = "queues not checked"
+
+    status_code = status.HTTP_200_OK
+    if stuck:
+        message = "queues stuck"
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    return JsonResponse(
+        {"update": message, "queues": queues}, status=status_code
+    )
 
 
 class SendWhatsAppTemplateMessageView(APIView):
