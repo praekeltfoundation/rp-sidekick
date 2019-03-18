@@ -22,3 +22,7 @@ TRANSFERTO_LOGIN = ("fake_transferto_login",)
 TRANSFERTO_TOKEN = ("fake_transferto_token",)
 TRANSFERTO_APIKEY = ("fake_transferto_apikey",)
 TRANSFERTO_APISECRET = ("fake_transferto_apisecret",)
+
+RABBITMQ_MANAGEMENT_INTERFACE = (
+    "http://user:pass@rabbitmq:15672/api/queues//my_vhost/"
+)

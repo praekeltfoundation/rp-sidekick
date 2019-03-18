@@ -4,7 +4,9 @@ from os import environ
 from urllib.parse import urlencode
 
 from django.urls import reverse
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.test.utils import override_settings
 
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
@@ -44,6 +46,52 @@ class HealthViewTest(APITestCase):
 
         self.assertTrue("version" in result)
         self.assertEqual(result["version"], environ["MARATHON_APP_VERSION"])
+
+
+class DetailedHealthViewTest(APITestCase):
+    def setUp(self):
+        self.api_client = APIClient()
+
+    def mock_queue_lookup(self, name="rp_sidekick", messages=1256, rate=1.25):
+        responses.add(
+            responses.GET,
+            "{}{}".format(settings.RABBITMQ_MANAGEMENT_INTERFACE, name),
+            json={
+                "messages": messages,
+                "messages_details": {"rate": rate},
+                "name": name,
+            },
+            status=200,
+            match_querystring=True,
+        )
+
+    @responses.activate
+    def test_detailed_health_endpoint_not_stuck(self):
+        self.mock_queue_lookup()
+
+        response = self.api_client.get(reverse("detailed-health"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.json()["queues"][0]["stuck"])
+
+    @responses.activate
+    def test_detailed_health_endpoint_stuck(self):
+        self.mock_queue_lookup(rate=0.0)
+
+        response = self.api_client.get(reverse("detailed-health"))
+
+        self.assertEqual(
+            response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        self.assertTrue(response.json()["queues"][0]["stuck"])
+
+    @override_settings(RABBITMQ_MANAGEMENT_INTERFACE=False)
+    def test_detailed_health_endpoint_deactivated(self):
+        response = self.api_client.get(reverse("detailed-health"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["update"], "queues not checked")
+        self.assertEqual(response.json()["queues"], [])
 
 
 class SidekickAPITestCase(APITestCase):
