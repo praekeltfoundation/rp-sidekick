@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+
+1.4.3
+------------
 Sidekick: new detailed health endpoint that will check db connection and celery queue status
 
 1.4.2
