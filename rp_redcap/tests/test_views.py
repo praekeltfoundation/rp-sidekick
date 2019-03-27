@@ -18,7 +18,7 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         self.user = User.objects.create_user(
             self.username, "testuser@example.com", self.password
         )
-        token = Token.objects.create(user=self.user)
+        token = Token.objects.get(user=self.user)
         self.token = token.key
         self.client.credentials(
             HTTP_AUTHORIZATION="Token {}".format(self.token)

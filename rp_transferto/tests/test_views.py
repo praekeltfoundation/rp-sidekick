@@ -75,7 +75,7 @@ class TestTransferToViewsAbstract(APITestCase):
         self.user = User.objects.create_user(
             "username", "testuser@example.com", "password"
         )
-        token = Token.objects.create(user=self.user)
+        token = Token.objects.get(user=self.user)
         self.token = token.key
 
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + self.token)
@@ -129,7 +129,7 @@ class TestTransferToViews(APITestCase):
         self.user = User.objects.create_user(
             "username", "testuser@example.com", "password"
         )
-        token = Token.objects.create(user=self.user)
+        token = Token.objects.get(user=self.user)
         self.token = token.key
 
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + self.token)

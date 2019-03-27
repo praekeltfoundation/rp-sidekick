@@ -3,6 +3,7 @@ VERSIONS
 
 Next Release
 ------------
+Sidekick: create Token automatically when a user is created, using Django signals
 
 1.4.3
 ------------

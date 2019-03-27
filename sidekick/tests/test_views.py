@@ -115,7 +115,7 @@ class SidekickAPITestCase(APITestCase):
         self.user = get_user_model().objects.create_superuser(
             username="superuser", email="superuser@email.com", password="pass"
         )
-        token = Token.objects.create(user=self.user)
+        token = Token.objects.get(user=self.user)
         self.token = token.key
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + self.token)
 
