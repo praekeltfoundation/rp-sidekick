@@ -390,6 +390,7 @@ class BuyAirtimeTakeAction(Task):
                 context = {
                     "org_name": topup_attempt.org.name,
                     "task_name": self.name,
+                    "topup_attempt_failed": topup_attempt_failed,
                     "topup_attempt": json2html.convert(
                         json.loads(topup_attempt.__str__())
                     ),
