@@ -3,6 +3,10 @@ VERSIONS
 
 Next Release
 ------------
+
+1.4.4
+------------
+TransferTo: fix email bug where it always reported topup request as a success
 Sidekick: create Token automatically when a user is created, using Django signals
 
 1.4.3
