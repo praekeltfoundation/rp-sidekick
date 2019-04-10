@@ -1,3 +1,4 @@
+import json
 import requests
 from django.utils import timezone
 from six.moves import urllib_parse
@@ -25,6 +26,15 @@ def clean_msisdn(msisdn):
     return msisdn.replace("+", "")
 
 
+def build_turn_headers(token):
+    distribution = pkg_resources.get_distribution("rp-sidekick")
+    return {
+        "Authorization": "Bearer {}".format(token),
+        "User-Agent": "rp-sidekick/{}".format(distribution.version),
+        "Content-Type": "application/json",
+    }
+
+
 def get_whatsapp_contact_id(org, msisdn):
     """
     Returns the WhatsApp ID for the given MSISDN
@@ -38,16 +48,10 @@ def get_whatsapp_contacts(org, msisdns):
     """
     Returns the Turn response for a given list of MSISDNs
     """
-    distribution = pkg_resources.get_distribution("rp-sidekick")
-
     return requests.post(
         urllib_parse.urljoin(org.engage_url, "/v1/contacts"),
         json={"blocking": "wait", "contacts": msisdns},
-        headers={
-            "Authorization": "Bearer {}".format(org.engage_token),
-            "User-Agent": "rp-sidekick/{}".format(distribution.version),
-            "Content-Type": "application/json",
-        },
+        headers=build_turn_headers(org.engage_token),
     )
 
 
@@ -70,6 +74,53 @@ def update_rapidpro_whatsapp_urn(org, msisdn):
                 client.update_contact(contact=contact.uuid, urns=urns)
         else:
             client.create_contact(urns=urns)
+
+
+def create_whatsapp_group(org, subject):
+    """
+    Creates a Whatsapp group using the subject
+    """
+    result = requests.post(
+        urljoin(org.engage_url, "v1/groups"),
+        headers=build_turn_headers(org.engage_token),
+        data=json.dumps({"subject": subject}),
+    )
+
+    return json.loads(result.content)["groups"][0]["id"]
+
+
+def get_whatsapp_group_invite_link(org, group_id):
+    """
+    Gets the invite link for a Whatsapp group with the group ID
+    """
+    response = requests.get(
+        urljoin(org.engage_url, "v1/groups/{}/invite".format(group_id)),
+        headers=build_turn_headers(org.engage_token),
+    )
+    return json.loads(response.content)["groups"][0]["link"]
+
+
+def get_whatsapp_group_info(org, group_id):
+    """
+    Gets info for a Whatsapp group with the group ID
+    """
+    result = requests.get(
+        urljoin(org.engage_url, "v1/groups/{}".format(group_id)),
+        headers=build_turn_headers(org.engage_token),
+    )
+
+    return json.loads(result.content)["groups"][0]
+
+
+def add_whatsapp_group_admin(org, group_id, wa_id):
+    """
+    Adds a existing Whatsapp group member to the list of admins on the group
+    """
+    return requests.patch(
+        urljoin(org.engage_url, "v1/groups/{}/admins".format(group_id)),
+        headers=build_turn_headers(org.engage_token),
+        data=json.dumps({"wa_ids": [wa_id]}),
+    )
 
 
 def get_flow_url(org, flow_uuid):

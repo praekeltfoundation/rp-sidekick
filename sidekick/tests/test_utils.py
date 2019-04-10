@@ -1,5 +1,6 @@
 import json
 
+import pkg_resources
 import responses
 from django.test import TestCase
 from django.utils import timezone
@@ -94,6 +95,17 @@ class UtilsTests(TestCase):
             ),
             "No new lines No tabs No huge spaces",
         )
+
+    def test_build_turn_headers(self):
+        distribution = pkg_resources.get_distribution("rp-sidekick")
+
+        headers = utils.build_turn_headers("FAKE_TOKEN")
+
+        self.assertEqual(headers["Authorization"], "Bearer FAKE_TOKEN")
+        self.assertEqual(
+            headers["User-Agent"], "rp-sidekick/{}".format(distribution.version)
+        )
+        self.assertEqual(headers["Content-Type"], "application/json")
 
     @responses.activate
     def test_get_whatsapp_contact_id_exists(self):
@@ -227,6 +239,88 @@ class UtilsTests(TestCase):
                 ]
             },
         )
+
+    @responses.activate
+    def test_create_whatsapp_group(self):
+        responses.add(
+            method=responses.POST,
+            url="http://whatsapp/v1/groups",
+            json={
+                "groups": [
+                    {
+                        "creation_time": timezone.now().strftime(
+                            "%Y-%m-%d %H:%M:%S %z"
+                        ),
+                        "id": "my-group-id",
+                    }
+                ]
+            },
+            status=200,
+        )
+
+        group_id = utils.create_whatsapp_group(self.org, "My Test Group")
+
+        self.assertEqual(group_id, "my-group-id")
+
+        self.assertEqual(len(responses.calls), 1)
+        request = responses.calls[-1].request
+        self.assertEqual(json.loads(request.body), {"subject": "My Test Group"})
+
+    @responses.activate
+    def test_get_whatsapp_group_invite_link(self):
+        group_id = "group_1"
+
+        responses.add(
+            method=responses.GET,
+            url="http://whatsapp/v1/groups/{}/invite".format(group_id),
+            json={"groups": [{"link": "group-invite-link"}]},
+            status=200,
+        )
+
+        link = utils.get_whatsapp_group_invite_link(self.org, group_id)
+
+        self.assertEqual(link, "group-invite-link")
+
+    @responses.activate
+    def test_get_whatsapp_group_info(self):
+        group_id = "group_1"
+        group_info = {
+            "admins": ["whatsapp-id-1", "whatsapp-id-2"],
+            "creation_time": "",
+            "creator": "whatsapp-id-1",
+            "participants": ["whatsapp-id-3", "whatsapp-id-4", "whatsapp-id-5"],
+            "subject": "your-group-subject",
+        }
+
+        responses.add(
+            method=responses.GET,
+            url="http://whatsapp/v1/groups/{}".format(group_id),
+            json={"groups": [group_info]},
+            status=200,
+        )
+
+        result = utils.get_whatsapp_group_info(self.org, group_id)
+
+        self.assertEqual(result, group_info)
+
+    @responses.activate
+    def test_add_whatsapp_group_admin(self):
+        group_id = "group_1"
+
+        responses.add(
+            method=responses.PATCH,
+            url="http://whatsapp/v1/groups/{}/admins".format(group_id),
+            json={},
+            status=200,
+        )
+
+        result = utils.add_whatsapp_group_admin(self.org, group_id, "wa_id_1")
+
+        self.assertEqual(json.loads(result.content), {})
+
+        self.assertEqual(len(responses.calls), 1)
+        request = responses.calls[-1].request
+        self.assertEqual(json.loads(request.body), {"wa_ids": ["wa_id_1"]})
 
     def test_clean_msisdn_1(self):
         self.assertEqual(utils.clean_msisdn("+2782653"), "2782653")
