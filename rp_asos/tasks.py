@@ -321,54 +321,6 @@ class CreateHospitalGroups(Task):
     name = "rp_redcap.tasks.create_hospital_groups"
     log = get_task_logger(__name__)
 
-    def create_hospital_wa_group(self, org, hospital):
-        # create whatsapp group
-        if not hospital.whatsapp_group_id:
-            # WA group subject is limited to 25 characters
-            hospital.whatsapp_group_id = utils.create_whatsapp_group(
-                org, "{} - ASOS2".format(hospital.name[:17])
-            )
-            hospital.save()
-        return hospital
-
-    def get_wa_group_info(self, org, hospital):
-        group_info = utils.get_whatsapp_group_info(
-            org, hospital.whatsapp_group_id
-        )
-        group_info["id"] = hospital.whatsapp_group_id
-        return group_info
-
-    def send_group_invites(self, org, group_info, wa_ids):
-        invites = []
-        for wa_id in wa_ids:
-            if wa_id not in group_info["participants"]:
-                invites.append(wa_id)
-
-        if invites:
-            invite_link = utils.get_whatsapp_group_invite_link(
-                org, group_info["id"]
-            )
-            for wa_id in invites:
-                utils.send_whatsapp_template_message(
-                    org,
-                    wa_id,
-                    "whatsapp:hsm:npo:praekeltpbc",
-                    "asos2_notification2",
-                    {
-                        "default": "Hi, please join the ASOS2 Whatsapp group: {}".format(
-                            invite_link
-                        )
-                    },
-                )
-
-    def add_group_admins(self, org, group_info, wa_ids):
-        for wa_id in wa_ids:
-            if (
-                wa_id in group_info["participants"]
-                and wa_id not in group_info["admins"]
-            ):
-                utils.add_whatsapp_group_admin(org, group_info["id"], wa_id)
-
     def run(self, project_id, **kwargs):
 
         project = Project.objects.prefetch_related("hospitals").get(
@@ -380,11 +332,11 @@ class CreateHospitalGroups(Task):
             if hospital.nomination_urn:
                 wa_ids.append(hospital.nomination_urn)
 
-            hospital = self.create_hospital_wa_group(project.org, hospital)
-            group_info = self.get_wa_group_info(project.org, hospital)
+            hospital.create_hospital_wa_group()
+            group_info = hospital.get_wa_group_info()
 
-            self.send_group_invites(project.org, group_info, wa_ids)
-            self.add_group_admins(project.org, group_info, wa_ids)
+            hospital.send_group_invites(group_info, wa_ids)
+            hospital.add_group_admins(group_info, wa_ids)
 
 
 create_hospital_groups = CreateHospitalGroups()
