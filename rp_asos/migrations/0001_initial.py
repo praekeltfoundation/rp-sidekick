@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [("rp_redcap", "0019_lead_and_nomination_name")]
+    dependencies = [("rp_redcap", "0020_remove_asos_models")]
 
     operations = [
         migrations.SeparateDatabaseAndState(
