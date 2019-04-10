@@ -1,7 +1,6 @@
 import requests
 import json
 from os import environ
-from urllib.parse import urljoin
 from django.conf import settings
 from django.db import connections
 from django.db.utils import OperationalError
@@ -11,7 +10,11 @@ from rest_framework import status
 from rest_framework.views import APIView
 
 from .models import Organization
-from .utils import clean_message, get_whatsapp_contacts
+from .utils import (
+    clean_message,
+    get_whatsapp_contacts,
+    send_whatsapp_template_message,
+)
 
 
 def health(request):
@@ -108,26 +111,8 @@ class SendWhatsAppTemplateMessageView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        headers = {
-            "Authorization": "Bearer {}".format(org.engage_token),
-            "Content-Type": "application/json",
-        }
-
-        result = requests.post(
-            urljoin(org.engage_url, "v1/messages"),
-            headers=headers,
-            data=json.dumps(
-                {
-                    "to": wa_id,
-                    "type": "hsm",
-                    "hsm": {
-                        "namespace": namespace,
-                        "element_name": element_name,
-                        "language": {"policy": "fallback", "code": "en_US"},
-                        "localizable_params": localizable_params,
-                    },
-                }
-            ),
+        result = send_whatsapp_template_message(
+            org, wa_id, namespace, element_name, localizable_params
         )
 
         return JsonResponse(
