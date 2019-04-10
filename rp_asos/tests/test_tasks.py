@@ -8,7 +8,7 @@ from django.test.utils import override_settings
 from mock import ANY, call, patch
 
 from rp_asos.models import Hospital, PatientRecord, PatientValue
-from rp_asos.tasks import patient_data_check
+from rp_asos.tasks import patient_data_check, create_hospital_groups
 from sidekick import utils
 
 from rp_redcap.tests.base import RedcapBaseTestCase
@@ -810,3 +810,194 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             patients[0]["missing_post_op_fields"],
             ["Post Field 1", "Post Field 2"],
         )
+
+
+class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
+    def setUp(self):
+        self.org = self.create_org()
+        self.project = self.create_project(self.org)
+
+    def create_hospital(self, nomination_urn="+27321", whatsapp_group_id=None):
+        return Hospital.objects.create(
+            name="Test Hospital One",
+            project_id=self.project.id,
+            data_access_group="my_test_hospital",
+            rapidpro_flow="123123123",
+            hospital_lead_urn="+27123",
+            hospital_lead_name="Tony Test",
+            nomination_urn=nomination_urn,
+            nomination_name="Peter Test",
+            whatsapp_group_id=whatsapp_group_id,
+        )
+
+    @patch("rp_asos.tasks.create_hospital_groups.create_hospital_wa_group")
+    @patch("rp_asos.tasks.create_hospital_groups.get_wa_group_info")
+    @patch("rp_asos.tasks.create_hospital_groups.send_group_invites")
+    @patch("rp_asos.tasks.create_hospital_groups.add_group_admins")
+    def test_create_hospitals_group_noop(
+        self,
+        mock_add_admins,
+        mock_send_invites,
+        mock_get_info,
+        mock_create_group,
+    ):
+        create_hospital_groups(str(self.project.id))
+
+        mock_add_admins.assert_not_called()
+        mock_send_invites.assert_not_called()
+        mock_get_info.assert_not_called()
+        mock_create_group.assert_not_called()
+
+    @patch("rp_asos.tasks.create_hospital_groups.create_hospital_wa_group")
+    @patch("rp_asos.tasks.create_hospital_groups.get_wa_group_info")
+    @patch("rp_asos.tasks.create_hospital_groups.send_group_invites")
+    @patch("rp_asos.tasks.create_hospital_groups.add_group_admins")
+    def test_create_hospitals_group_with_nomination(
+        self,
+        mock_add_admins,
+        mock_send_invites,
+        mock_get_info,
+        mock_create_group,
+    ):
+        hospital = self.create_hospital(whatsapp_group_id="group-id-a")
+
+        mock_create_group.return_value = hospital
+        mock_get_info.return_value = {"id": "group-id-a"}
+
+        create_hospital_groups(str(self.project.id))
+
+        mock_create_group.assert_called_with(self.org, hospital)
+        mock_get_info.assert_called_with(self.org, hospital)
+        mock_send_invites.assert_called_with(
+            self.org, {"id": "group-id-a"}, ["+27123", "+27321"]
+        )
+        mock_add_admins.assert_called_with(
+            self.org, {"id": "group-id-a"}, ["+27123", "+27321"]
+        )
+
+    @patch("rp_asos.tasks.create_hospital_groups.create_hospital_wa_group")
+    @patch("rp_asos.tasks.create_hospital_groups.get_wa_group_info")
+    @patch("rp_asos.tasks.create_hospital_groups.send_group_invites")
+    @patch("rp_asos.tasks.create_hospital_groups.add_group_admins")
+    def test_create_hospitals_group_with_lead_only(
+        self,
+        mock_add_admins,
+        mock_send_invites,
+        mock_get_info,
+        mock_create_group,
+    ):
+        hospital = self.create_hospital(
+            nomination_urn=None, whatsapp_group_id="group-id-a"
+        )
+
+        mock_create_group.return_value = hospital
+        mock_get_info.return_value = {"id": "group-id-a"}
+
+        create_hospital_groups(str(self.project.id))
+
+        mock_create_group.assert_called_with(self.org, hospital)
+        mock_get_info.assert_called_with(self.org, hospital)
+        mock_send_invites.assert_called_with(
+            self.org, {"id": "group-id-a"}, ["+27123"]
+        )
+        mock_add_admins.assert_called_with(
+            self.org, {"id": "group-id-a"}, ["+27123"]
+        )
+
+    @patch("sidekick.utils.create_whatsapp_group")
+    def test_create_hospital_wa_group_no_group_id(
+        self, mock_create_whatsapp_group
+    ):
+        mock_create_whatsapp_group.return_value = "group-id-1"
+
+        hospital = self.create_hospital()
+
+        hospital = create_hospital_groups.create_hospital_wa_group(
+            self.org, hospital
+        )
+
+        self.assertEqual(hospital.whatsapp_group_id, "group-id-1")
+        mock_create_whatsapp_group.assert_called_with(
+            self.org, "{} - ASOS2".format(hospital.name[:17])
+        )
+
+    @patch("sidekick.utils.create_whatsapp_group")
+    def test_create_hospital_wa_group_with_group_id(
+        self, mock_create_whatsapp_group
+    ):
+        hospital = self.create_hospital(whatsapp_group_id="group-id-2")
+
+        hospital = create_hospital_groups.create_hospital_wa_group(
+            self.org, hospital
+        )
+
+        self.assertEqual(hospital.whatsapp_group_id, "group-id-2")
+        mock_create_whatsapp_group.assert_not_called()
+
+    @patch("sidekick.utils.get_whatsapp_group_info")
+    def test_get_wa_group_info(self, mock_get_whatsapp_group_info):
+        mock_get_whatsapp_group_info.return_value = {"group": "info"}
+
+        hospital = self.create_hospital(whatsapp_group_id="group-id-3")
+
+        group_info = create_hospital_groups.get_wa_group_info(
+            self.org, hospital
+        )
+
+        self.assertEqual(group_info, {"group": "info", "id": "group-id-3"})
+        mock_get_whatsapp_group_info.assert_called_with(self.org, "group-id-3")
+
+    @patch("sidekick.utils.send_whatsapp_template_message")
+    @patch("sidekick.utils.get_whatsapp_group_invite_link")
+    def test_invites_noop(self, mock_get_invite_link, mock_send):
+        create_hospital_groups.send_group_invites(
+            self.org,
+            {"participants": ["wa-id-1", "wa-id-2"]},
+            ["wa-id-1", "wa-id-2"],
+        )
+        mock_get_invite_link.assert_not_called()
+        mock_send.assert_not_called()
+
+    @patch("sidekick.utils.send_whatsapp_template_message")
+    @patch("sidekick.utils.get_whatsapp_group_invite_link")
+    def test_invites_send(self, mock_get_invite_link, mock_send):
+        mock_get_invite_link.return_value = "test-link"
+
+        create_hospital_groups.send_group_invites(
+            self.org,
+            {"id": "group-id-4", "participants": ["wa-id-2"]},
+            ["wa-id-1", "wa-id-2"],
+        )
+        mock_get_invite_link.assert_called_with(self.org, "group-id-4")
+        mock_send.assert_called_with(
+            self.org,
+            "wa-id-1",
+            "whatsapp:hsm:npo:praekeltpbc",
+            "asos2_notification2",
+            {"default": "Hi, please join the ASOS2 Whatsapp group: test-link"},
+        )
+
+    @patch("sidekick.utils.add_whatsapp_group_admin")
+    def test_add_admins_noop(self, mock_add_admin):
+        create_hospital_groups.add_group_admins(
+            self.org,
+            {
+                "participants": ["wa-id-1", "wa-id-2"],
+                "admins": ["wa-id-1", "wa-id-2"],
+            },
+            ["wa-id-1", "wa-id-2"],
+        )
+        mock_add_admin.assert_not_called()
+
+    @patch("sidekick.utils.add_whatsapp_group_admin")
+    def test_add_admins(self, mock_add_admin):
+        create_hospital_groups.add_group_admins(
+            self.org,
+            {
+                "id": "group-id-5",
+                "participants": ["wa-id-1", "wa-id-2"],
+                "admins": ["wa-id-1"],
+            },
+            ["wa-id-1", "wa-id-2"],
+        )
+        mock_add_admin.assert_called_with(self.org, "group-id-5", "wa-id-2")
