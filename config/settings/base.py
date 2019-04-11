@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "rp_asos",
     "rp_redcap",
     "rp_transferto",
+    "crispy_forms",
 ]
 
 MIDDLEWARE = [
@@ -96,6 +97,7 @@ USE_L10N = True
 
 USE_TZ = True
 
+LOGIN_URL = "/admin/login/"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
@@ -185,3 +187,4 @@ EMAIL_SUBJECT_PREFIX = env.str("EMAIL_SUBJECT_PREFIX", "[Django]")
 RABBITMQ_MANAGEMENT_INTERFACE = env.str("RABBITMQ_MANAGEMENT_INTERFACE", "")
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", False)
+CRISPY_TEMPLATE_PACK = "bootstrap4"

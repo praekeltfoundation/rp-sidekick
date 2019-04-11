@@ -62,6 +62,30 @@ def send_whatsapp_template_message(
     )
 
 
+def submit_whatsapp_template_message(org, category, content, name, language):
+    content = content.replace("\r", "")
+    from pprint import pprint
+
+    pprint(
+        {**build_turn_headers(org.engage_token), "Accept": "application/vnd.v1+json"}
+    )
+
+    # do not raise_for_status because we want to surface this error in the form
+    return requests.post(
+        urljoin(org.engage_url, "v1/message_templates"),
+        headers={
+            **build_turn_headers(org.engage_token),
+            "Accept": "application/vnd.v1+json",
+        },
+        data={
+            "category": category,
+            "content": content,
+            "name": name,
+            "language": language,
+        },
+    )
+
+
 def send_whatsapp_group_message(org, group_id, message):
     session = requests.Session()
     retries = Retry(total=3, backoff_factor=1)

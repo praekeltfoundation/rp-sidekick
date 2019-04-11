@@ -14,6 +14,7 @@ setup(
         "coreapi==2.3.3",
         "Django>=2.1.2,<2.2",
         "django-celery==3.2.2",
+        "django-crispy-forms>=1.7.2,<2",
         "django-environ==0.4.5",
         "django-extensions==2.1.0",
         "django-prometheus>=1.0.15,<2",

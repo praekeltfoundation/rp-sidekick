@@ -3,21 +3,29 @@ from os import environ
 
 import requests
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import connections
 from django.db.utils import OperationalError
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, reverse
-from django.views.generic import TemplateView
+from django.shortcuts import redirect, render, reverse
+from django.views.generic import TemplateView, View
+from requests.exceptions import RequestException
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .forms import OrgForm, WhatsAppTemplateForm, language_codes
 from .models import Consent, Organization
 from .serializers import RapidProFlowWebhookSerializer
 from .tasks import start_flow_task
-from .utils import clean_message, get_whatsapp_contacts, send_whatsapp_template_message
+from .utils import (
+    clean_message,
+    get_whatsapp_contacts,
+    send_whatsapp_template_message,
+    submit_whatsapp_template_message,
+)
 
 
 def health(request):
@@ -72,6 +80,9 @@ def detailed_health(request):
 class SendWhatsAppTemplateMessageView(APIView):
     def get(self, request, *args, **kwargs):
         data = request.GET.dict()
+        from pprint import pprint
+
+        pprint(data)
 
         required_params = ["org_id", "wa_id", "namespace", "element_name"]
 
@@ -209,3 +220,80 @@ class ProvideConsentView(APIView):
             return redirect(consent.redirect_url)
 
         return Response()
+
+
+class TemplateCreationView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        return render(
+            request,
+            "sidekick/create_templates.html",
+            {"form": WhatsAppTemplateForm(user=request.user)},
+        )
+
+    def post(self, request, *args, **kwargs):
+        # check the user from the request is legitimate
+        form = WhatsAppTemplateForm(request.POST)
+
+        # print(form.non_field_errors())
+
+        if form.is_valid():
+            # add the necessary items to the request
+            # send the request
+            response = submit_whatsapp_template_message(**form.cleaned_data)
+            try:
+                response.raise_for_status()
+            except RequestException as e:
+                if "errors" in response.json():
+                    [form.add_error(None, error) for error in response.json()["errors"]]
+                else:
+                    form.add_error(None, "error: {}".format(e))
+                return render(request, "sidekick/create_templates.html", {"form": form})
+            # redirect them to list of templates if successful
+            return redirect(reverse("view_template"))
+        return render(request, "sidekick/create_templates.html", {"form": form})
+
+
+class TemplateView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        return render(
+            request, "sidekick/get_templates.html", {"form": OrgForm(user=request.user)}
+        )
+
+    def post(self, request, *args, **kwargs):
+        form = OrgForm(request.POST)
+        if form.is_valid():
+            org = form.cleaned_data["org"]
+
+            # might want to move this to a form field thing
+            if not org.users.filter(id=request.user.id).exists():
+                return HttpResponse(
+                    "Unauthorized: user does not belong to organization", status=401
+                )
+
+            url = "https://whatsapp.praekelt.org/v1/message_templates"
+            headers = {
+                "Authorization": "Bearer {}".format(org.engage_token),
+                "Accept": "application/vnd.v1+json",
+            }
+            response = requests.request("GET", url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()["data"]
+
+            updated_data = [
+                {
+                    **blob,
+                    # display only message body, this will change in the future
+                    "content": blob["components"][0]["text"],
+                    # replace language code with language string
+                    "language": language_codes[blob["language"]],
+                }
+                for blob in data
+            ]
+
+            return render(
+                request,
+                "sidekick/get_templates.html",
+                {"data": updated_data, "form": form},
+            )
+        return render(request, "sidekick/get_templates.html", {"form": form})

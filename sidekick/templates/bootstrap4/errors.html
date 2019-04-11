@@ -1,0 +1,7 @@
+{% if form.non_field_errors %}
+    <div class="alert alert-block alert-danger">
+        {% if form_error_title %}<h4 class="alert-heading">{{ form_error_title }}</h4>{% endif %}
+        <h4 class="alert-heading">Non-Success Response From Turn/Whatsapp:</h4>
+        {{ form.non_field_errors }}
+    </div>
+{% endif %}

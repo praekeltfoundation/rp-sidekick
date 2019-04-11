@@ -4,6 +4,10 @@ from . import views
 
 urlpatterns = [
     path("", include("django_prometheus.urls")),
+    path("template/view/", views.TemplateView.as_view(), name="view_template"),
+    path(
+        "template/create/", views.TemplateCreationView.as_view(), name="create_template"
+    ),
     path("health", views.health, name="health"),
     path("health_details", views.detailed_health, name="detailed-health"),
     path(
