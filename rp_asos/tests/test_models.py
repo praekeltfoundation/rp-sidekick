@@ -1,16 +1,12 @@
-import datetime
 import json
 import responses
 
 from django.test import TestCase
+from freezegun import freeze_time
 from mock import patch
 
 from rp_asos.models import Hospital
 from rp_redcap.tests.base import RedcapBaseTestCase
-
-
-def override_get_today():
-    return datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
 
 
 class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
@@ -135,6 +131,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
         mock_add_admin.assert_called_with(self.org, "group-id-5", "wa-id-2")
 
     @responses.activate
+    @freeze_time("2018-06-06 01:30:00")
     @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
     def test_send_message_not_in_group(self, mock_update_wa_urn):
         responses.add(
@@ -157,8 +154,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
 
         hospital = self.create_hospital(nomination_urn=None)
 
-        with patch("sidekick.utils.get_today", override_get_today):
-            hospital.send_message(["Test message"])
+        hospital.send_message(["Test message"])
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -179,6 +175,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
         mock_update_wa_urn.assert_called()
 
     @responses.activate
+    @freeze_time("2018-06-06 01:30:00")
     @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
     def test_send_message_not_in_group_nominated_urn(self, mock_update_wa_urn):
         responses.add(
@@ -201,8 +198,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
 
         hospital = self.create_hospital()
 
-        with patch("sidekick.utils.get_today", override_get_today):
-            hospital.send_message(["Test message"])
+        hospital.send_message(["Test message"])
 
         self.assertEqual(len(responses.calls), 2)
 
