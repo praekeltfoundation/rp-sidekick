@@ -1,5 +1,4 @@
 import datetime
-import json
 from collections import defaultdict
 
 import responses
@@ -650,8 +649,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_redcap_records.assert_not_called()
 
     @responses.activate
-    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
-    def test_send_reminders(self, mock_update_rapidpro_whatsapp_urn):
+    @patch("rp_asos.models.Hospital.send_message")
+    def test_send_reminders(self, mock_send_message):
         date = override_get_today()
         hospital = self.create_hospital()
         rapidpro_client = self.org.get_rapidpro_client()
@@ -659,115 +658,16 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         messages = defaultdict(lambda: defaultdict(list))
         messages[hospital][date].append("A test message")
 
-        responses.add(
-            responses.POST,
-            "http://localhost:8002/api/v2/flow_starts.json",
-            json={
-                "uuid": "09d23a05",
-                "flow": {"uuid": "f5901b62", "name": "Send Reminder"},
-                "groups": [{"uuid": "f5901b62", "name": "Investigators"}],
-                "contacts": [{"uuid": "f5901b62", "name": "Ryan Lewis"}],
-                "restart_participants": True,
-                "status": "complete",
-                "extra": {},
-                "created_on": "2013-08-19T19:11:21.082Z",
-                "modified_on": "2013-08-19T19:11:21.082Z",
-            },
-            status=200,
-            match_querystring=True,
-        )
-
         with patch("sidekick.utils.get_today", override_get_today):
             patient_data_check.send_reminders(
                 messages, rapidpro_client, self.org
             )
 
-        self.assertEqual(len(responses.calls), 2)
-        self.assertEqual(
-            json.loads(responses.calls[0].request.body),
-            {
-                "flow": "123123123",
-                "restart_participants": 1,
-                "urns": ["tel:+27123"],
-                "extra": {
-                    "hospital_name": "My Test Hospital",
-                    "week": 23,
-                    "reminder": "\nFor surgeries registered on 06 June 2018:\nA test message",
-                    "contact_name": "Tony Test",
-                },
-            },
-        )
-        self.assertEqual(
-            json.loads(responses.calls[1].request.body),
-            {
-                "flow": "123123123",
-                "restart_participants": 1,
-                "urns": ["tel:+27321"],
-                "extra": {
-                    "hospital_name": "My Test Hospital",
-                    "week": 23,
-                    "reminder": "\nFor surgeries registered on 06 June 2018:\nA test message",
-                    "contact_name": "Peter Test",
-                },
-            },
-        )
-        mock_update_rapidpro_whatsapp_urn.assert_called()
+        mock_send_message.assert_called_once()
 
     @responses.activate
-    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
-    def test_send_reminders_no_nomination_urn(
-        self, mock_update_rapidpro_whatsapp_urn
-    ):
-        date = override_get_today()
-        hospital = self.create_hospital(nomination_urn=None)
-        rapidpro_client = self.org.get_rapidpro_client()
-
-        messages = defaultdict(lambda: defaultdict(list))
-        messages[hospital][date].append("A test message")
-
-        responses.add(
-            responses.POST,
-            "http://localhost:8002/api/v2/flow_starts.json",
-            json={
-                "uuid": "09d23a05",
-                "flow": {"uuid": "f5901b62", "name": "Send Reminder"},
-                "groups": [{"uuid": "f5901b62", "name": "Investigators"}],
-                "contacts": [{"uuid": "f5901b62", "name": "Ryan Lewis"}],
-                "restart_participants": True,
-                "status": "complete",
-                "extra": {},
-                "created_on": "2013-08-19T19:11:21.082Z",
-                "modified_on": "2013-08-19T19:11:21.082Z",
-            },
-            status=200,
-            match_querystring=True,
-        )
-
-        with patch("sidekick.utils.get_today", override_get_today):
-            patient_data_check.send_reminders(
-                messages, rapidpro_client, self.org
-            )
-
-        self.assertEqual(len(responses.calls), 1)
-        self.assertEqual(
-            json.loads(responses.calls[0].request.body),
-            {
-                "flow": "123123123",
-                "restart_participants": 1,
-                "urns": ["tel:+27123"],
-                "extra": {
-                    "hospital_name": "My Test Hospital",
-                    "week": 23,
-                    "reminder": "\nFor surgeries registered on 06 June 2018:\nA test message",
-                    "contact_name": "Tony Test",
-                },
-            },
-        )
-        mock_update_rapidpro_whatsapp_urn.assert_called()
-
-    @responses.activate
-    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
-    def test_send_reminders_empty(self, mock_update_rapidpro_whatsapp_urn):
+    @patch("rp_asos.models.Hospital.send_message")
+    def test_send_reminders_empty(self, mock_send_message):
         date = override_get_today()
         hospital = self.create_hospital(nomination_urn=None)
         rapidpro_client = self.org.get_rapidpro_client()
@@ -777,8 +677,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         patient_data_check.send_reminders(messages, rapidpro_client, self.org)
 
-        self.assertEqual(len(responses.calls), 0)
-        mock_update_rapidpro_whatsapp_urn.assert_not_called()
+        mock_send_message.assert_not_called()
 
     def test_check_patients_status(self):
 

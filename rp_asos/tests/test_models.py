@@ -1,8 +1,16 @@
+import datetime
+import json
+import responses
+
 from django.test import TestCase
 from mock import patch
 
 from rp_asos.models import Hospital
 from rp_redcap.tests.base import RedcapBaseTestCase
+
+
+def override_get_today():
+    return datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
 
 
 class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
@@ -60,6 +68,15 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
         self.assertEqual(group_info, {"group": "info", "id": "group-id-3"})
         mock_get_whatsapp_group_info.assert_called_with(self.org, "group-id-3")
 
+    @patch("sidekick.utils.get_whatsapp_group_info")
+    def test_get_wa_group_info_no_id(self, mock_get_whatsapp_group_info):
+        hospital = self.create_hospital()
+
+        group_info = hospital.get_wa_group_info()
+
+        self.assertEqual(group_info, {"participants": [], "admins": []})
+        mock_get_whatsapp_group_info.assert_not_called()
+
     @patch("sidekick.utils.send_whatsapp_template_message")
     @patch("sidekick.utils.get_whatsapp_group_invite_link")
     def test_invites_noop(self, mock_get_invite_link, mock_send):
@@ -116,3 +133,111 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
             ["wa-id-1", "wa-id-2"],
         )
         mock_add_admin.assert_called_with(self.org, "group-id-5", "wa-id-2")
+
+    @responses.activate
+    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
+    def test_send_message_not_in_group(self, mock_update_wa_urn):
+        responses.add(
+            responses.POST,
+            "http://localhost:8002/api/v2/flow_starts.json",
+            json={
+                "uuid": "09d23a05",
+                "flow": {"uuid": "f5901b62", "name": "Send Reminder"},
+                "groups": [{"uuid": "f5901b62", "name": "Investigators"}],
+                "contacts": [{"uuid": "f5901b62", "name": "Ryan Lewis"}],
+                "restart_participants": True,
+                "status": "complete",
+                "extra": {},
+                "created_on": "2013-08-19T19:11:21.082Z",
+                "modified_on": "2013-08-19T19:11:21.082Z",
+            },
+            status=200,
+            match_querystring=True,
+        )
+
+        hospital = self.create_hospital(nomination_urn=None)
+
+        with patch("sidekick.utils.get_today", override_get_today):
+            hospital.send_message(["Test message"])
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(
+            json.loads(responses.calls[0].request.body),
+            {
+                "flow": "123123123",
+                "restart_participants": 1,
+                "urns": ["tel:+27123"],
+                "extra": {
+                    "hospital_name": "Test Hospital One",
+                    "week": 23,
+                    "reminder": "Test message",
+                    "contact_name": "Tony Test",
+                },
+            },
+        )
+
+        mock_update_wa_urn.assert_called()
+
+    @responses.activate
+    @patch("sidekick.utils.update_rapidpro_whatsapp_urn")
+    def test_send_message_not_in_group_nominated_urn(self, mock_update_wa_urn):
+        responses.add(
+            responses.POST,
+            "http://localhost:8002/api/v2/flow_starts.json",
+            json={
+                "uuid": "09d23a05",
+                "flow": {"uuid": "f5901b62", "name": "Send Reminder"},
+                "groups": [{"uuid": "f5901b62", "name": "Investigators"}],
+                "contacts": [{"uuid": "f5901b62", "name": "Ryan Lewis"}],
+                "restart_participants": True,
+                "status": "complete",
+                "extra": {},
+                "created_on": "2013-08-19T19:11:21.082Z",
+                "modified_on": "2013-08-19T19:11:21.082Z",
+            },
+            status=200,
+            match_querystring=True,
+        )
+
+        hospital = self.create_hospital()
+
+        with patch("sidekick.utils.get_today", override_get_today):
+            hospital.send_message(["Test message"])
+
+        self.assertEqual(len(responses.calls), 2)
+
+        mock_update_wa_urn.assert_called()
+
+    @responses.activate
+    @patch("sidekick.utils.get_whatsapp_group_info")
+    @patch("sidekick.utils.send_whatsapp_group_message")
+    def test_send_message_in_group(
+        self, mock_send_group, mock_get_whatsapp_group_info
+    ):
+        mock_get_whatsapp_group_info.return_value = {"participants": ["27123"]}
+
+        hospital = self.create_hospital(
+            nomination_urn=None, whatsapp_group_id="group-id-1"
+        )
+
+        hospital.send_message(["Test message"])
+
+        mock_send_group.assert_called_with(
+            self.org, "group-id-1", "Test message"
+        )
+
+    @responses.activate
+    @patch("sidekick.utils.get_whatsapp_group_info")
+    @patch("sidekick.utils.send_whatsapp_group_message")
+    def test_send_message_in_group_with_nomination(
+        self, mock_send_group, mock_get_whatsapp_group_info
+    ):
+        mock_get_whatsapp_group_info.return_value = {
+            "participants": ["27123", "27321"]
+        }
+
+        hospital = self.create_hospital(whatsapp_group_id="group-id-1")
+
+        hospital.send_message(["Test message"])
+
+        mock_send_group.assert_called_once()

@@ -247,37 +247,7 @@ class PatientDataCheck(BaseTask):
                     reminders.append(msg)
 
             if reminders:
-                urns = ["tel:{}".format(hospital.hospital_lead_urn)]
-                utils.update_rapidpro_whatsapp_urn(
-                    org, hospital.hospital_lead_urn
-                )
-
-                extra_info = {
-                    "hospital_name": hospital.name,
-                    "week": utils.get_current_week_number(),
-                    "reminder": "\n".join(reminders),
-                    "contact_name": hospital.hospital_lead_name,
-                }
-
-                rapidpro_client.create_flow_start(
-                    hospital.rapidpro_flow,
-                    urns,
-                    restart_participants=True,
-                    extra=extra_info,
-                )
-
-                if hospital.nomination_urn:
-                    urns = ["tel:{}".format(hospital.nomination_urn)]
-                    utils.update_rapidpro_whatsapp_urn(
-                        org, hospital.nomination_urn
-                    )
-                    extra_info["contact_name"] = hospital.nomination_name
-                    rapidpro_client.create_flow_start(
-                        hospital.rapidpro_flow,
-                        urns,
-                        restart_participants=True,
-                        extra=extra_info,
-                    )
+                hospital.send_message(reminders)
 
     def run(self, project_id, **kwargs):
         project = Project.objects.prefetch_related("hospitals").get(
