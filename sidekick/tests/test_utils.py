@@ -108,6 +108,22 @@ class UtilsTests(TestCase):
         self.assertEqual(headers["Content-Type"], "application/json")
 
     @responses.activate
+    def test_send_whatsapp_group_message(self):
+        group_id = "group_1"
+        message = "Hey!"
+
+        responses.add(
+            method=responses.POST,
+            url="http://whatsapp/v1/messages",
+            json={"messages": [{"id": "gBEGkYiEB1VXAglK1ZEqA1YKPrU"}]},
+            status=200,
+        )
+
+        result = utils.send_whatsapp_group_message(self.org, group_id, message)
+
+        self.assertEqual(result.status_code, 200)
+
+    @responses.activate
     def test_get_whatsapp_contact_id_exists(self):
         responses.add(
             method=responses.POST,

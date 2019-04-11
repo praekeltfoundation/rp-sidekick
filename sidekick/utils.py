@@ -56,6 +56,22 @@ def send_whatsapp_template_message(
     )
 
 
+def send_whatsapp_group_message(org, group_id, message):
+    return requests.post(
+        urljoin(org.engage_url, "v1/messages"),
+        headers=build_turn_headers(org.engage_token),
+        data=json.dumps(
+            {
+                "recipient_type": "group",
+                "to": group_id,
+                "render_mentions": False,
+                "type": "text",
+                "text": {"body": message},
+            }
+        ),
+    )
+
+
 def get_whatsapp_contact_id(org, msisdn):
     """
     Returns the WhatsApp ID for the given MSISDN

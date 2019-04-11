@@ -32,10 +32,12 @@ class Hospital(models.Model):
             self.save()
 
     def get_wa_group_info(self):
-        group_info = utils.get_whatsapp_group_info(
-            self.project.org, self.whatsapp_group_id
-        )
-        group_info["id"] = self.whatsapp_group_id
+        group_info = {"participants": [], "admins": []}
+        if self.whatsapp_group_id:
+            group_info = utils.get_whatsapp_group_info(
+                self.project.org, self.whatsapp_group_id
+            )
+            group_info["id"] = self.whatsapp_group_id
         return group_info
 
     def send_group_invites(self, group_info, wa_ids):
@@ -69,6 +71,41 @@ class Hospital(models.Model):
             ):
                 utils.add_whatsapp_group_admin(
                     self.project.org, group_info["id"], wa_id
+                )
+
+    def send_message(self, reminders):
+        group_info = self.get_wa_group_info()
+        rapidpro_client = self.project.org.get_rapidpro_client()
+
+        urns = {self.hospital_lead_urn: self.hospital_lead_name}
+        if self.nomination_urn:
+            urns[self.nomination_urn] = self.nomination_name
+
+        sent_to_group = False
+        for urn, name in urns.items():
+            if urn.replace("+", "") in group_info["participants"]:
+                if not sent_to_group:
+                    sent_to_group = True
+
+                    utils.send_whatsapp_group_message(
+                        self.project.org, group_info["id"], "\n".join(reminders)
+                    )
+            else:
+                urns = ["tel:{}".format(urn)]
+                utils.update_rapidpro_whatsapp_urn(self.project.org, urn)
+
+                extra_info = {
+                    "hospital_name": self.name,
+                    "week": utils.get_current_week_number(),
+                    "reminder": "\n".join(reminders),
+                    "contact_name": name,
+                }
+
+                rapidpro_client.create_flow_start(
+                    self.rapidpro_flow,
+                    urns,
+                    restart_participants=True,
+                    extra=extra_info,
                 )
 
 
