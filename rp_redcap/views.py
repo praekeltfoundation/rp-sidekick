@@ -6,7 +6,7 @@ from .tasks import project_check
 from .models import Project
 
 
-def validate_project_start_task(project_id, request, task):
+def validate_project(project_id, request):
     try:
         project = Project.objects.get(id=project_id)
     except Project.DoesNotExist:
@@ -15,15 +15,14 @@ def validate_project_start_task(project_id, request, task):
     if not project.org.users.filter(id=request.user.id).exists():
         return status.HTTP_401_UNAUTHORIZED
 
-    task.delay(project.id)
-
     return status.HTTP_202_ACCEPTED
 
 
 class StartProjectCheckView(APIView):
     def post(self, request, project_id, *args, **kwargs):
-        return_status = validate_project_start_task(
-            project_id, request, project_check
-        )
+        return_status = validate_project(project_id, request)
+
+        if return_status == status.HTTP_202_ACCEPTED:
+            project_check.delay(project_id)
 
         return HttpResponse(status=return_status)
