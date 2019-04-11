@@ -6,6 +6,9 @@ from urllib.parse import urljoin
 from temba_client.v2 import TembaClient
 import pkg_resources
 
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
 
 def get_today():
     return timezone.now().date()
@@ -57,7 +60,11 @@ def send_whatsapp_template_message(
 
 
 def send_whatsapp_group_message(org, group_id, message):
-    return requests.post(
+    session = requests.Session()
+    retries = Retry(total=3, backoff_factor=1)
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+
+    response = session.post(
         urljoin(org.engage_url, "v1/messages"),
         headers=build_turn_headers(org.engage_token),
         data=json.dumps(
@@ -70,6 +77,8 @@ def send_whatsapp_group_message(org, group_id, message):
             }
         ),
     )
+    response.raise_for_status()
+    return response
 
 
 def get_whatsapp_contact_id(org, msisdn):
