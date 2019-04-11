@@ -11,9 +11,7 @@ class StartPatientDataCheckView(APIView):
         return_status = validate_project(project_id, request)
 
         if return_status == status.HTTP_202_ACCEPTED:
-            chain = patient_data_check.s(project_id) | create_hospital_groups.s(
-                project_id
-            )
-            chain.delay()
+            chain = create_hospital_groups.s() | patient_data_check.s()
+            chain.delay(project_id)
 
         return HttpResponse(status=return_status)

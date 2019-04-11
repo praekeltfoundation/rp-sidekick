@@ -308,5 +308,7 @@ class CreateHospitalGroups(Task):
             hospital.send_group_invites(group_info, wa_ids)
             hospital.add_group_admins(group_info, wa_ids)
 
+        return project_id
+
 
 create_hospital_groups = CreateHospitalGroups()

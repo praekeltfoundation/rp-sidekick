@@ -38,6 +38,7 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         If this is a valid request, a 202 status should be returned and the
         task should be started.
         """
+        mock_create_hospital_groups.return_value = self.project.id
         self.org.users.add(self.user)
 
         survey_url = reverse(
@@ -49,8 +50,8 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
-        mock_patient_data_check.assert_called_with(self.project.id)
-        mock_create_hospital_groups.assert_called_with(self.project.id)
+        mock_create_hospital_groups.assert_called()
+        mock_patient_data_check.assert_called()
 
     @patch("rp_asos.tasks.create_hospital_groups.s")
     @patch("rp_asos.tasks.patient_data_check.s")
