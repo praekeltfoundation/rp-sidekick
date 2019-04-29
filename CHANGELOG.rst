@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.4.5
+------------
+ASOS: Create WA group per hospital, notification will be sent there if hospital lead is a member.
+
 1.4.4
 ------------
 TransferTo: fix email bug where it always reported topup request as a success
