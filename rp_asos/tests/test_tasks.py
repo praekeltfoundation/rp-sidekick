@@ -6,7 +6,12 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from mock import ANY, call, patch
 
-from rp_asos.models import Hospital, PatientRecord, PatientValue
+from rp_asos.models import (
+    Hospital,
+    PatientRecord,
+    PatientValue,
+    ScreeningRecord,
+)
 from rp_asos.tasks import patient_data_check, create_hospital_groups
 from sidekick import utils
 
@@ -501,7 +506,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             ],
         )
 
-    def test_get_reminders_no_errors(self):
+    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
+    def test_get_reminders_no_errors(self, mock_save_screening):
         hospital = self.create_hospital()
         date = datetime.date(2018, 1, 16)
         screening_client = MockRedCapPatients()
@@ -513,7 +519,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         self.assertEqual(messages[hospital][date], [])
 
-    def test_get_reminders_no_screening_record(self):
+    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
+    def test_get_reminders_no_screening_record(self, mock_save_screening):
         hospital = self.create_hospital()
 
         date = datetime.date(2018, 2, 20)
@@ -531,7 +538,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         self.assertEqual(messages, check_messages)
 
-    def test_get_reminders_empty_screening_record(self):
+    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
+    def test_get_reminders_empty_screening_record(self, mock_save_screening):
         hospital = self.create_hospital()
 
         date = datetime.date(2018, 1, 9)
@@ -549,7 +557,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         self.assertEqual(messages, check_messages)
 
-    def test_get_reminders_eligible_mismatch(self):
+    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
+    def test_get_reminders_eligible_mismatch(self, mock_save_screening):
         hospital = self.create_hospital()
         date = datetime.date(2018, 3, 20)
         screening_client = MockRedCapPatients()
@@ -564,7 +573,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         self.assertEqual(messages, check_messages)
 
-    def test_get_reminders_patients_incomplete(self):
+    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
+    def test_get_reminders_patients_incomplete(self, mock_save_screening):
         hospital = self.create_hospital()
 
         date = datetime.date(2018, 4, 20)
@@ -596,12 +606,16 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         )
         self.assertEqual(messages, check_messages)
 
-    def test_get_reminders_patients_multiple_hospitals(self):
+    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
+    def test_get_reminders_patients_multiple_hospitals(
+        self, mock_save_screening
+    ):
         hospital1 = self.create_hospital()
         hospital2 = self.create_hospital(
             "Another Test Hospital", "another_hosp"
         )
 
+        monday = datetime.date(2018, 5, 14)
         date = datetime.date(2018, 5, 18)
         screening_client = MockRedCapPatients()
         patient_client = MockRedCapPatients()
@@ -633,8 +647,48 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             messages[hospital2][date], ["Not all patients captured.(1/2)"]
         )
 
+        calls = [
+            call(
+                hospital2,
+                monday,
+                [
+                    {
+                        "record_id": "1",
+                        "asos2_eligible": "10",
+                        "day1": "2",
+                        "day2": "2",
+                        "day3": "2",
+                        "day4": "2",
+                        "day5": "2",
+                        "redcap_data_access_group": "another_hosp",
+                    }
+                ],
+            ),
+            call(
+                hospital1,
+                monday,
+                [
+                    {
+                        "record_id": "1",
+                        "asos2_eligible": "10",
+                        "day1": "2",
+                        "day2": "2",
+                        "day3": "2",
+                        "day4": "2",
+                        "day5": "2",
+                        "redcap_data_access_group": "my_test_hospital",
+                    }
+                ],
+            ),
+        ]
+        print(date)
+        mock_save_screening.assert_has_calls(calls)
+
+    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
     @patch("rp_asos.tasks.patient_data_check.get_redcap_records")
-    def test_get_reminders_patients_weekend(self, mock_get_redcap_records):
+    def test_get_reminders_patients_weekend(
+        self, mock_get_redcap_records, mock_save_screening
+    ):
         hospital = self.create_hospital()
 
         date = datetime.date(2018, 6, 17)
@@ -709,6 +763,48 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             patients[0]["missing_post_op_fields"],
             ["Post Field 1", "Post Field 2"],
         )
+
+    def test_save_screening_records_empty(self):
+        hospital = self.create_hospital()
+
+        date = datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
+
+        patient_data_check.save_screening_records(hospital, date, [])
+
+        self.assertEqual(ScreeningRecord.objects.all().count(), 0)
+
+    def test_save_screening_records_existing(self):
+        hospital = self.create_hospital()
+
+        date = datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
+
+        ScreeningRecord.objects.create(hospital=hospital, date=date)
+
+        patient_data_check.save_screening_records(
+            hospital,
+            date,
+            [{"day1": "1", "day2": "", "day3": "", "day4": "", "day5": "1"}],
+        )
+
+        self.assertEqual(ScreeningRecord.objects.all().count(), 1)
+        self.assertEqual(ScreeningRecord.objects.all()[0].week_day_1, 1)
+        self.assertEqual(ScreeningRecord.objects.all()[0].week_day_2, None)
+        self.assertEqual(ScreeningRecord.objects.all()[0].week_day_5, 1)
+
+    def test_save_screening_records_new(self):
+        hospital = self.create_hospital()
+
+        date = datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
+
+        patient_data_check.save_screening_records(
+            hospital,
+            date,
+            [{"day1": "1", "day2": "", "day3": "", "day4": "", "day5": ""}],
+        )
+
+        self.assertEqual(ScreeningRecord.objects.all().count(), 1)
+        self.assertEqual(ScreeningRecord.objects.all()[0].week_day_1, 1)
+        self.assertEqual(ScreeningRecord.objects.all()[0].week_day_2, None)
 
 
 class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
