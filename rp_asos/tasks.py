@@ -196,7 +196,9 @@ class PatientDataCheck(BaseTask):
             project, patient_records, required_fields
         )
 
-        for hospital in project.hospitals.filter(tz_code=tz_code):
+        for hospital in project.hospitals.filter(
+            tz_code=tz_code, is_active=True
+        ):
 
             hospital_screening_records = [
                 d
@@ -322,7 +324,9 @@ class CreateHospitalGroups(Task):
             id=project_id
         )
 
-        for hospital in project.hospitals.filter(tz_code=tz_code):
+        for hospital in project.hospitals.filter(
+            tz_code=tz_code, is_active=True
+        ):
             wa_ids = [hospital.hospital_lead_urn]
             if hospital.nomination_urn:
                 wa_ids.append(hospital.nomination_urn)
