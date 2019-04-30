@@ -7,7 +7,7 @@ from django.conf import settings
 
 from sidekick import utils
 
-from .models import PatientRecord, PatientValue
+from .models import PatientRecord, PatientValue, ScreeningRecord
 from rp_redcap.models import Project
 from rp_redcap.tasks import BaseTask
 
@@ -29,6 +29,16 @@ class PatientDataCheck(BaseTask):
             export_checkbox_labels=True,
             records=record_ids,
         )
+
+    def save_screening_records(self, hospital, date, records):
+        for record in records:
+            data = {}
+            for i in range(1, 6):
+                if record["day{}".format(i)]:
+                    data["week_day_{}".format(i)] = record["day{}".format(i)]
+            screening_record, _ = ScreeningRecord.objects.update_or_create(
+                hospital=hospital, date=date, defaults=data
+            )
 
     def save_patient_records(self, project, patients, date=None):
         for patient in patients:
@@ -192,6 +202,10 @@ class PatientDataCheck(BaseTask):
                 for d in patient_records
                 if d["redcap_data_access_group"] == hospital.data_access_group
             ]
+
+            self.save_screening_records(
+                hospital, screening_date, hospital_screening_records
+            )
 
             if (
                 hospital_screening_records

@@ -109,6 +109,24 @@ class Hospital(models.Model):
                 )
 
 
+class ScreeningRecord(models.Model):
+    record_id = models.CharField(max_length=30, null=False, blank=False)
+    hospital = models.ForeignKey(
+        Hospital,
+        related_name="screening_records",
+        null=False,
+        on_delete=models.CASCADE,
+    )
+    date = models.DateField()
+    week_day_1 = models.IntegerField(null=True, blank=True)
+    week_day_2 = models.IntegerField(null=True, blank=True)
+    week_day_3 = models.IntegerField(null=True, blank=True)
+    week_day_4 = models.IntegerField(null=True, blank=True)
+    week_day_5 = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class PatientRecord(models.Model):
 
     INCOMPLETE_STATUS = "0"
