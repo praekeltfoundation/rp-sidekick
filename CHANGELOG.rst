@@ -3,6 +3,7 @@ VERSIONS
 
 Next Release
 ------------
+ASOS: Save screening record when running the Patient Data Check task.
 
 1.4.5
 ------------
