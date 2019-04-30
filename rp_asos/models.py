@@ -17,6 +17,7 @@ class Hospital(models.Model):
     nomination_name = models.CharField(max_length=200, null=True, blank=True)
     nomination_urn = models.CharField(max_length=200, null=True, blank=True)
     whatsapp_group_id = models.CharField(max_length=200, null=True, blank=True)
+    tz_code = models.CharField(max_length=10, default="CAT")
 
     unique_together = (("name", "project_id"),)
 

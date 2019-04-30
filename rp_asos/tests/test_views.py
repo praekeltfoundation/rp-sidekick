@@ -42,7 +42,7 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         self.org.users.add(self.user)
 
         survey_url = reverse(
-            "rp_asos.start_patient_check", args=[self.project.id]
+            "rp_asos.start_patient_check", args=[self.project.id, "CAT"]
         )
 
         response = self.client.post(
@@ -65,7 +65,7 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         error should be returned and the task should not be started.
         """
         survey_url = reverse(
-            "rp_asos.start_patient_check", args=[self.project.id]
+            "rp_asos.start_patient_check", args=[self.project.id, "CAT"]
         )
 
         response = self.client.post(

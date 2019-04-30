@@ -4,7 +4,7 @@ from .views import StartPatientDataCheckView
 
 urlpatterns = [
     path(
-        "start-patient-check/<int:project_id>/",
+        "start-patient-check/<int:project_id>/<slug:tz_code>",
         StartPatientDataCheckView.as_view(),
         name="rp_asos.start_patient_check",
     )

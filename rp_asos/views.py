@@ -7,11 +7,11 @@ from rp_redcap.views import validate_project
 
 
 class StartPatientDataCheckView(APIView):
-    def post(self, request, project_id, *args, **kwargs):
+    def post(self, request, project_id, tz_code, *args, **kwargs):
         return_status = validate_project(project_id, request)
 
         if return_status == status.HTTP_202_ACCEPTED:
             chain = create_hospital_groups.s() | patient_data_check.s()
-            chain.delay(project_id)
+            chain.delay(project_id, tz_code)
 
         return HttpResponse(status=return_status)
