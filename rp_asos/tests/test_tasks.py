@@ -248,6 +248,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         name="My Test Hospital",
         dag="my_test_hospital",
         nomination_urn="+27321",
+        tz_code="CAT",
     ):
         return Hospital.objects.create(
             name=name,
@@ -258,6 +259,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             hospital_lead_name="Tony Test",
             nomination_urn=nomination_urn,
             nomination_name="Peter Test",
+            tz_code=tz_code,
         )
 
     def create_patient_records(self, date):
@@ -301,7 +303,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_redcap_crf_client.return_value = MockRedCapPatients()
 
         with patch("sidekick.utils.get_today", override_get_today):
-            patient_data_check(str(self.project.id))
+            patient_data_check(str(self.project.id), "CAT")
 
         required_fields = {
             "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
@@ -317,6 +319,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 ANY,
                 ANY,
                 required_fields,
+                "CAT",
             ),
             call(
                 date - datetime.timedelta(days=2),
@@ -324,6 +327,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 ANY,
                 ANY,
                 required_fields,
+                "CAT",
             ),
             call(
                 date - datetime.timedelta(days=3),
@@ -331,6 +335,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 ANY,
                 ANY,
                 required_fields,
+                "CAT",
             ),
         ]
         mock_get_reminders_for_date.assert_has_calls(calls)
@@ -373,7 +378,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_redcap_crf_client.return_value = MockRedCapPatients()
 
         with patch("sidekick.utils.get_today", override_get_today):
-            patient_data_check(str(self.project.id))
+            patient_data_check(str(self.project.id), "CAT")
 
         required_fields = {
             "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
@@ -388,6 +393,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             ANY,
             ANY,
             required_fields,
+            "CAT",
         )
         self.assertEqual(len(mock_get_reminders_for_date.mock_calls), 1)
 
@@ -514,10 +520,24 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}
+            date, self.project, screening_client, patient_client, {}, "CAT"
         )
 
         self.assertEqual(messages[hospital][date], [])
+
+    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
+    def test_get_reminders_hospital_filter(self, mock_save_screening):
+        self.create_hospital(tz_code="NOT_CAT")
+
+        date = datetime.date(2018, 2, 20)
+        screening_client = MockRedCapPatients()
+        patient_client = MockRedCapPatients()
+
+        messages = patient_data_check.get_reminders_for_date(
+            date, self.project, screening_client, patient_client, {}, "CAT"
+        )
+
+        self.assertEqual(messages, {})
 
     @patch("rp_asos.tasks.patient_data_check.save_screening_records")
     def test_get_reminders_no_screening_record(self, mock_save_screening):
@@ -528,7 +548,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}
+            date, self.project, screening_client, patient_client, {}, "CAT"
         )
 
         check_messages = defaultdict(lambda: defaultdict(list))
@@ -547,7 +567,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}
+            date, self.project, screening_client, patient_client, {}, "CAT"
         )
 
         check_messages = defaultdict(lambda: defaultdict(list))
@@ -565,7 +585,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}
+            date, self.project, screening_client, patient_client, {}, "CAT"
         )
 
         check_messages = defaultdict(lambda: defaultdict(list))
@@ -598,6 +618,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                     "label": "Post Field 2",
                 },
             },
+            "CAT",
         )
 
         check_messages = defaultdict(lambda: defaultdict(list))
@@ -614,6 +635,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         hospital2 = self.create_hospital(
             "Another Test Hospital", "another_hosp"
         )
+        self.create_hospital(tz_code="NOT_CAT")
 
         monday = datetime.date(2018, 5, 14)
         date = datetime.date(2018, 5, 18)
@@ -637,6 +659,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                     "label": "Post Field 2",
                 },
             },
+            "CAT",
         )
 
         self.assertEqual(
@@ -681,7 +704,6 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 ],
             ),
         ]
-        print(date)
         mock_save_screening.assert_has_calls(calls)
 
     @patch("rp_asos.tasks.patient_data_check.save_screening_records")
@@ -696,7 +718,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_client = MockRedCapPatients()
 
         messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}
+            date, self.project, screening_client, patient_client, {}, "CAT"
         )
 
         self.assertEqual(messages[hospital][date], [])
@@ -812,7 +834,9 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
         self.org = self.create_org()
         self.project = self.create_project(self.org)
 
-    def create_hospital(self, nomination_urn="+27321", whatsapp_group_id=None):
+    def create_hospital(
+        self, nomination_urn="+27321", whatsapp_group_id=None, tz_code="CAT"
+    ):
         return Hospital.objects.create(
             name="Test Hospital One",
             project_id=self.project.id,
@@ -823,6 +847,7 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
             nomination_urn=nomination_urn,
             nomination_name="Peter Test",
             whatsapp_group_id=whatsapp_group_id,
+            tz_code=tz_code,
         )
 
     @patch("rp_asos.models.Hospital.create_hospital_wa_group")
@@ -836,7 +861,9 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_info,
         mock_create_group,
     ):
-        create_hospital_groups(str(self.project.id))
+        self.create_hospital(tz_code="NOT_CAT")
+
+        create_hospital_groups(str(self.project.id), "CAT")
 
         mock_add_admins.assert_not_called()
         mock_send_invites.assert_not_called()
@@ -859,7 +886,7 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
         mock_create_group.return_value = hospital
         mock_get_info.return_value = {"id": "group-id-a"}
 
-        create_hospital_groups(str(self.project.id))
+        create_hospital_groups(str(self.project.id), "CAT")
 
         mock_create_group.assert_called_with()
         mock_get_info.assert_called_with()
@@ -888,7 +915,7 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
         mock_create_group.return_value = hospital
         mock_get_info.return_value = {"id": "group-id-a"}
 
-        create_hospital_groups(str(self.project.id))
+        create_hospital_groups(str(self.project.id), "CAT")
 
         mock_create_group.assert_called_with()
         mock_get_info.assert_called_with()

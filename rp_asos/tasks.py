@@ -167,7 +167,13 @@ class PatientDataCheck(BaseTask):
         return patients
 
     def get_reminders_for_date(
-        self, date, project, screening_client, patient_client, required_fields
+        self,
+        date,
+        project,
+        screening_client,
+        patient_client,
+        required_fields,
+        tz_code,
     ):
         messages = defaultdict(lambda: defaultdict(list))
         if date.weekday() > 4:
@@ -190,7 +196,7 @@ class PatientDataCheck(BaseTask):
             project, patient_records, required_fields
         )
 
-        for hospital in project.hospitals.all():
+        for hospital in project.hospitals.filter(tz_code=tz_code):
 
             hospital_screening_records = [
                 d
@@ -263,7 +269,7 @@ class PatientDataCheck(BaseTask):
             if reminders:
                 hospital.send_message(reminders)
 
-    def run(self, project_id, **kwargs):
+    def run(self, project_id, tz_code, **kwargs):
         project = Project.objects.prefetch_related("hospitals").get(
             id=project_id
         )
@@ -281,7 +287,12 @@ class PatientDataCheck(BaseTask):
             date = utils.get_today() - datetime.timedelta(days=day + 1)
 
             new_messages = self.get_reminders_for_date(
-                date, project, screening_client, patient_client, required_fields
+                date,
+                project,
+                screening_client,
+                patient_client,
+                required_fields,
+                tz_code,
             )
 
             for hospital, date_messages in new_messages.items():
@@ -305,13 +316,13 @@ class CreateHospitalGroups(Task):
     name = "rp_redcap.tasks.create_hospital_groups"
     log = get_task_logger(__name__)
 
-    def run(self, project_id, **kwargs):
+    def run(self, project_id, tz_code, **kwargs):
 
         project = Project.objects.prefetch_related("hospitals").get(
             id=project_id
         )
 
-        for hospital in project.hospitals.all():
+        for hospital in project.hospitals.filter(tz_code=tz_code):
             wa_ids = [hospital.hospital_lead_urn]
             if hospital.nomination_urn:
                 wa_ids.append(hospital.nomination_urn)
@@ -322,7 +333,7 @@ class CreateHospitalGroups(Task):
             hospital.send_group_invites(group_info, wa_ids)
             hospital.add_group_admins(group_info, wa_ids)
 
-        return project_id
+        return project_id, tz_code
 
 
 create_hospital_groups = CreateHospitalGroups()
