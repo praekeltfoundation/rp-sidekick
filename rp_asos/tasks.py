@@ -7,7 +7,7 @@ from django.conf import settings
 
 from sidekick import utils
 
-from .models import PatientRecord, PatientValue, ScreeningRecord
+from .models import PatientRecord, PatientValue, ScreeningRecord, Hospital
 from rp_redcap.models import Project
 from rp_redcap.tasks import BaseTask
 
@@ -50,8 +50,14 @@ class PatientDataCheck(BaseTask):
             if date:
                 patient_defaults.update({"date": date})
 
+            hospital = Hospital.objects.get(
+                project=project,
+                data_access_group=patient["redcap_data_access_group"],
+            )
+
             patient_obj, created = PatientRecord.objects.get_or_create(
                 project=project,
+                hospital=hospital,
                 record_id=patient["record_id"],
                 defaults=patient_defaults,
             )
@@ -80,6 +86,7 @@ class PatientDataCheck(BaseTask):
                         "post_operation_status",
                         "missing_pre_op_fields",
                         "missing_post_op_fields",
+                        "redcap_data_access_group",
                     ]
                     and value != ""
                 ):

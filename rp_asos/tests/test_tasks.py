@@ -262,10 +262,11 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             tz_code=tz_code,
         )
 
-    def create_patient_records(self, date):
+    def create_patient_records(self, date, hospital):
         patient_record = PatientRecord.objects.create(
             **{
                 "project": self.project,
+                "hospital": hospital,
                 "date": date,
                 "record_id": "1",
                 "pre_operation_status": PatientRecord.INCOMPLETE_STATUS,
@@ -406,8 +407,10 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def test_save_patient_records_existing(self):
         date = utils.get_today()
 
+        hospital = self.create_hospital()
+
         # create records to update
-        self.create_patient_records(date)
+        self.create_patient_records(date, hospital)
 
         # update records
         new_data = {
@@ -417,6 +420,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "field_one": "new_value",
             "missing_pre_op_fields": [],
             "missing_post_op_fields": [],
+            "redcap_data_access_group": "my_test_hospital",
         }
 
         patient_data_check.save_patient_records(self.project, [new_data])
@@ -439,8 +443,10 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def test_save_patient_records_existing_update(self):
         date = utils.get_today()
 
+        hospital = self.create_hospital()
+
         # create records to update
-        self.create_patient_records(date)
+        self.create_patient_records(date, hospital)
 
         # update records
         new_data = {
@@ -448,6 +454,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "pre_operation_status": PatientRecord.COMPLETE_STATUS,
             "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
+            "redcap_data_access_group": "my_test_hospital",
         }
 
         patient_data_check.save_patient_records(self.project, [new_data])
@@ -463,12 +470,14 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         self.assertEqual(patient_value.value, "new_value")
 
     def test_save_patient_records_new(self):
+        self.create_hospital()
         date = utils.get_today()
         data = {
             "record_id": "1",
             "pre_operation_status": PatientRecord.COMPLETE_STATUS,
             "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
+            "redcap_data_access_group": "my_test_hospital",
         }
 
         patient_data_check.save_patient_records(self.project, [data], date)
@@ -493,7 +502,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def test_refresh_historical_data_with_records(
         self, mock_save_patient_records
     ):
-        self.create_patient_records(utils.get_today())
+        hospital = self.create_hospital()
+        self.create_patient_records(utils.get_today(), hospital)
         client = MockRedCapPatients()
         patient_data_check.refresh_historical_data(self.project, client, {})
 
@@ -635,7 +645,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         hospital2 = self.create_hospital(
             "Another Test Hospital", "another_hosp"
         )
-        self.create_hospital(tz_code="NOT_CAT")
+        self.create_hospital(tz_code="NOT_CAT", dag="another_hosp2")
 
         monday = datetime.date(2018, 5, 14)
         date = datetime.date(2018, 5, 18)
