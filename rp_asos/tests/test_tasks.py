@@ -815,13 +815,23 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_data_check.save_screening_records(
             hospital,
             date,
-            [{"day1": "1", "day2": "", "day3": "", "day4": "", "day5": "1"}],
+            [
+                {
+                    "day1": "1",
+                    "day2": "",
+                    "day3": "",
+                    "day4": "",
+                    "day5": "1",
+                    "asos2_eligible": "2",
+                }
+            ],
         )
 
         self.assertEqual(ScreeningRecord.objects.all().count(), 1)
         self.assertEqual(ScreeningRecord.objects.all()[0].week_day_1, 1)
         self.assertEqual(ScreeningRecord.objects.all()[0].week_day_2, None)
         self.assertEqual(ScreeningRecord.objects.all()[0].week_day_5, 1)
+        self.assertEqual(ScreeningRecord.objects.all()[0].total_eligible, 2)
 
     def test_save_screening_records_new(self):
         hospital = self.create_hospital()
@@ -831,12 +841,22 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient_data_check.save_screening_records(
             hospital,
             date,
-            [{"day1": "1", "day2": "", "day3": "", "day4": "", "day5": ""}],
+            [
+                {
+                    "day1": "1",
+                    "day2": "",
+                    "day3": "",
+                    "day4": "",
+                    "day5": "",
+                    "asos2_eligible": "1",
+                }
+            ],
         )
 
         self.assertEqual(ScreeningRecord.objects.all().count(), 1)
         self.assertEqual(ScreeningRecord.objects.all()[0].week_day_1, 1)
         self.assertEqual(ScreeningRecord.objects.all()[0].week_day_2, None)
+        self.assertEqual(ScreeningRecord.objects.all()[0].total_eligible, 1)
 
 
 class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
