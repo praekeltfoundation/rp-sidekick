@@ -125,6 +125,7 @@ class ScreeningRecord(models.Model):
     week_day_3 = models.IntegerField(null=True, blank=True)
     week_day_4 = models.IntegerField(null=True, blank=True)
     week_day_5 = models.IntegerField(null=True, blank=True)
+    total_eligible = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

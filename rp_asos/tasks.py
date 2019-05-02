@@ -32,7 +32,7 @@ class PatientDataCheck(BaseTask):
 
     def save_screening_records(self, hospital, date, records):
         for record in records:
-            data = {}
+            data = {"total_eligible": record["asos2_eligible"]}
             for i in range(1, 6):
                 if record["day{}".format(i)]:
                     data["week_day_{}".format(i)] = record["day{}".format(i)]
