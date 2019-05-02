@@ -143,6 +143,9 @@ class PatientRecord(models.Model):
     project = models.ForeignKey(
         Project, related_name="patients", null=False, on_delete=models.CASCADE
     )
+    hospital = models.ForeignKey(
+        Hospital, related_name="patients", null=True, on_delete=models.CASCADE
+    )
     record_id = models.CharField(max_length=30, null=False, blank=False)
     date = models.DateField()
     pre_operation_status = models.CharField(
