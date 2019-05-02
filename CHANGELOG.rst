@@ -4,6 +4,7 @@ VERSIONS
 Next Release
 ------------
 ASOS: Save screening record when running the Patient Data Check task.
+ASOS: Link patient records to hospitals
 
 1.4.5
 ------------
