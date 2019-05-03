@@ -77,7 +77,7 @@ class Hospital(models.Model):
                     self.project.org, group_info["id"], wa_id
                 )
 
-    def send_message(self, reminders):
+    def send_message(self, message):
         group_info = self.get_wa_group_info()
         rapidpro_client = self.project.org.get_rapidpro_client()
 
@@ -92,7 +92,7 @@ class Hospital(models.Model):
                     sent_to_group = True
 
                     utils.send_whatsapp_group_message(
-                        self.project.org, group_info["id"], "\n".join(reminders)
+                        self.project.org, group_info["id"], message
                     )
             else:
                 urns = ["tel:{}".format(urn)]
@@ -101,7 +101,7 @@ class Hospital(models.Model):
                 extra_info = {
                     "hospital_name": self.name,
                     "week": utils.get_current_week_number(),
-                    "reminder": "\n".join(reminders),
+                    "reminder": message,
                     "contact_name": name,
                 }
 

@@ -1,13 +1,12 @@
 import datetime
-from collections import defaultdict
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
-from django.conf import settings
+from django.db.models import Sum, Max, Q
 
 from sidekick import utils
 
-from .models import PatientRecord, PatientValue, ScreeningRecord, Hospital
+from .models import PatientRecord, PatientValue, ScreeningRecord
 from rp_redcap.models import Project
 from rp_redcap.tasks import BaseTask
 
@@ -30,30 +29,23 @@ class PatientDataCheck(BaseTask):
             records=record_ids,
         )
 
-    def save_screening_records(self, hospital, date, records):
+    def save_screening_records(self, hospital, records):
         for record in records:
             data = {"total_eligible": record["asos2_eligible"]}
             for i in range(1, 6):
                 if record["day{}".format(i)]:
                     data["week_day_{}".format(i)] = record["day{}".format(i)]
             screening_record, _ = ScreeningRecord.objects.update_or_create(
-                hospital=hospital, date=date, defaults=data
+                hospital=hospital, date=record["date"], defaults=data
             )
 
-    def save_patient_records(self, project, patients, date=None):
+    def save_patient_records(self, project, hospital, patients):
         for patient in patients:
             patient_defaults = {
                 "pre_operation_status": patient["pre_operation_status"],
                 "post_operation_status": patient["post_operation_status"],
+                "date": patient["date_surg"],
             }
-
-            if date:
-                patient_defaults.update({"date": date})
-
-            hospital = Hospital.objects.get(
-                project=project,
-                data_access_group=patient["redcap_data_access_group"],
-            )
 
             patient_obj, created = PatientRecord.objects.get_or_create(
                 project=project,
@@ -87,6 +79,7 @@ class PatientDataCheck(BaseTask):
                         "missing_pre_op_fields",
                         "missing_post_op_fields",
                         "redcap_data_access_group",
+                        "date_surg",
                     ]
                     and value != ""
                 ):
@@ -99,28 +92,6 @@ class PatientDataCheck(BaseTask):
                     if not created and obj.value != value:
                         obj.value = value
                         obj.save()
-
-    def refresh_historical_data(self, project, patient_client, required_fields):
-        record_ids = []
-
-        for patient_record in PatientRecord.objects.filter(
-            project=project
-        ).exclude(
-            pre_operation_status=PatientRecord.COMPLETE_STATUS,
-            post_operation_status=PatientRecord.COMPLETE_STATUS,
-        ):
-            record_ids.append(patient_record.record_id)
-
-        if record_ids:
-            patient_records = self.get_redcap_records(
-                patient_client, "asos2_crf", record_ids=record_ids
-            )
-
-            patient_records = self.check_patients_status(
-                project, patient_records, required_fields
-            )
-
-            self.save_patient_records(project, patient_records)
 
     def check_patients_status(self, project, patients, required_fields):
 
@@ -173,31 +144,20 @@ class PatientDataCheck(BaseTask):
 
         return patients
 
-    def get_reminders_for_date(
-        self,
-        date,
-        project,
-        screening_client,
-        patient_client,
-        required_fields,
-        tz_code,
+    def save_all_data_from_redcap(
+        self, project, patient_client, required_fields, tz_code
     ):
-        messages = defaultdict(lambda: defaultdict(list))
-        if date.weekday() > 4:
-            return messages
-
-        screening_date = date - datetime.timedelta(days=date.weekday())
-        screening_field = "day{}".format(date.weekday() + 1)
-
+        screening_client = project.get_redcap_client()
         screening_records = self.get_redcap_records(
-            screening_client,
-            "screening_tool",
-            "[date] = '{}'".format(screening_date),
+            screening_client, "screening_tool"
         )
 
-        patient_records = self.get_redcap_records(
-            patient_client, "asos2_crf", "[date_surg] = '{}'".format(date)
-        )
+        patient_client = project.get_redcap_crf_client()
+
+        metadata = self.get_metadata(patient_client)
+        required_fields = self.get_required_fields(metadata)
+
+        patient_records = self.get_redcap_records(patient_client, "asos2_crf")
 
         patient_records = self.check_patients_status(
             project, patient_records, required_fields
@@ -212,108 +172,80 @@ class PatientDataCheck(BaseTask):
                 for d in screening_records
                 if d["redcap_data_access_group"] == hospital.data_access_group
             ]
+            self.save_screening_records(hospital, hospital_screening_records)
+
             hospital_patient_records = [
                 d
                 for d in patient_records
                 if d["redcap_data_access_group"] == hospital.data_access_group
             ]
 
-            self.save_screening_records(
-                hospital, screening_date, hospital_screening_records
+            self.save_patient_records(
+                project, hospital, hospital_patient_records
             )
 
-            if (
-                hospital_screening_records
-                and hospital_screening_records[0][screening_field]
-            ):
-                patient_count = int(
-                    hospital_screening_records[0][screening_field]
-                )
-
-                # Check count
-                if patient_count != len(hospital_patient_records):
-                    messages[hospital][date].append(
-                        "Not all patients captured.({}/{})".format(
-                            len(hospital_patient_records), patient_count
-                        )
-                    )
-
-                # check status
-                for patient in hospital_patient_records:
-                    if (
-                        patient.get("pre_operation_status")
-                        != PatientRecord.COMPLETE_STATUS
-                        or patient.get("post_operation_status")
-                        != PatientRecord.COMPLETE_STATUS
-                    ):
-                        messages[hospital][date].append(
-                            "{}: {} preoperative, {} postoperative fields missing".format(
-                                patient["record_id"],
-                                len(patient["missing_pre_op_fields"]),
-                                len(patient["missing_post_op_fields"]),
-                            )
-                        )
-            else:
-                messages[hospital][date].append(
-                    "No screening records found.({})".format(date)
-                )
-
-        self.save_patient_records(project, patient_records, date)
-
-        return messages
-
-    def send_reminders(self, messages, rapidpro_client, org):
-        for hospital, msgs in messages.items():
-            reminders = []
-            for date, hosp_msgs in msgs.items():
-                if hosp_msgs:
-                    reminders.append(
-                        "\nFor surgeries registered on {}:".format(
-                            date.strftime("%d %B %Y")
-                        )
-                    )
-                for msg in hosp_msgs:
-                    reminders.append(msg)
-
-            if reminders:
-                hospital.send_message(reminders)
-
-    def run(self, args, **kwargs):
-        project_id = args[0]
-        tz_code = args[1]
-
+    def run(self, project_id, tz_code, **kwargs):
         project = Project.objects.prefetch_related("hospitals").get(
             id=project_id
         )
 
-        screening_client = project.get_redcap_client()
-        patient_client = project.get_redcap_crf_client()
-        rapidpro_client = project.org.get_rapidpro_client()
+        message_template = (
+            "Daily data update for Worcester Hospital:\n"
+            "{} eligible operations have been reported on your screening log.\n"
+            "{}\n"  # last update
+            "{}"  # last update warning
+            "\n"
+            "{} CRFs have been captured on REDCap.\n"
+            "{} CRFs have incomplete data fields.\n"
+            "The following CRFs have incomplete data fields on REDCap:\n"
+            "{}"
+        )
 
-        metadata = self.get_metadata(patient_client)
-        required_fields = self.get_required_fields(metadata)
+        date = utils.get_today() - datetime.timedelta(days=1)
 
-        messages = defaultdict(lambda: defaultdict(list))
+        self.save_all_data_from_redcap(project, tz_code)
 
-        for day in range(0, settings.ASOS_HISTORICAL_DAYS):
-            date = utils.get_today() - datetime.timedelta(days=day + 1)
-
-            new_messages = self.get_reminders_for_date(
-                date,
-                project,
-                screening_client,
-                patient_client,
-                required_fields,
-                tz_code,
+        for hospital in project.hospitals.filter(
+            tz_code=tz_code, is_active=True
+        ):
+            total_screening = 0
+            last_update = "The screening log has not been updated."
+            update_warning = (
+                "Please update your screening log today or WhatsApp us if "
+                "there is a problem.\n"
             )
+            if hospital.screening_records.exists():
+                aggregate_date = hospital.screening_records.aggregate(
+                    Sum("total_eligible"), Max("updated_at")
+                )
 
-            for hospital, date_messages in new_messages.items():
-                for date, hospital_messages in date_messages.items():
-                    messages[hospital][date] += hospital_messages
+                total_screening = aggregate_date["total_eligible__sum"]
+                last_update = "The last screening log update was on {}.".format(
+                    aggregate_date["updated_at__max"].strftime("%d %B %Y")
+                )
 
-        self.send_reminders(messages, rapidpro_client, project.org)
+                if (date - aggregate_date["updated_at__max"].date()).days <= 2:
+                    update_warning = ""
 
-        self.refresh_historical_data(project, patient_client, required_fields)
+                # TODO: check if screening hasn't been updated for 3 days, send
+                # message to ASOS admin team
+
+            crf_total_count = hospital.patients.count()
+            record_ids = hospital.patients.exclude(
+                Q(pre_operation_status=PatientRecord.COMPLETE_STATUS)
+                | Q(post_operation_status=PatientRecord.COMPLETE_STATUS)
+            ).values_list("record_id", flat=True)
+
+            hospital.send_message(
+                message_template.format(
+                    total_screening,
+                    last_update,
+                    update_warning,
+                    crf_total_count,
+                    len(record_ids),
+                    "; ".join(record_ids),
+                )
+            )
 
 
 patient_data_check = PatientDataCheck()
