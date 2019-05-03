@@ -3,6 +3,7 @@ VERSIONS
 
 Next Release
 ------------
+TransferTo: updated docs to better show how to use asynch endpoints.
 Sidekick: Bugfix, reference last inbound message, not last message, for archiving Turn conversation
 
 1.6.0
