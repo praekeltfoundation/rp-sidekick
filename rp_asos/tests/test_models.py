@@ -189,7 +189,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
 
         hospital = self.create_hospital(nomination_urn=None)
 
-        hospital.send_message(["Test message"])
+        hospital.send_message("Test message")
 
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(
@@ -251,7 +251,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
             nomination_urn=None, whatsapp_group_id="group-id-1"
         )
 
-        hospital.send_message(["Test message"])
+        hospital.send_message("Test message")
 
         mock_send_group.assert_called_with(
             self.org, "group-id-1", "Test message"

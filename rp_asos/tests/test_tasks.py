@@ -1,10 +1,9 @@
 import datetime
-from collections import defaultdict
+from freezegun import freeze_time
+from mock import patch
 
-import responses
 from django.test import TestCase
-from django.test.utils import override_settings
-from mock import ANY, call, patch
+from django.utils import timezone
 
 from rp_asos.models import (
     Hospital,
@@ -16,10 +15,6 @@ from rp_asos.tasks import patient_data_check, create_hospital_groups
 from sidekick import utils
 
 from rp_redcap.tests.base import RedcapBaseTestCase
-
-
-def override_get_today():
-    return datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
 
 
 class MockRedCapPatients(object):
@@ -62,179 +57,55 @@ class MockRedCapPatients(object):
         export_checkbox_labels=False,
         filter_logic=None,
     ):
-        if records:
-            # test_refresh_historical_data_with_records
+        if "screening_tool" in forms:
+            return [
+                {
+                    "record_id": "1",
+                    "date": "2018-06-06",
+                    "asos2_eligible": "5",
+                    "day1": "1",
+                    "day2": "1",
+                    "day3": "1",
+                    "day4": "",
+                    "day5": "1",
+                    "redcap_data_access_group": "my_test_hospital",
+                },
+                {
+                    "record_id": "1",
+                    "date": "2017-06-06",
+                    "asos2_eligible": "5",
+                    "day1": "1",
+                    "day2": "1",
+                    "day3": "1",
+                    "day4": "",
+                    "day5": "1",
+                    "redcap_data_access_group": "other_hospital",
+                },
+            ]
+        if "asos2_crf" in forms:
             return [
                 {
                     "record_id": "1",
                     "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
-                    "field_one": "new_value",
-                }
+                    "redcap_data_access_group": "my_test_hospital",
+                    "pre_op_field_1": "value",
+                    "pre_op_field_2": "value",
+                    "post_op_field_1": "value",
+                    "post_op_field_2": "value",
+                    "date_surg": "2018-11-20",
+                },
+                {
+                    "record_id": "1",
+                    "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
+                    "redcap_data_access_group": "other_hospital",
+                    "pre_op_field_1": "value",
+                    "pre_op_field_2": "value",
+                    "post_op_field_1": "value",
+                    "post_op_field_2": "value",
+                    "date_surg": "2017-11-20",
+                },
             ]
-        if "'2018-01-16'" in filter_logic or "'2018-01-15'" in filter_logic:
-            # test_get_reminders_no_errors
-            if "screening_tool" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "5",
-                        "day1": "1",
-                        "day2": "1",
-                        "day3": "1",
-                        "day4": "",
-                        "day5": "1",
-                        "redcap_data_access_group": "my_test_hospital",
-                    }
-                ]
-            if "asos2_crf" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
-                        "redcap_data_access_group": "my_test_hospital",
-                        "pre_op_field_1": "value",
-                        "pre_op_field_2": "value",
-                        "post_op_field_1": "value",
-                        "post_op_field_2": "value",
-                    }
-                ]
-        elif "'2018-01-09'" in filter_logic or "'2018-01-08'" in filter_logic:
-            # test_get_reminders_empty_screening_record
-            if "screening_tool" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "5",
-                        "day1": "",
-                        "day2": "",
-                        "day3": "",
-                        "day4": "",
-                        "day5": "",
-                        "redcap_data_access_group": "my_test_hospital",
-                    }
-                ]
-        elif "'2018-02-20'" in filter_logic or "'2018-02-19'" in filter_logic:
-            # test_get_reminders_no_screening_record
-            if "screening_tool" in forms:
-                return []
-        elif "'2018-03-20'" in filter_logic or "'2018-03-19'" in filter_logic:
-            # test_get_reminders_eligible_mismatch
-            if "screening_tool" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "6",
-                        "day1": "1",
-                        "day2": "2",
-                        "day3": "1",
-                        "day4": "1",
-                        "day5": "1",
-                        "redcap_data_access_group": "my_test_hospital",
-                    }
-                ]
-            if "asos2_crf" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
-                        "redcap_data_access_group": "my_test_hospital",
-                        "pre_op_field_1": "value",
-                        "pre_op_field_2": "value",
-                        "post_op_field_1": "value",
-                        "post_op_field_2": "value",
-                    }
-                ]
-        elif "'2018-04-20'" in filter_logic or "'2018-04-16'" in filter_logic:
-            # test_get_reminders_patients_incomplete
-            if "screening_tool" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "10",
-                        "day1": "2",
-                        "day2": "2",
-                        "day3": "2",
-                        "day4": "2",
-                        "day5": "2",
-                        "redcap_data_access_group": "my_test_hospital",
-                    }
-                ]
-            if "asos2_crf" in forms:
-                return [
-                    {
-                        "record_id": "1999-1",
-                        "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
-                        "redcap_data_access_group": "my_test_hospital",
-                        "pre_op_field_1": "value",
-                        "pre_op_field_2": "value",
-                        "post_op_field_1": "value",
-                        "post_op_field_2": "value",
-                    },
-                    {
-                        "record_id": "1999-2",
-                        "asos2_crf_complete": PatientRecord.INCOMPLETE_STATUS,
-                        "redcap_data_access_group": "my_test_hospital",
-                        "pre_op_field_1": "",
-                        "pre_op_field_2": "",
-                        "post_op_field_1": "",
-                        "post_op_field_2": "",
-                    },
-                ]
-        elif "'2018-05-18'" in filter_logic or "'2018-05-14'" in filter_logic:
-            # test_get_reminders_patients_multiple_hospitals
-            if "screening_tool" in forms:
-                return [
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "10",
-                        "day1": "2",
-                        "day2": "2",
-                        "day3": "2",
-                        "day4": "2",
-                        "day5": "2",
-                        "redcap_data_access_group": "my_test_hospital",
-                    },
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "10",
-                        "day1": "2",
-                        "day2": "2",
-                        "day3": "2",
-                        "day4": "2",
-                        "day5": "2",
-                        "redcap_data_access_group": "another_hosp",
-                    },
-                ]
-            if "asos2_crf" in forms:
-                return [
-                    {
-                        "record_id": "1888-1",
-                        "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
-                        "redcap_data_access_group": "my_test_hospital",
-                        "pre_op_field_1": "value",
-                        "pre_op_field_2": "value",
-                        "post_op_field_1": "value",
-                        "post_op_field_2": "value",
-                    },
-                    {
-                        "record_id": "1888-2",
-                        "asos2_crf_complete": PatientRecord.INCOMPLETE_STATUS,
-                        "redcap_data_access_group": "my_test_hospital",
-                        "pre_op_field_1": "",
-                        "pre_op_field_2": "",
-                        "post_op_field_1": "",
-                        "post_op_field_2": "",
-                    },
-                    {
-                        "record_id": "1888-3",
-                        "asos2_crf_complete": PatientRecord.COMPLETE_STATUS,
-                        "redcap_data_access_group": "another_hosp",
-                        "pre_op_field_1": "value",
-                        "pre_op_field_2": "value",
-                        "post_op_field_1": "value",
-                        "post_op_field_2": "value",
-                    },
-                ]
+
         return []
 
 
@@ -262,13 +133,13 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             tz_code=tz_code,
         )
 
-    def create_patient_records(self, date, hospital):
+    def create_patient_records(self, date, hospital, record_id="1"):
         patient_record = PatientRecord.objects.create(
             **{
                 "project": self.project,
                 "hospital": hospital,
                 "date": date,
-                "record_id": "1",
+                "record_id": record_id,
                 "pre_operation_status": PatientRecord.INCOMPLETE_STATUS,
             }
         )
@@ -279,130 +150,114 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "value": "original_value",
             }
         )
+        return patient_record
 
-    @patch("rp_redcap.models.Project.get_redcap_crf_client")
-    @patch("rp_redcap.models.Project.get_redcap_client")
-    @patch("rp_asos.tasks.patient_data_check.get_reminders_for_date")
-    @patch("rp_asos.tasks.patient_data_check.refresh_historical_data")
-    @patch("rp_asos.tasks.patient_data_check.send_reminders")
-    def test_patient_check(
-        self,
-        mock_send_reminders,
-        mock_refresh_historical_data,
-        mock_get_reminders_for_date,
-        mock_get_redcap_client,
-        mock_get_redcap_crf_client,
+    @patch("rp_asos.tasks.patient_data_check.save_all_data_from_redcap")
+    @patch("rp_asos.models.Hospital.send_message")
+    def test_patient_check_no_data(
+        self, mock_send_message, mock_save_all_data_from_redcap
+    ):
+        self.create_hospital()
+
+        patient_data_check(str(self.project.id), "CAT")
+
+        message = (
+            "Daily data update for Worcester Hospital:\n"
+            "0 eligible operations have been reported on your screening log.\n"
+            "The screening log has not been updated.\n"
+            "Please update your screening log today or WhatsApp us if "
+            "there is a problem.\n\n"
+            "0 CRFs have been captured on REDCap.\n"
+            "0 CRFs have incomplete data fields.\n"
+            "The following CRFs have incomplete data fields on REDCap:\n"
+        )
+
+        mock_send_message.assert_called_with(message)
+
+    @freeze_time("2019-01-01")
+    @patch("rp_asos.tasks.patient_data_check.save_all_data_from_redcap")
+    @patch("rp_asos.models.Hospital.send_message")
+    def test_patient_check_with_data(
+        self, mock_send_message, mock_save_all_data_from_redcap
     ):
         hospital = self.create_hospital()
-        date = override_get_today()
 
-        return_data = defaultdict(lambda: defaultdict(list))
-        return_data[hospital][date].append("test notification")
-        mock_get_reminders_for_date.return_value = return_data
-
-        mock_get_redcap_client.return_value = MockRedCapPatients()
-        mock_get_redcap_crf_client.return_value = MockRedCapPatients()
-
-        with patch("sidekick.utils.get_today", override_get_today):
-            patient_data_check([str(self.project.id), "CAT"])
-
-        required_fields = {
-            "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
-            "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
-            "post_op_field_1": {"condition": "True", "label": "Post Field 1"},
-            "post_op_field_2": {"condition": "True", "label": "Post Field 2"},
-        }
-
-        calls = [
-            call(
-                date - datetime.timedelta(days=1),
-                self.project,
-                ANY,
-                ANY,
-                required_fields,
-                "CAT",
-            ),
-            call(
-                date - datetime.timedelta(days=2),
-                self.project,
-                ANY,
-                ANY,
-                required_fields,
-                "CAT",
-            ),
-            call(
-                date - datetime.timedelta(days=3),
-                self.project,
-                ANY,
-                ANY,
-                required_fields,
-                "CAT",
-            ),
-        ]
-        mock_get_reminders_for_date.assert_has_calls(calls)
-        self.assertEqual(len(mock_get_reminders_for_date.mock_calls), 3)
-
-        mock_refresh_historical_data.assert_called_with(
-            self.project, ANY, required_fields
+        ScreeningRecord.objects.create(
+            **{
+                "hospital": hospital,
+                "date": datetime.date(2019, 1, 16),
+                "total_eligible": 2,
+            }
         )
 
-        mock_get_redcap_crf_client.assert_called_once()
-        mock_get_redcap_client.assert_called_once()
+        self.create_patient_records(datetime.date(2018, 1, 16), hospital)
+        patient = self.create_patient_records(
+            datetime.date(2018, 1, 16), hospital, "2"
+        )
+        self.create_patient_records(datetime.date(2018, 1, 16), hospital, "3")
 
-        return_data[hospital][date].append("test notification")
-        return_data[hospital][date].append("test notification")
+        patient.pre_operation_status = PatientRecord.COMPLETE_STATUS
+        patient.post_operation_status = PatientRecord.COMPLETE_STATUS
+        patient.save()
 
-        mock_send_reminders.assert_called_with(return_data, ANY, self.org)
+        patient_data_check(str(self.project.id), "CAT")
 
-    @override_settings(ASOS_HISTORICAL_DAYS=1)
-    @patch("rp_redcap.models.Project.get_redcap_crf_client")
-    @patch("rp_redcap.models.Project.get_redcap_client")
-    @patch("rp_asos.tasks.patient_data_check.get_reminders_for_date")
-    @patch("rp_asos.tasks.patient_data_check.refresh_historical_data")
-    @patch("rp_asos.tasks.patient_data_check.send_reminders")
-    def test_patient_check_one_day(
-        self,
-        mock_send_reminders,
-        mock_refresh_historical_data,
-        mock_get_reminders_for_date,
-        mock_get_redcap_client,
-        mock_get_redcap_crf_client,
+        message = (
+            "Daily data update for Worcester Hospital:\n"
+            "2 eligible operations have been reported on your screening log.\n"
+            "The last screening log update was on 01 January 2019.\n\n"
+            "3 CRFs have been captured on REDCap.\n"
+            "2 CRFs have incomplete data fields.\n"
+            "The following CRFs have incomplete data fields on REDCap:\n"
+            "1; 3"
+        )
+
+        mock_send_message.assert_called_with(message)
+
+    @freeze_time("2019-02-01")
+    @patch("rp_asos.tasks.patient_data_check.save_all_data_from_redcap")
+    @patch("rp_asos.models.Hospital.send_message")
+    def test_patient_check_with_data_no_warning(
+        self, mock_send_message, mock_save_all_data_from_redcap
     ):
         hospital = self.create_hospital()
-        date = override_get_today()
 
-        return_data = defaultdict(lambda: defaultdict(list))
-        return_data[hospital][date].append("test notification")
-        mock_get_reminders_for_date.return_value = return_data
-
-        mock_get_redcap_client.return_value = MockRedCapPatients()
-        mock_get_redcap_crf_client.return_value = MockRedCapPatients()
-
-        with patch("sidekick.utils.get_today", override_get_today):
-            patient_data_check([str(self.project.id), "CAT"])
-
-        required_fields = {
-            "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
-            "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
-            "post_op_field_1": {"condition": "True", "label": "Post Field 1"},
-            "post_op_field_2": {"condition": "True", "label": "Post Field 2"},
-        }
-
-        mock_get_reminders_for_date.assert_called_with(
-            date - datetime.timedelta(days=1),
-            self.project,
-            ANY,
-            ANY,
-            required_fields,
-            "CAT",
+        ScreeningRecord.objects.create(
+            **{
+                "hospital": hospital,
+                "date": datetime.date(2019, 1, 16),
+                "total_eligible": 2,
+            }
         )
-        self.assertEqual(len(mock_get_reminders_for_date.mock_calls), 1)
-
-        mock_refresh_historical_data.assert_called_with(
-            self.project, ANY, required_fields
+        ScreeningRecord.objects.all().update(
+            updated_at=datetime.datetime(2018, 12, 20, tzinfo=timezone.utc)
         )
 
-        mock_send_reminders.assert_called_with(return_data, ANY, self.org)
+        self.create_patient_records(datetime.date(2018, 1, 16), hospital)
+        patient = self.create_patient_records(
+            datetime.date(2018, 1, 16), hospital, "2"
+        )
+        self.create_patient_records(datetime.date(2018, 1, 16), hospital, "3")
+
+        patient.pre_operation_status = PatientRecord.COMPLETE_STATUS
+        patient.post_operation_status = PatientRecord.COMPLETE_STATUS
+        patient.save()
+
+        patient_data_check(str(self.project.id), "CAT")
+
+        message = (
+            "Daily data update for Worcester Hospital:\n"
+            "2 eligible operations have been reported on your screening log.\n"
+            "The last screening log update was on 20 December 2018.\n"
+            "Please update your screening log today or WhatsApp us if "
+            "there is a problem.\n\n"
+            "3 CRFs have been captured on REDCap.\n"
+            "2 CRFs have incomplete data fields.\n"
+            "The following CRFs have incomplete data fields on REDCap:\n"
+            "1; 3"
+        )
+
+        mock_send_message.assert_called_with(message)
 
     def test_save_patient_records_existing(self):
         date = utils.get_today()
@@ -421,9 +276,12 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "missing_pre_op_fields": [],
             "missing_post_op_fields": [],
             "redcap_data_access_group": "my_test_hospital",
+            "date_surg": "2018-10-24",
         }
 
-        patient_data_check.save_patient_records(self.project, [new_data])
+        patient_data_check.save_patient_records(
+            self.project, hospital, [new_data]
+        )
 
         # check
         patient_record = PatientRecord.objects.all()[0]
@@ -455,9 +313,12 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
             "redcap_data_access_group": "my_test_hospital",
+            "date_surg": "2018-10-24",
         }
 
-        patient_data_check.save_patient_records(self.project, [new_data])
+        patient_data_check.save_patient_records(
+            self.project, hospital, [new_data]
+        )
 
         # check
         patient_record = PatientRecord.objects.all()[0]
@@ -470,17 +331,17 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         self.assertEqual(patient_value.value, "new_value")
 
     def test_save_patient_records_new(self):
-        self.create_hospital()
-        date = utils.get_today()
+        hospital = self.create_hospital()
         data = {
             "record_id": "1",
             "pre_operation_status": PatientRecord.COMPLETE_STATUS,
             "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
             "redcap_data_access_group": "my_test_hospital",
+            "date_surg": "2018-10-24",
         }
 
-        patient_data_check.save_patient_records(self.project, [data], date)
+        patient_data_check.save_patient_records(self.project, hospital, [data])
 
         patient_record = PatientRecord.objects.all()[0]
         patient_value = PatientValue.objects.all()[0]
@@ -489,281 +350,6 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             patient_record.pre_operation_status, PatientRecord.COMPLETE_STATUS
         )
         self.assertEqual(patient_value.value, "new_value")
-
-    @patch("rp_asos.tasks.patient_data_check.save_patient_records")
-    def test_refresh_historical_data_no_records(
-        self, mock_save_patient_records
-    ):
-
-        patient_data_check.refresh_historical_data(self.project, None, {})
-        mock_save_patient_records.assert_not_called()
-
-    @patch("rp_asos.tasks.patient_data_check.save_patient_records")
-    def test_refresh_historical_data_with_records(
-        self, mock_save_patient_records
-    ):
-        hospital = self.create_hospital()
-        self.create_patient_records(utils.get_today(), hospital)
-        client = MockRedCapPatients()
-        patient_data_check.refresh_historical_data(self.project, client, {})
-
-        mock_save_patient_records.assert_called_with(
-            self.project,
-            [
-                {
-                    "record_id": 1,
-                    "asos2_crf_complete": int(PatientRecord.COMPLETE_STATUS),
-                    "field_one": "new_value",
-                    "pre_operation_status": "2",
-                    "post_operation_status": "2",
-                    "missing_pre_op_fields": [],
-                    "missing_post_op_fields": [],
-                }
-            ],
-        )
-
-    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
-    def test_get_reminders_no_errors(self, mock_save_screening):
-        hospital = self.create_hospital()
-        date = datetime.date(2018, 1, 16)
-        screening_client = MockRedCapPatients()
-        patient_client = MockRedCapPatients()
-
-        messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}, "CAT"
-        )
-
-        self.assertEqual(messages[hospital][date], [])
-
-    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
-    def test_get_reminders_hospital_filter(self, mock_save_screening):
-        self.create_hospital(tz_code="NOT_CAT")
-
-        date = datetime.date(2018, 2, 20)
-        screening_client = MockRedCapPatients()
-        patient_client = MockRedCapPatients()
-
-        messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}, "CAT"
-        )
-
-        self.assertEqual(messages, {})
-
-    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
-    def test_get_reminders_no_screening_record(self, mock_save_screening):
-        hospital = self.create_hospital()
-
-        date = datetime.date(2018, 2, 20)
-        screening_client = MockRedCapPatients()
-        patient_client = MockRedCapPatients()
-
-        messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}, "CAT"
-        )
-
-        check_messages = defaultdict(lambda: defaultdict(list))
-        check_messages[hospital][date].append(
-            "No screening records found.(2018-02-20)"
-        )
-
-        self.assertEqual(messages, check_messages)
-
-    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
-    def test_get_reminders_empty_screening_record(self, mock_save_screening):
-        hospital = self.create_hospital()
-
-        date = datetime.date(2018, 1, 9)
-        screening_client = MockRedCapPatients()
-        patient_client = MockRedCapPatients()
-
-        messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}, "CAT"
-        )
-
-        check_messages = defaultdict(lambda: defaultdict(list))
-        check_messages[hospital][date].append(
-            "No screening records found.(2018-01-09)"
-        )
-
-        self.assertEqual(messages, check_messages)
-
-    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
-    def test_get_reminders_eligible_mismatch(self, mock_save_screening):
-        hospital = self.create_hospital()
-        date = datetime.date(2018, 3, 20)
-        screening_client = MockRedCapPatients()
-        patient_client = MockRedCapPatients()
-
-        messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}, "CAT"
-        )
-
-        check_messages = defaultdict(lambda: defaultdict(list))
-        check_messages[hospital][date].append("Not all patients captured.(1/2)")
-
-        self.assertEqual(messages, check_messages)
-
-    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
-    def test_get_reminders_patients_incomplete(self, mock_save_screening):
-        hospital = self.create_hospital()
-
-        date = datetime.date(2018, 4, 20)
-        screening_client = MockRedCapPatients()
-        patient_client = MockRedCapPatients()
-
-        messages = patient_data_check.get_reminders_for_date(
-            date,
-            self.project,
-            screening_client,
-            patient_client,
-            {
-                "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
-                "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
-                "post_op_field_1": {
-                    "condition": "True",
-                    "label": "Post Field 1",
-                },
-                "post_op_field_2": {
-                    "condition": "True",
-                    "label": "Post Field 2",
-                },
-            },
-            "CAT",
-        )
-
-        check_messages = defaultdict(lambda: defaultdict(list))
-        check_messages[hospital][date].append(
-            "1999-2: 2 preoperative, 2 postoperative fields missing"
-        )
-        self.assertEqual(messages, check_messages)
-
-    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
-    def test_get_reminders_patients_multiple_hospitals(
-        self, mock_save_screening
-    ):
-        hospital1 = self.create_hospital()
-        hospital2 = self.create_hospital(
-            "Another Test Hospital", "another_hosp"
-        )
-        self.create_hospital(tz_code="NOT_CAT", dag="another_hosp2")
-
-        monday = datetime.date(2018, 5, 14)
-        date = datetime.date(2018, 5, 18)
-        screening_client = MockRedCapPatients()
-        patient_client = MockRedCapPatients()
-
-        messages = patient_data_check.get_reminders_for_date(
-            date,
-            self.project,
-            screening_client,
-            patient_client,
-            {
-                "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
-                "pre_op_field_2": {"condition": "True", "label": "Pre Field 2"},
-                "post_op_field_1": {
-                    "condition": "True",
-                    "label": "Post Field 1",
-                },
-                "post_op_field_2": {
-                    "condition": "True",
-                    "label": "Post Field 2",
-                },
-            },
-            "CAT",
-        )
-
-        self.assertEqual(
-            messages[hospital1][date],
-            ["1888-2: 2 preoperative, 2 postoperative fields missing"],
-        )
-        self.assertEqual(
-            messages[hospital2][date], ["Not all patients captured.(1/2)"]
-        )
-
-        calls = [
-            call(
-                hospital2,
-                monday,
-                [
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "10",
-                        "day1": "2",
-                        "day2": "2",
-                        "day3": "2",
-                        "day4": "2",
-                        "day5": "2",
-                        "redcap_data_access_group": "another_hosp",
-                    }
-                ],
-            ),
-            call(
-                hospital1,
-                monday,
-                [
-                    {
-                        "record_id": "1",
-                        "asos2_eligible": "10",
-                        "day1": "2",
-                        "day2": "2",
-                        "day3": "2",
-                        "day4": "2",
-                        "day5": "2",
-                        "redcap_data_access_group": "my_test_hospital",
-                    }
-                ],
-            ),
-        ]
-        mock_save_screening.assert_has_calls(calls)
-
-    @patch("rp_asos.tasks.patient_data_check.save_screening_records")
-    @patch("rp_asos.tasks.patient_data_check.get_redcap_records")
-    def test_get_reminders_patients_weekend(
-        self, mock_get_redcap_records, mock_save_screening
-    ):
-        hospital = self.create_hospital()
-
-        date = datetime.date(2018, 6, 17)
-        screening_client = MockRedCapPatients()
-        patient_client = MockRedCapPatients()
-
-        messages = patient_data_check.get_reminders_for_date(
-            date, self.project, screening_client, patient_client, {}, "CAT"
-        )
-
-        self.assertEqual(messages[hospital][date], [])
-        mock_get_redcap_records.assert_not_called()
-
-    @responses.activate
-    @patch("rp_asos.models.Hospital.send_message")
-    def test_send_reminders(self, mock_send_message):
-        date = override_get_today()
-        hospital = self.create_hospital()
-        rapidpro_client = self.org.get_rapidpro_client()
-
-        messages = defaultdict(lambda: defaultdict(list))
-        messages[hospital][date].append("A test message")
-
-        with patch("sidekick.utils.get_today", override_get_today):
-            patient_data_check.send_reminders(
-                messages, rapidpro_client, self.org
-            )
-
-        mock_send_message.assert_called_once()
-
-    @responses.activate
-    @patch("rp_asos.models.Hospital.send_message")
-    def test_send_reminders_empty(self, mock_send_message):
-        date = override_get_today()
-        hospital = self.create_hospital(nomination_urn=None)
-        rapidpro_client = self.org.get_rapidpro_client()
-
-        messages = defaultdict(lambda: defaultdict(list))
-        messages[hospital][date] = []
-
-        patient_data_check.send_reminders(messages, rapidpro_client, self.org)
-
-        mock_send_message.assert_not_called()
 
     def test_check_patients_status(self):
 
@@ -799,9 +385,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def test_save_screening_records_empty(self):
         hospital = self.create_hospital()
 
-        date = datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
-
-        patient_data_check.save_screening_records(hospital, date, [])
+        patient_data_check.save_screening_records(hospital, [])
 
         self.assertEqual(ScreeningRecord.objects.all().count(), 0)
 
@@ -814,9 +398,9 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         patient_data_check.save_screening_records(
             hospital,
-            date,
             [
                 {
+                    "date": "2018-06-06",
                     "day1": "1",
                     "day2": "",
                     "day3": "",
@@ -836,13 +420,11 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     def test_save_screening_records_new(self):
         hospital = self.create_hospital()
 
-        date = datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
-
         patient_data_check.save_screening_records(
             hospital,
-            date,
             [
                 {
+                    "date": "2018-06-06",
                     "day1": "1",
                     "day2": "",
                     "day3": "",
@@ -854,9 +436,52 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         )
 
         self.assertEqual(ScreeningRecord.objects.all().count(), 1)
-        self.assertEqual(ScreeningRecord.objects.all()[0].week_day_1, 1)
-        self.assertEqual(ScreeningRecord.objects.all()[0].week_day_2, None)
-        self.assertEqual(ScreeningRecord.objects.all()[0].total_eligible, 1)
+
+        screening_record = ScreeningRecord.objects.all()[0]
+        self.assertEqual(screening_record.week_day_1, 1)
+        self.assertEqual(screening_record.week_day_2, None)
+        self.assertEqual(screening_record.total_eligible, 1)
+        self.assertEqual(screening_record.date, datetime.date(2018, 6, 6))
+
+    @patch("rp_redcap.models.Project.get_redcap_crf_client")
+    @patch("rp_redcap.models.Project.get_redcap_client")
+    def test_save_all_data_from_redcap(
+        self, mock_get_redcap_client, mock_get_redcap_crf_client
+    ):
+        hospital = self.create_hospital()
+
+        mock_get_redcap_client.return_value = MockRedCapPatients()
+        mock_get_redcap_crf_client.return_value = MockRedCapPatients()
+
+        patient_data_check.save_all_data_from_redcap(
+            self.project, MockRedCapPatients(), {}, "CAT"
+        )
+
+        mock_get_redcap_client.assert_called_once()
+
+        self.assertEqual(ScreeningRecord.objects.all().count(), 1)
+        self.assertEqual(PatientRecord.objects.all().count(), 1)
+        self.assertEqual(PatientValue.objects.all().count(), 4)
+
+        screening = ScreeningRecord.objects.all()[0]
+        self.assertEqual(screening.hospital.id, hospital.id)
+        self.assertEqual(screening.total_eligible, 5)
+        self.assertEqual(screening.date, datetime.date(2018, 6, 6))
+
+        patient = PatientRecord.objects.all()[0]
+        self.assertEqual(patient.hospital.id, hospital.id)
+        self.assertEqual(patient.date, datetime.date(2018, 11, 20))
+
+        for field in [
+            "pre_op_field_1",
+            "pre_op_field_2",
+            "post_op_field_1",
+            "post_op_field_2",
+        ]:
+            self.assertEqual(
+                PatientValue.objects.filter(name=field, value="value").count(),
+                1,
+            )
 
 
 class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
