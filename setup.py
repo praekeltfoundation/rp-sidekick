@@ -16,6 +16,7 @@ setup(
         "django-celery==3.2.2",
         "django-environ==0.4.5",
         "django-extensions==2.1.0",
+        "django-prometheus>=1.0.15,<2",
         "djangorestframework==3.8.2",
         "json2html==1.2.1",
         "psycopg2==2.7.1",
