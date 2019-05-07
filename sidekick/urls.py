@@ -1,8 +1,9 @@
-from django.urls import path
+from django.urls import path, include
 
 from . import views
 
 urlpatterns = [
+    path("", include("django_prometheus.urls")),
     path("health", views.health, name="health"),
     path("health_details", views.detailed_health, name="detailed-health"),
     path(
