@@ -304,7 +304,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_redcap_crf_client.return_value = MockRedCapPatients()
 
         with patch("sidekick.utils.get_today", override_get_today):
-            patient_data_check(str(self.project.id), "CAT")
+            patient_data_check([str(self.project.id), "CAT"])
 
         required_fields = {
             "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},
@@ -379,7 +379,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_redcap_crf_client.return_value = MockRedCapPatients()
 
         with patch("sidekick.utils.get_today", override_get_today):
-            patient_data_check(str(self.project.id), "CAT")
+            patient_data_check([str(self.project.id), "CAT"])
 
         required_fields = {
             "pre_op_field_1": {"condition": "True", "label": "Pre Field 1"},

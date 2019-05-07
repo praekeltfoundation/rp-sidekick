@@ -278,7 +278,10 @@ class PatientDataCheck(BaseTask):
             if reminders:
                 hospital.send_message(reminders)
 
-    def run(self, project_id, tz_code, **kwargs):
+    def run(self, args, **kwargs):
+        project_id = args[0]
+        tz_code = args[1]
+
         project = Project.objects.prefetch_related("hospitals").get(
             id=project_id
         )
@@ -326,7 +329,6 @@ class CreateHospitalGroups(Task):
     log = get_task_logger(__name__)
 
     def run(self, project_id, tz_code, **kwargs):
-
         project = Project.objects.prefetch_related("hospitals").get(
             id=project_id
         )
@@ -344,7 +346,7 @@ class CreateHospitalGroups(Task):
             hospital.send_group_invites(group_info, wa_ids)
             hospital.add_group_admins(group_info, wa_ids)
 
-        return project_id, tz_code
+        return (project_id, tz_code)
 
 
 create_hospital_groups = CreateHospitalGroups()
