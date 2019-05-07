@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.4.8
+------------
+ASOS: Fix starting of the patient data check task
+
 1.4.7
 ------------
 ASOS: Add total eligble field to the screening record model
