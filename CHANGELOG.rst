@@ -4,6 +4,11 @@ VERSIONS
 Next Release
 ------------
 
+1.5.0
+------------
+Sidekick: added prometheus metrics endpoint and view metrics
+TransferTo: added prometheus metrics for DTOne/TransferTo call
+
 1.4.8
 ------------
 ASOS: Fix starting of the patient data check task
