@@ -178,9 +178,10 @@ class TestTransferToClient(TestCase):
         )
 
         output = self.client._make_transferto_api_request(
+            "some_action",
             url="https://api.transferto.com/v1.1/operators/{}/products".format(
                 fake_country_id
-            )
+            ),
         )
         expected_output = {"fake": "payload"}
         self.assertDictEqual(output, expected_output)
@@ -198,6 +199,7 @@ class TestTransferToClient(TestCase):
             status=200,
         )
         self.client._make_transferto_api_request(
+            "some_action",
             url="https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
             body=FAKE_REQUEST_BODY,
         )
@@ -214,9 +216,10 @@ class TestTransferToClient(TestCase):
             self.client.get_operator_products(fake_operator_id)
 
         mock.assert_called_once_with(
+            "get_operator_products",
             "https://api.transferto.com/v1.1/operators/{}/products".format(
                 fake_operator_id
-            )
+            ),
         )
 
     def test_get_country_services(self):
@@ -225,9 +228,10 @@ class TestTransferToClient(TestCase):
             self.client.get_country_services(fake_country_id)
 
         mock.assert_called_once_with(
+            "get_country_services",
             "https://api.transferto.com/v1.1/countries/{}/services".format(
                 fake_country_id
-            )
+            ),
         )
 
     @freeze_time("2000-01-01")
@@ -241,6 +245,7 @@ class TestTransferToClient(TestCase):
             self.client.topup_data(test_msisdn, test_product_id)
 
         mock.assert_called_once_with(
+            "topup_data",
             "https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
             body={
                 "account_number": formatted_test_msisdn,
@@ -279,6 +284,7 @@ class TestTransferToClient(TestCase):
             self.client.topup_data(test_msisdn, test_product_id, simulate=True)
 
         mock.assert_called_once_with(
+            "topup_data",
             "https://api.transferto.com/v1.1/transactions/fixed_value_recharges",
             body={
                 "account_number": formatted_test_msisdn,
