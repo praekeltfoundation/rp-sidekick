@@ -915,6 +915,7 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
 
         mock_create_group.return_value = hospital
         mock_get_info.return_value = {"id": "group-id-a"}
+        mock_send_invites.return_value = ["+27123", "+27321"]
 
         create_hospital_groups(str(self.project.id), "CAT")
 
@@ -944,6 +945,7 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
 
         mock_create_group.return_value = hospital
         mock_get_info.return_value = {"id": "group-id-a"}
+        mock_send_invites.return_value = ["+27123"]
 
         create_hospital_groups(str(self.project.id), "CAT")
 

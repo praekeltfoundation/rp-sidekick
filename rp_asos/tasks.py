@@ -336,14 +336,14 @@ class CreateHospitalGroups(Task):
         for hospital in project.hospitals.filter(
             tz_code=tz_code, is_active=True
         ):
-            wa_ids = [hospital.hospital_lead_urn]
+            msisdns = [hospital.hospital_lead_urn]
             if hospital.nomination_urn:
-                wa_ids.append(hospital.nomination_urn)
+                msisdns.append(hospital.nomination_urn)
 
             hospital.create_hospital_wa_group()
             group_info = hospital.get_wa_group_info()
 
-            hospital.send_group_invites(group_info, wa_ids)
+            wa_ids = hospital.send_group_invites(group_info, msisdns)
             hospital.add_group_admins(group_info, wa_ids)
 
         return (project_id, tz_code)

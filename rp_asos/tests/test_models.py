@@ -73,27 +73,61 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
         self.assertEqual(group_info, {"participants": [], "admins": []})
         mock_get_whatsapp_group_info.assert_not_called()
 
+    @patch("sidekick.utils.get_whatsapp_contact_id")
     @patch("sidekick.utils.send_whatsapp_template_message")
     @patch("sidekick.utils.get_whatsapp_group_invite_link")
-    def test_invites_noop(self, mock_get_invite_link, mock_send):
+    def test_invites_noop(
+        self, mock_get_invite_link, mock_send, mock_get_wa_id
+    ):
+        mock_get_wa_id.return_value = "wa-id-1"
+
         hospital = self.create_hospital()
-        hospital.send_group_invites(
-            {"participants": ["wa-id-1", "wa-id-2"]}, ["wa-id-1", "wa-id-2"]
+        wa_ids = hospital.send_group_invites(
+            {"participants": ["wa-id-1"]}, ["msisdn-1"]
         )
+
+        self.assertEqual(wa_ids, [])
+
         mock_get_invite_link.assert_not_called()
         mock_send.assert_not_called()
+        mock_get_wa_id.assert_called_with(self.org, "msisdn-1")
 
+    @patch("sidekick.utils.get_whatsapp_contact_id")
     @patch("sidekick.utils.send_whatsapp_template_message")
     @patch("sidekick.utils.get_whatsapp_group_invite_link")
-    def test_invites_send(self, mock_get_invite_link, mock_send):
+    def test_invites_no_wa_contact(
+        self, mock_get_invite_link, mock_send, mock_get_wa_id
+    ):
+        mock_get_wa_id.return_value = None
+
+        hospital = self.create_hospital()
+        wa_ids = hospital.send_group_invites(
+            {"participants": ["wa-id-1"]}, ["msisdn-1"]
+        )
+
+        self.assertEqual(wa_ids, [])
+
+        mock_get_invite_link.assert_not_called()
+        mock_send.assert_not_called()
+        mock_get_wa_id.assert_called_with(self.org, "msisdn-1")
+
+    @patch("sidekick.utils.get_whatsapp_contact_id")
+    @patch("sidekick.utils.send_whatsapp_template_message")
+    @patch("sidekick.utils.get_whatsapp_group_invite_link")
+    def test_invites_send(
+        self, mock_get_invite_link, mock_send, mock_get_wa_id
+    ):
         mock_get_invite_link.return_value = "test-link"
+        mock_get_wa_id.return_value = "wa-id-1"
 
         hospital = self.create_hospital()
 
-        hospital.send_group_invites(
-            {"id": "group-id-4", "participants": ["wa-id-2"]},
-            ["wa-id-1", "wa-id-2"],
+        wa_ids = hospital.send_group_invites(
+            {"id": "group-id-4", "participants": ["wa-id-2"]}, ["msisdn-1"]
         )
+
+        self.assertEqual(wa_ids, ["wa-id-1"])
+
         mock_get_invite_link.assert_called_with(self.org, "group-id-4")
         mock_send.assert_called_with(
             self.org,
@@ -102,6 +136,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
             "asos2_notification2",
             {"default": "Hi, please join the ASOS2 Whatsapp group: test-link"},
         )
+        mock_get_wa_id.assert_called_with(self.org, "msisdn-1")
 
     @patch("sidekick.utils.add_whatsapp_group_admin")
     def test_add_admins_noop(self, mock_add_admin):
