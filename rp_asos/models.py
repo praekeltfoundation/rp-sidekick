@@ -42,10 +42,11 @@ class Hospital(models.Model):
             group_info["id"] = self.whatsapp_group_id
         return group_info
 
-    def send_group_invites(self, group_info, wa_ids):
+    def send_group_invites(self, group_info, msisdns):
         invites = []
-        for wa_id in wa_ids:
-            if wa_id not in group_info["participants"]:
+        for msisdn in msisdns:
+            wa_id = utils.get_whatsapp_contact_id(self.project.org, msisdn)
+            if wa_id and wa_id not in group_info["participants"]:
                 invites.append(wa_id)
 
         if invites:
@@ -64,6 +65,7 @@ class Hospital(models.Model):
                         )
                     },
                 )
+        return invites
 
     def add_group_admins(self, group_info, wa_ids):
         for wa_id in wa_ids:
