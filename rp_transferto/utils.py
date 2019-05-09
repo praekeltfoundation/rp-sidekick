@@ -4,6 +4,19 @@ import hashlib
 import hmac
 import base64
 
+from prometheus_client import Histogram
+
+transferto_request_time = Histogram(
+    "transferto_request_time",
+    "request time for calls to transferto",
+    ["action"],
+)
+transferto_goods_and_services_request_time = Histogram(
+    "transferto_goods_and_services_request_time",
+    "request time for calls to transferto goods and services API",
+    ["action"],
+)
+
 
 class TransferToClient:
     def __init__(self, login, token, apikey, apisecret):
@@ -35,7 +48,8 @@ class TransferToClient:
             (self.login + self.token + key).encode("UTF-8")
         ).hexdigest()
         data = dict(login=self.login, key=key, md5=md5, action=action, **kwargs)
-        response = requests.post(self.url, data=data)
+        with transferto_request_time.labels(action=action).time():
+            response = requests.post(self.url, data=data)
         return self._convert_response_body(response.content)
 
     def ping(self):
@@ -116,7 +130,7 @@ class TransferToClient:
 
         return self._make_transferto_request(**keyword_args)
 
-    def _make_transferto_api_request(self, url, body=None):
+    def _make_transferto_api_request(self, action, url, body=None):
         nonce = int(time.time() * 1000000)
         message = bytes((self.apikey + str(nonce)).encode("utf-8"))
         secret = bytes(self.apisecret.encode("utf-8"))
@@ -129,24 +143,31 @@ class TransferToClient:
         headers["X-TransferTo-nonce"] = str(nonce)
         headers["x-transferto-hmac"] = transferto_hmac
 
-        if not body:
-            response = requests.get(url, headers=headers)
-        else:
-            response = requests.post(url, headers=headers, json=body)
+        with transferto_goods_and_services_request_time.labels(
+            action=action
+        ).time():
+            if not body:
+                response = requests.get(url, headers=headers)
+            else:
+                response = requests.post(url, headers=headers, json=body)
         return response.json()
 
     def get_operator_products(self, operator_id):
         product_url = "https://api.transferto.com/v1.1/operators/{}/products".format(
             operator_id
         )
-        return self._make_transferto_api_request(product_url)
+        return self._make_transferto_api_request(
+            "get_operator_products", product_url
+        )
 
     def get_country_services(self, country_id):
 
         service_url = "https://api.transferto.com/v1.1/countries/{}/services".format(
             country_id
         )
-        return self._make_transferto_api_request(service_url)
+        return self._make_transferto_api_request(
+            "get_country_services", service_url
+        )
 
     def topup_data(self, msisdn, product_id, simulate=False):
         external_id = str(int(time.time() * 1000000))
@@ -181,4 +202,6 @@ class TransferToClient:
         url = (
             "https://api.transferto.com/v1.1/transactions/fixed_value_recharges"
         )
-        return self._make_transferto_api_request(url, body=fixed_recharge)
+        return self._make_transferto_api_request(
+            "topup_data", url, body=fixed_recharge
+        )
