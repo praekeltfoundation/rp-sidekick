@@ -188,9 +188,9 @@ class PatientDataCheck(BaseTask):
                 project, hospital, hospital_patient_records
             )
 
-    def run(self, args, **kwargs):
-        project_id = args[0]
-        tz_code = args[1]
+    def run(self, context):
+        project_id = context["project_id"]
+        tz_code = context["tz_code"]
 
         project = Project.objects.prefetch_related("hospitals").get(
             id=project_id
@@ -286,7 +286,7 @@ class CreateHospitalGroups(Task):
             wa_ids = hospital.send_group_invites(group_info, msisdns)
             hospital.add_group_admins(group_info, wa_ids)
 
-        return (project_id, tz_code)
+        return {"project_id": project_id, "tz_code": tz_code}
 
 
 create_hospital_groups = CreateHospitalGroups()
