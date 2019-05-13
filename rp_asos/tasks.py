@@ -50,8 +50,10 @@ class PatientDataCheck(BaseTask):
             patient_defaults = {
                 "pre_operation_status": patient["pre_operation_status"],
                 "post_operation_status": patient["post_operation_status"],
-                "date": patient["date_surg"],
             }
+
+            if patient["date_surg"]:
+                patient_defaults["date"] = patient["date_surg"]
 
             patient_obj, created = PatientRecord.objects.get_or_create(
                 project=project,
