@@ -145,7 +145,7 @@ class PatientRecord(models.Model):
         Hospital, related_name="patients", null=True, on_delete=models.CASCADE
     )
     record_id = models.CharField(max_length=30, null=False, blank=False)
-    date = models.DateField()
+    date = models.DateField(null=True)
     pre_operation_status = models.CharField(
         max_length=1,
         null=False,

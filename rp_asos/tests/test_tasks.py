@@ -349,7 +349,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "post_operation_status": PatientRecord.INCOMPLETE_STATUS,
             "field_one": "new_value",
             "redcap_data_access_group": "my_test_hospital",
-            "date_surg": "2018-10-24",
+            "date_surg": "",
         }
 
         patient_data_check.save_patient_records(self.project, hospital, [data])
