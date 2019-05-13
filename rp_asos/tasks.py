@@ -31,12 +31,18 @@ class PatientDataCheck(BaseTask):
 
     def save_screening_records(self, hospital, records):
         for record in records:
-            data = {"total_eligible": record["asos2_eligible"]}
-            for i in range(1, 6):
+            total = 0
+            for i in range(1, 29):
                 if record["day{}".format(i)]:
-                    data["week_day_{}".format(i)] = record["day{}".format(i)]
+                    total += int(record["day{}".format(i)])
+
+            data = {"total_eligible": total}
+
+            if record["date"]:
+                data["date"] = record["date"]
+
             screening_record, _ = ScreeningRecord.objects.update_or_create(
-                hospital=hospital, date=record["date"], defaults=data
+                hospital=hospital, defaults=data
             )
 
     def save_patient_records(self, project, hospital, patients):
@@ -144,9 +150,7 @@ class PatientDataCheck(BaseTask):
 
         return patients
 
-    def save_all_data_from_redcap(
-        self, project, patient_client, required_fields, tz_code
-    ):
+    def save_all_data_from_redcap(self, project, tz_code):
         screening_client = project.get_redcap_client()
         screening_records = self.get_redcap_records(
             screening_client, "screening_tool"
@@ -190,7 +194,7 @@ class PatientDataCheck(BaseTask):
         )
 
         message_template = (
-            "Daily data update for Worcester Hospital:\n"
+            "Daily data update for {}:\n"
             "{} eligible operations have been reported on your screening log.\n"
             "{}\n"  # last update
             "{}"  # last update warning
@@ -238,6 +242,7 @@ class PatientDataCheck(BaseTask):
 
             hospital.send_message(
                 message_template.format(
+                    hospital.name,
                     total_screening,
                     last_update,
                     update_warning,

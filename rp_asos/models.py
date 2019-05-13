@@ -121,12 +121,7 @@ class ScreeningRecord(models.Model):
         null=False,
         on_delete=models.CASCADE,
     )
-    date = models.DateField()
-    week_day_1 = models.IntegerField(null=True, blank=True)
-    week_day_2 = models.IntegerField(null=True, blank=True)
-    week_day_3 = models.IntegerField(null=True, blank=True)
-    week_day_4 = models.IntegerField(null=True, blank=True)
-    week_day_5 = models.IntegerField(null=True, blank=True)
+    date = models.DateField(null=True)
     total_eligible = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
