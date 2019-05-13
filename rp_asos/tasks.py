@@ -188,7 +188,10 @@ class PatientDataCheck(BaseTask):
                 project, hospital, hospital_patient_records
             )
 
-    def run(self, project_id, tz_code, **kwargs):
+    def run(self, args, **kwargs):
+        project_id = args[0]
+        tz_code = args[1]
+
         project = Project.objects.prefetch_related("hospitals").get(
             id=project_id
         )

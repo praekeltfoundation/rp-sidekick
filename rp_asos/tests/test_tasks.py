@@ -161,7 +161,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     ):
         self.create_hospital()
 
-        patient_data_check(str(self.project.id), "CAT")
+        patient_data_check((str(self.project.id), "CAT"))
 
         message = (
             "Daily data update for My Test Hospital:\n"
@@ -203,7 +203,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient.post_operation_status = PatientRecord.COMPLETE_STATUS
         patient.save()
 
-        patient_data_check(str(self.project.id), "CAT")
+        patient_data_check((str(self.project.id), "CAT"))
 
         message = (
             "Daily data update for My Test Hospital:\n"
@@ -247,7 +247,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         patient.post_operation_status = PatientRecord.COMPLETE_STATUS
         patient.save()
 
-        patient_data_check(str(self.project.id), "CAT")
+        patient_data_check((str(self.project.id), "CAT"))
 
         message = (
             "Daily data update for My Test Hospital:\n"
