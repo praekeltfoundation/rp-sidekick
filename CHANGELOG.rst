@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.5.3
+------------
+ASOS: Allow nulls on patient record date
+
 1.5.2
 ------------
 ASOS: Fix starting of the patient data check task again
