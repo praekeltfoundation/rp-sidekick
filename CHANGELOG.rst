@@ -4,6 +4,11 @@ VERSIONS
 Next Release
 ------------
 
+1.5.2
+------------
+ASOS: Fix starting of the patient data check task again
+ASOS: Use new template
+
 1.5.1
 ------------
 ASOS: New patient reminder template and update screening record fields
