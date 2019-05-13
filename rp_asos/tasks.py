@@ -194,15 +194,15 @@ class PatientDataCheck(BaseTask):
         )
 
         message_template = (
-            "Daily data update for {}:\n"
-            "{} eligible operations have been reported on your screening log.\n"
-            "{}\n"  # last update
-            "{}"  # last update warning
+            "Daily data update for {hospital_name}:\n"
+            "{total_eligible} eligible operations have been reported on your screening log.\n"
+            "{last_update}\n"  # last update
+            "{last_update_warning}"  # last update warning
             "\n"
-            "{} CRFs have been captured on REDCap.\n"
-            "{} CRFs have incomplete data fields.\n"
+            "{total_crfs} CRFs have been captured on REDCap.\n"
+            "{total_incomplete_crfs} CRFs have incomplete data fields.\n"
             "The following CRFs have incomplete data fields on REDCap:\n"
-            "{}"
+            "{record_ids}"
         )
 
         date = utils.get_today() - datetime.timedelta(days=1)
@@ -242,13 +242,13 @@ class PatientDataCheck(BaseTask):
 
             hospital.send_message(
                 message_template.format(
-                    hospital.name,
-                    total_screening,
-                    last_update,
-                    update_warning,
-                    crf_total_count,
-                    len(record_ids),
-                    "; ".join(record_ids),
+                    hospital_name=hospital.name,
+                    total_eligible=total_screening,
+                    last_update=last_update,
+                    last_update_warning=update_warning,
+                    total_crfs=crf_total_count,
+                    total_incomplete_crfs=len(record_ids),
+                    record_ids="; ".join(record_ids),
                 )
             )
 
