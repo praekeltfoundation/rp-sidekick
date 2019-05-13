@@ -133,7 +133,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
             self.org,
             "wa-id-1",
             "whatsapp:hsm:npo:praekeltpbc",
-            "asos2_notification2",
+            "asos2_notification_v2",
             {"default": "Hi, please join the ASOS2 Whatsapp group: test-link"},
         )
         mock_get_wa_id.assert_called_with(self.org, "msisdn-1")
