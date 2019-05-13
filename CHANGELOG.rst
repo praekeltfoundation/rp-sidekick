@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.5.1
+------------
+ASOS: New patient reminder template and update screening record fields
+
 1.5.0
 ------------
 Sidekick: added prometheus metrics endpoint and view metrics
