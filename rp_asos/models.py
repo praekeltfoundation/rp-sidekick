@@ -59,11 +59,13 @@ class Hospital(models.Model):
                     wa_id,
                     "whatsapp:hsm:npo:praekeltpbc",
                     "asos2_notification_v2",
-                    {
-                        "default": "Hi, please join the ASOS2 Whatsapp group: {}".format(
-                            invite_link
-                        )
-                    },
+                    [
+                        {
+                            "default": "Hi, please join the ASOS2 Whatsapp group: {}".format(
+                                invite_link
+                            )
+                        }
+                    ],
                 )
         return invites
 
