@@ -2,6 +2,7 @@ import datetime
 from freezegun import freeze_time
 from mock import patch
 
+from django.conf import settings
 from django.test import TestCase
 from django.utils import timezone
 
@@ -11,7 +12,11 @@ from rp_asos.models import (
     PatientValue,
     ScreeningRecord,
 )
-from rp_asos.tasks import patient_data_check, create_hospital_groups
+from rp_asos.tasks import (
+    patient_data_check,
+    create_hospital_groups,
+    screening_record_check,
+)
 from sidekick import utils
 
 from rp_redcap.tests.base import RedcapBaseTestCase
@@ -572,3 +577,61 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_info.assert_called_with()
         mock_send_invites.assert_called_with({"id": "group-id-a"}, ["+27123"])
         mock_add_admins.assert_called_with({"id": "group-id-a"}, ["+27123"])
+
+
+class ScreeningRecordTaskTests(RedcapBaseTestCase, TestCase):
+    def setUp(self):
+        self.org = self.create_org()
+        project = self.create_project(self.org)
+
+        self.hospital = Hospital.objects.create(
+            name="Test Hospital",
+            project_id=project.id,
+            data_access_group="test",
+            hospital_lead_urn="+27123",
+            hospital_lead_name="Tony Test",
+        )
+
+    def create_screening_record(self):
+        ScreeningRecord.objects.create(
+            **{
+                "hospital": self.hospital,
+                "date": datetime.date(2019, 1, 16),
+                "total_eligible": 2,
+            }
+        )
+
+        ScreeningRecord.objects.all().update(
+            updated_at=datetime.datetime(2019, 1, 9, tzinfo=timezone.utc)
+        )
+
+    @freeze_time("2019-01-13")
+    @patch("sidekick.utils.send_whatsapp_group_message")
+    def test_screening_record_check_not_updated(self, mock_send_group):
+        self.create_screening_record()
+
+        screening_record_check(str(self.org.id))
+
+        mock_send_group.assert_called_with(
+            self.org,
+            settings.ASOS_ADMIN_GROUP_ID,
+            "Hospitals with outdated screening records:\nTest Hospital",
+        )
+
+    @freeze_time("2019-01-10")
+    @patch("sidekick.utils.send_whatsapp_group_message")
+    def test_screening_record_check_updated(self, mock_send_group):
+        self.create_screening_record()
+        screening_record_check(str(self.org.id))
+
+        mock_send_group.assert_not_called()
+
+    @patch("sidekick.utils.send_whatsapp_group_message")
+    def test_screening_record_check_no_screening_record(self, mock_send_group):
+        screening_record_check(str(self.org.id))
+
+        mock_send_group.assert_called_with(
+            self.org,
+            settings.ASOS_ADMIN_GROUP_ID,
+            "Hospitals with outdated screening records:\nTest Hospital",
+        )

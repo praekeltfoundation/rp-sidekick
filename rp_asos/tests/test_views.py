@@ -75,3 +75,46 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         mock_patient_data_check.assert_not_called()
         mock_create_hospital_groups.assert_not_called()
+
+    @patch("rp_asos.tasks.screening_record_check.delay")
+    def test_start_screening_record_check(self, mock_screening_check):
+        self.org.users.add(self.user)
+
+        survey_url = reverse(
+            "rp_asos.start_screening_record_check", args=[self.org.id]
+        )
+
+        response = self.client.post(
+            survey_url, {}, content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        mock_screening_check.assert_called()
+
+    @patch("rp_asos.tasks.screening_record_check.delay")
+    def test_start_screening_record_check_not_in_org(
+        self, mock_screening_check
+    ):
+        survey_url = reverse(
+            "rp_asos.start_screening_record_check", args=[self.org.id]
+        )
+
+        response = self.client.post(
+            survey_url, {}, content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        mock_screening_check.assert_not_called()
+
+    @patch("rp_asos.tasks.screening_record_check.delay")
+    def test_start_screening_record_check_invalid_org(
+        self, mock_screening_check
+    ):
+        survey_url = reverse("rp_asos.start_screening_record_check", args=[23])
+
+        response = self.client.post(
+            survey_url, {}, content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_screening_check.assert_not_called()

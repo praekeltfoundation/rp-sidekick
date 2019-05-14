@@ -2,6 +2,7 @@ import datetime
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
+from django.conf import settings
 from django.db.models import Sum, Max, Q
 
 from sidekick import utils
@@ -9,6 +10,7 @@ from sidekick import utils
 from .models import PatientRecord, PatientValue, ScreeningRecord
 from rp_redcap.models import Project
 from rp_redcap.tasks import BaseTask
+from sidekick.models import Organization
 
 
 class PatientDataCheck(BaseTask):
@@ -292,3 +294,50 @@ class CreateHospitalGroups(Task):
 
 
 create_hospital_groups = CreateHospitalGroups()
+
+
+class ScreeningRecordCheck(Task):
+    """
+    Checks all the active screening records linked to the organisation and
+    notifies the steering group of records that have not been updated in the
+    last 3 days.
+    """
+
+    name = "rp_asos.tasks.screening_record_check"
+    log = get_task_logger(__name__)
+
+    def run(self, org_id):
+        org = Organization.objects.prefetch_related(
+            "projects",
+            "projects__hospitals",
+            "projects__hospitals__screening_records",
+        ).get(id=org_id)
+
+        no_update = []
+
+        for project in org.projects.all():
+            for hospital in project.hospitals.all():
+                aggregate_data = hospital.screening_records.aggregate(
+                    Max("updated_at")
+                )
+
+                if aggregate_data["updated_at__max"]:
+                    if (
+                        utils.get_today()
+                        - aggregate_data["updated_at__max"].date()
+                    ).days > 3:
+                        no_update.append(hospital.name)
+                else:
+                    no_update.append(hospital.name)
+
+        if no_update:
+            utils.send_whatsapp_group_message(
+                org,
+                settings.ASOS_ADMIN_GROUP_ID,
+                "Hospitals with outdated screening records:\n{}".format(
+                    "\n".join(no_update)
+                ),
+            )
+
+
+screening_record_check = ScreeningRecordCheck()
