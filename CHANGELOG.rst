@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.5.4
+------------
+ASOS: Search for contacts by Tel and WhatsApp ID before trying to create.
+
 1.5.3
 ------------
 ASOS: Allow nulls on patient record date
