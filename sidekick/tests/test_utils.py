@@ -244,7 +244,7 @@ class UtilsTests(TestCase):
 
         utils.update_rapidpro_whatsapp_urn(self.org, "+27820001001")
 
-        self.assertEqual(len(responses.calls), 2)
+        self.assertEqual(len(responses.calls), 3)
         request = responses.calls[-1].request
         self.assertEqual(
             json.loads(request.body),

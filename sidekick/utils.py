@@ -112,6 +112,10 @@ def update_rapidpro_whatsapp_urn(org, msisdn):
 
     if whatsapp_id:
         contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
+        if not contact:
+            contact = client.get_contacts(
+                urn="whatsapp:{}".format(whatsapp_id)
+            ).first()
 
         urns = ["tel:{}".format(msisdn), "whatsapp:{}".format(whatsapp_id)]
 
