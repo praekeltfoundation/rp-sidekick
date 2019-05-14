@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.5.5
+------------
+ASOS: Fix the group invite message.
+
 1.5.4
 ------------
 ASOS: Search for contacts by Tel and WhatsApp ID before trying to create.
