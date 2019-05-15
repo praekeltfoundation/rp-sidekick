@@ -1,6 +1,7 @@
 import json
 import requests
 from django.utils import timezone
+from rest_framework import status
 from six.moves import urllib_parse
 from urllib.parse import urljoin
 from temba_client.v2 import TembaClient
@@ -8,6 +9,8 @@ import pkg_resources
 
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+
+from .models import Organization
 
 
 def get_today():
@@ -175,3 +178,15 @@ def add_whatsapp_group_admin(org, group_id, wa_id):
 
 def get_flow_url(org, flow_uuid):
     return urljoin(urljoin(org.url, "/flow/editor/"), flow_uuid)
+
+
+def validate_organization(org_id, request):
+    try:
+        org = Organization.objects.get(id=org_id)
+    except Organization.DoesNotExist:
+        return status.HTTP_400_BAD_REQUEST
+
+    if not org.users.filter(id=request.user.id).exists():
+        return status.HTTP_401_UNAUTHORIZED
+
+    return status.HTTP_202_ACCEPTED
