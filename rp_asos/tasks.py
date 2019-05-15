@@ -313,7 +313,7 @@ class ScreeningRecordCheck(Task):
             "projects__hospitals__screening_records",
         ).get(id=org_id)
 
-        no_update = []
+        outdated_hospitals = []
 
         for project in org.projects.all():
             for hospital in project.hospitals.all():
@@ -326,16 +326,16 @@ class ScreeningRecordCheck(Task):
                         utils.get_today()
                         - aggregate_data["updated_at__max"].date()
                     ).days > 3:
-                        no_update.append(hospital.name)
+                        outdated_hospitals.append(hospital.name)
                 else:
-                    no_update.append(hospital.name)
+                    outdated_hospitals.append(hospital.name)
 
-        if no_update:
+        if outdated_hospitals:
             utils.send_whatsapp_group_message(
                 org,
                 settings.ASOS_ADMIN_GROUP_ID,
                 "Hospitals with outdated screening records:\n{}".format(
-                    "\n".join(no_update)
+                    "\n".join(outdated_hospitals)
                 ),
             )
 
