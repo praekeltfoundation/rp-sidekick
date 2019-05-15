@@ -316,7 +316,7 @@ class ScreeningRecordCheck(Task):
         outdated_hospitals = []
 
         for project in org.projects.all():
-            for hospital in project.hospitals.all():
+            for hospital in project.hospitals.filter(is_active=True):
                 aggregate_data = hospital.screening_records.aggregate(
                     Max("updated_at")
                 )
