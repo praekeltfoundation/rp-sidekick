@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.5.6
+------------
+ASOS: Steering committee notification on outdated screening records.
+
 1.5.5
 ------------
 ASOS: Fix the group invite message.
