@@ -8,19 +8,7 @@ from .tasks import (
     screening_record_check,
 )
 from rp_redcap.views import validate_project
-from sidekick.models import Organization
-
-
-def validate_organization(org_id, request):
-    try:
-        org = Organization.objects.get(id=org_id)
-    except Organization.DoesNotExist:
-        return status.HTTP_400_BAD_REQUEST
-
-    if not org.users.filter(id=request.user.id).exists():
-        return status.HTTP_401_UNAUTHORIZED
-
-    return status.HTTP_202_ACCEPTED
+from sidekick.utils import validate_organization
 
 
 class StartPatientDataCheckView(APIView):
