@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.5.7
+------------
+ASOS: Only include active hospitals in screening record check.
+
 1.5.6
 ------------
 ASOS: Steering committee notification on outdated screening records.
