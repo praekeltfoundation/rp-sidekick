@@ -610,7 +610,7 @@ class ScreeningRecordTaskTests(RedcapBaseTestCase, TestCase):
     def test_screening_record_check_not_updated(self, mock_send_group):
         self.create_screening_record()
 
-        screening_record_check(str(self.org.id))
+        screening_record_check(self.org.id)
 
         mock_send_group.assert_called_with(
             self.org,
@@ -622,13 +622,13 @@ class ScreeningRecordTaskTests(RedcapBaseTestCase, TestCase):
     @patch("sidekick.utils.send_whatsapp_group_message")
     def test_screening_record_check_updated(self, mock_send_group):
         self.create_screening_record()
-        screening_record_check(str(self.org.id))
+        screening_record_check(self.org.id)
 
         mock_send_group.assert_not_called()
 
     @patch("sidekick.utils.send_whatsapp_group_message")
     def test_screening_record_check_no_screening_record(self, mock_send_group):
-        screening_record_check(str(self.org.id))
+        screening_record_check(self.org.id)
 
         mock_send_group.assert_called_with(
             self.org,
