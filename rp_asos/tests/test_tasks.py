@@ -584,22 +584,28 @@ class ScreeningRecordTaskTests(RedcapBaseTestCase, TestCase):
         self.org = self.create_org()
         project = self.create_project(self.org)
 
-        self.hospital = Hospital.objects.create(
-            name="Test Hospital",
-            project_id=project.id,
-            data_access_group="test",
-            hospital_lead_urn="+27123",
-            hospital_lead_name="Tony Test",
-        )
+        self.hospitals = []
+        for i in range(0, 2):
+            self.hospitals.append(
+                Hospital.objects.create(
+                    name="Test Hospital {}".format(i),
+                    project_id=project.id,
+                    data_access_group="test",
+                    hospital_lead_urn="+27123",
+                    hospital_lead_name="Tony Test",
+                    is_active=i == 0,
+                )
+            )
 
     def create_screening_record(self):
-        ScreeningRecord.objects.create(
-            **{
-                "hospital": self.hospital,
-                "date": datetime.date(2019, 1, 16),
-                "total_eligible": 2,
-            }
-        )
+        for hospital in self.hospitals:
+            ScreeningRecord.objects.create(
+                **{
+                    "hospital": hospital,
+                    "date": datetime.date(2019, 1, 16),
+                    "total_eligible": 2,
+                }
+            )
 
         ScreeningRecord.objects.all().update(
             updated_at=datetime.datetime(2019, 1, 9, tzinfo=timezone.utc)
@@ -615,7 +621,7 @@ class ScreeningRecordTaskTests(RedcapBaseTestCase, TestCase):
         mock_send_group.assert_called_with(
             self.org,
             settings.ASOS_ADMIN_GROUP_ID,
-            "Hospitals with outdated screening records:\nTest Hospital",
+            "Hospitals with outdated screening records:\nTest Hospital 0",
         )
 
     @freeze_time("2019-01-10")
@@ -633,5 +639,5 @@ class ScreeningRecordTaskTests(RedcapBaseTestCase, TestCase):
         mock_send_group.assert_called_with(
             self.org,
             settings.ASOS_ADMIN_GROUP_ID,
-            "Hospitals with outdated screening records:\nTest Hospital",
+            "Hospitals with outdated screening records:\nTest Hospital 0",
         )
