@@ -33,25 +33,32 @@ class PatientDataCheck(BaseTask):
 
     def save_screening_records(self, hospital, records):
         for record in records:
+
+            screening_record, _ = ScreeningRecord.objects.get_or_create(
+                hospital=hospital
+            )
+            new_values = screening_record.as_dict()
+
             total = 0
             for i in range(1, 29):
                 if record["day{}".format(i)]:
                     total += int(record["day{}".format(i)])
 
-            data = {"total_eligible": total}
+            new_values["total_eligible"] = total
 
             for i in range(1, 5):
                 if record["week_{}_case_count".format(i)]:
-                    data["week_{}_case_count".format(i)] = record[
-                        "week_{}_case_count".format(i)
-                    ]
+                    new_values["week_{}_case_count".format(i)] = int(
+                        record["week_{}_case_count".format(i)]
+                    )
 
             if record["date"]:
-                data["date"] = record["date"]
+                new_values["date"] = record["date"]
 
-            screening_record, _ = ScreeningRecord.objects.update_or_create(
-                hospital=hospital, defaults=data
-            )
+            if screening_record.as_dict() != new_values:
+                for attr, value in new_values.items():
+                    setattr(screening_record, attr, value)
+                screening_record.save()
 
     def save_patient_records(self, project, hospital, patients):
         for patient in patients:
