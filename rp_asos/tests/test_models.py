@@ -1,3 +1,4 @@
+import datetime
 import json
 import responses
 
@@ -5,7 +6,7 @@ from django.test import TestCase
 from freezegun import freeze_time
 from mock import patch
 
-from rp_asos.models import Hospital
+from rp_asos.models import Hospital, ScreeningRecord
 from rp_redcap.tests.base import RedcapBaseTestCase
 
 
@@ -26,6 +27,129 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
             nomination_name="Peter Test",
             whatsapp_group_id=whatsapp_group_id,
         )
+
+    def test_hospital_status_no_screening_record(self):
+        """
+        If there is no screening record do nothing
+        """
+        hospital = self.create_hospital()
+        hospital.check_and_update_status()
+
+        hospital.refresh_from_db()
+        self.assertTrue(hospital.is_active)
+
+    def test_hospital_status_screening_record_empty_date(self):
+        """
+        If there is no date on the screening record do nothing
+        """
+        hospital = self.create_hospital()
+        ScreeningRecord.objects.create(
+            **{
+                "hospital": hospital,
+                "week_1_case_count": 50,
+                "week_2_case_count": 45,
+                "week_3_case_count": 5,
+                "week_4_case_count": 2,
+                "total_eligible": 102,
+            }
+        )
+
+        hospital.check_and_update_status()
+
+        hospital.refresh_from_db()
+        self.assertTrue(hospital.is_active)
+
+    @freeze_time("2019-01-24 01:30:00")
+    def test_hospital_status_not_enough_cases(self):
+        """
+        If there is not enough cases and it has not been 4 weeks, do nothing
+        """
+        hospital = self.create_hospital()
+        ScreeningRecord.objects.create(
+            **{
+                "hospital": hospital,
+                "date": datetime.date(2019, 1, 7),
+                "week_1_case_count": 50,
+                "total_eligible": 50,
+            }
+        )
+
+        hospital.check_and_update_status()
+
+        hospital.refresh_from_db()
+        self.assertTrue(hospital.is_active)
+
+    @freeze_time("2019-01-24 01:30:00")
+    def test_hospital_status_enough_cases(self):
+        """
+        If there is enough cases in the first week and we are 4 days past the
+        new week, disable hospital
+        """
+        hospital = self.create_hospital()
+        ScreeningRecord.objects.create(
+            **{
+                "hospital": hospital,
+                "date": datetime.date(2019, 1, 7),
+                "week_1_case_count": 101,
+                "week_2_case_count": 0,
+                "week_3_case_count": 0,
+                "week_4_case_count": 0,
+                "total_eligible": 101,
+            }
+        )
+
+        hospital.check_and_update_status()
+
+        hospital.refresh_from_db()
+        self.assertFalse(hospital.is_active)
+
+    @freeze_time("2019-02-05 01:30:00")
+    def test_hospital_status_after_4_weeks(self):
+        """
+        If the case count is too low and 4 weeks have passed but not the 4 days
+        after that, do nothing.
+        """
+        hospital = self.create_hospital()
+        ScreeningRecord.objects.create(
+            **{
+                "hospital": hospital,
+                "date": datetime.date(2019, 1, 7),
+                "week_1_case_count": 20,
+                "week_2_case_count": 20,
+                "week_3_case_count": 20,
+                "week_4_case_count": 20,
+                "total_eligible": 80,
+            }
+        )
+
+        hospital.check_and_update_status()
+
+        hospital.refresh_from_db()
+        self.assertTrue(hospital.is_active)
+
+    @freeze_time("2019-02-07 01:30:00")
+    def test_hospital_status_after_4_weeks_4_days(self):
+        """
+        If the case count is low and 4 days and 4 weeks have passed, disable
+        the hospital.
+        """
+        hospital = self.create_hospital()
+        ScreeningRecord.objects.create(
+            **{
+                "hospital": hospital,
+                "date": datetime.date(2019, 1, 7),
+                "week_1_case_count": 20,
+                "week_2_case_count": 20,
+                "week_3_case_count": 20,
+                "week_4_case_count": 20,
+                "total_eligible": 80,
+            }
+        )
+
+        hospital.check_and_update_status()
+
+        hospital.refresh_from_db()
+        self.assertFalse(hospital.is_active)
 
     @patch("sidekick.utils.create_whatsapp_group")
     def test_create_hospital_wa_group_no_group_id(

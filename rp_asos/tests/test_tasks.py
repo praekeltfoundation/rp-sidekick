@@ -24,6 +24,8 @@ from rp_redcap.tests.base import RedcapBaseTestCase
 SCREENING_RECORD_TEMPLATE = {}
 for i in range(1, 29):
     SCREENING_RECORD_TEMPLATE["day{}".format(i)] = "1"
+for i in range(1, 5):
+    SCREENING_RECORD_TEMPLATE["week_{}_case_count".format(i)] = "7"
 
 
 class MockRedCapPatients(object):
@@ -74,6 +76,7 @@ class MockRedCapPatients(object):
                     "record_id": "1",
                     "date": "2018-06-06",
                     "day4": "",
+                    "week_1_case_count": "6",
                     "redcap_data_access_group": "my_test_hospital",
                 }
             )
@@ -84,6 +87,7 @@ class MockRedCapPatients(object):
                     "record_id": "1",
                     "date": "2017-06-06",
                     "day4": "",
+                    "week_1_case_count": "6",
                     "redcap_data_access_group": "other_hospital",
                 }
             )
@@ -228,10 +232,14 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         mock_save_all_data_from_redcap.assert_called_with(self.project, "CAT")
 
     @freeze_time("2019-02-01")
+    @patch("rp_asos.models.Hospital.check_and_update_status")
     @patch("rp_asos.tasks.patient_data_check.save_all_data_from_redcap")
     @patch("rp_asos.models.Hospital.send_message")
     def test_patient_check_with_data_no_warning(
-        self, mock_send_message, mock_save_all_data_from_redcap
+        self,
+        mock_send_message,
+        mock_save_all_data_from_redcap,
+        mock_check_and_update_status,
     ):
         hospital = self.create_hospital()
 
@@ -272,6 +280,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "1; 3"
         )
 
+        mock_check_and_update_status.assert_called_once()
         mock_send_message.assert_called_with(message)
         mock_save_all_data_from_redcap.assert_called_with(self.project, "CAT")
 
@@ -413,13 +422,23 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         ScreeningRecord.objects.create(hospital=hospital, date=date)
 
         record = SCREENING_RECORD_TEMPLATE
-        record.update({"date": "", "day2": "", "day3": ""})
+        record.update(
+            {
+                "date": "",
+                "day2": "",
+                "day3": "",
+                "week_1_case_count": "4",
+                "week_4_case_count": "",
+            }
+        )
 
         patient_data_check.save_screening_records(hospital, [record])
 
         screening_record = ScreeningRecord.objects.all()[0]
         self.assertEqual(ScreeningRecord.objects.all().count(), 1)
         self.assertEqual(screening_record.total_eligible, 26)
+        self.assertEqual(screening_record.week_1_case_count, 4)
+        self.assertEqual(screening_record.week_2_case_count, 7)
         self.assertEqual(screening_record.date, date)
 
     def test_save_screening_records_new(self):
@@ -433,6 +452,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "day3": "",
                 "day4": "",
                 "day5": "",
+                "week_1_case_count": "3",
             }
         )
 
@@ -442,6 +462,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         screening_record = ScreeningRecord.objects.all()[0]
         self.assertEqual(screening_record.total_eligible, 24)
+        self.assertEqual(screening_record.week_1_case_count, 3)
+        self.assertEqual(screening_record.week_2_case_count, 7)
         self.assertEqual(screening_record.date, datetime.date(2018, 6, 6))
 
     @patch("rp_redcap.models.Project.get_redcap_crf_client")
