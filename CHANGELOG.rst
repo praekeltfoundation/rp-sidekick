@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.5.8
+------------
+ASOS: Stop reminders when recruitment is over for hospitals.
+
 1.5.7
 ------------
 ASOS: Only include active hospitals in screening record check.
