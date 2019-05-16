@@ -421,7 +421,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         ScreeningRecord.objects.create(hospital=hospital, date=date)
 
-        record = SCREENING_RECORD_TEMPLATE
+        record = SCREENING_RECORD_TEMPLATE.copy()
         record.update(
             {
                 "date": "",
@@ -441,10 +441,39 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         self.assertEqual(screening_record.week_2_case_count, 7)
         self.assertEqual(screening_record.date, date)
 
+    def test_save_screening_records_updated_at(self):
+        hospital = self.create_hospital()
+        date = datetime.datetime.strptime("2018-06-06", "%Y-%m-%d").date()
+        screening_record = ScreeningRecord.objects.create(
+            hospital=hospital,
+            date=date,
+            week_1_case_count=7,
+            week_2_case_count=7,
+            week_3_case_count=7,
+            week_4_case_count=7,
+            total_eligible=28,
+        )
+
+        ScreeningRecord.objects.all().update(
+            updated_at=datetime.datetime(2019, 1, 9, tzinfo=timezone.utc)
+        )
+
+        record = SCREENING_RECORD_TEMPLATE.copy()
+        record.update({"date": "2018-06-06"})
+
+        patient_data_check.save_screening_records(hospital, [record])
+
+        screening_record = ScreeningRecord.objects.all()[0]
+        self.assertEqual(ScreeningRecord.objects.all().count(), 1)
+        self.assertEqual(
+            screening_record.updated_at,
+            datetime.datetime(2019, 1, 9, tzinfo=timezone.utc),
+        )
+
     def test_save_screening_records_new(self):
         hospital = self.create_hospital()
 
-        record = SCREENING_RECORD_TEMPLATE
+        record = SCREENING_RECORD_TEMPLATE.copy()
         record.update(
             {
                 "date": "2018-06-06",

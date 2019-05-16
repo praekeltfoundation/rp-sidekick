@@ -160,6 +160,16 @@ class ScreeningRecord(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def as_dict(self):
+        return {
+            "date": self.date.strftime("%Y-%m-%d") if self.date else "",
+            "week_1_case_count": self.week_1_case_count,
+            "week_2_case_count": self.week_2_case_count,
+            "week_3_case_count": self.week_3_case_count,
+            "week_4_case_count": self.week_4_case_count,
+            "total_eligible": self.total_eligible,
+        }
+
 
 class PatientRecord(models.Model):
 
