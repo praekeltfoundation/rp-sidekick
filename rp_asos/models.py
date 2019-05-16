@@ -25,6 +25,34 @@ class Hospital(models.Model):
     def __str__(self):
         return "{} - {}".format(self.project.name, self.name)
 
+    def check_and_update_status(self):
+        """
+        Recruitment stops on the first Monday after the hospital has 100
+        cases or after 4 weeks.
+        Reminders stop on the Thursday after recruitment stopped.
+        We disable the hospital when the reminders should stop.
+        """
+        screening_record = self.screening_records.first()
+        if screening_record and screening_record.date:
+            today = utils.get_today()
+
+            total_days = (today - screening_record.date).days
+            week_number = total_days // 7
+
+            total_cases = 0
+            for i in range(1, week_number + 1):
+                week_count = getattr(
+                    screening_record, "week_{}_case_count".format(i)
+                )
+                if week_count:
+                    total_cases += week_count
+
+            if total_days >= week_number * 7 + 3 and (
+                total_cases >= 100 or week_number >= 4
+            ):
+                self.is_active = False
+                self.save()
+
     def create_hospital_wa_group(self):
         if not self.whatsapp_group_id:
             # WA group subject is limited to 25 characters
@@ -124,6 +152,10 @@ class ScreeningRecord(models.Model):
         on_delete=models.CASCADE,
     )
     date = models.DateField(null=True)
+    week_1_case_count = models.IntegerField(null=True, blank=True)
+    week_2_case_count = models.IntegerField(null=True, blank=True)
+    week_3_case_count = models.IntegerField(null=True, blank=True)
+    week_4_case_count = models.IntegerField(null=True, blank=True)
     total_eligible = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

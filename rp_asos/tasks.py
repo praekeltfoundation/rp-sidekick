@@ -40,6 +40,12 @@ class PatientDataCheck(BaseTask):
 
             data = {"total_eligible": total}
 
+            for i in range(1, 5):
+                if record["week_{}_case_count".format(i)]:
+                    data["week_{}_case_count".format(i)] = record[
+                        "week_{}_case_count".format(i)
+                    ]
+
             if record["date"]:
                 data["date"] = record["date"]
 
@@ -238,9 +244,6 @@ class PatientDataCheck(BaseTask):
                 if (date - aggregate_date["updated_at__max"].date()).days <= 2:
                     update_warning = ""
 
-                # TODO: check if screening hasn't been updated for 3 days, send
-                # message to ASOS admin team
-
             crf_total_count = hospital.patients.count()
             record_ids = hospital.patients.exclude(
                 Q(pre_operation_status=PatientRecord.COMPLETE_STATUS)
@@ -258,6 +261,8 @@ class PatientDataCheck(BaseTask):
                     record_ids="; ".join(record_ids),
                 )
             )
+
+            hospital.check_and_update_status()
 
 
 patient_data_check = PatientDataCheck()
