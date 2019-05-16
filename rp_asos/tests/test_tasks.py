@@ -458,14 +458,25 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             updated_at=datetime.datetime(2019, 1, 9, tzinfo=timezone.utc)
         )
 
+        # nothing changes, updated_at should stay the same
         record = SCREENING_RECORD_TEMPLATE.copy()
         record.update({"date": "2018-06-06"})
-
         patient_data_check.save_screening_records(hospital, [record])
 
         screening_record = ScreeningRecord.objects.all()[0]
         self.assertEqual(ScreeningRecord.objects.all().count(), 1)
         self.assertEqual(
+            screening_record.updated_at,
+            datetime.datetime(2019, 1, 9, tzinfo=timezone.utc),
+        )
+
+        # something will change, updated_at should have new timestamp
+        record.update({"day1": "100"})
+        patient_data_check.save_screening_records(hospital, [record])
+
+        screening_record = ScreeningRecord.objects.all()[0]
+        self.assertEqual(ScreeningRecord.objects.all().count(), 1)
+        self.assertNotEqual(
             screening_record.updated_at,
             datetime.datetime(2019, 1, 9, tzinfo=timezone.utc),
         )
