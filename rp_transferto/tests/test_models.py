@@ -1,18 +1,16 @@
 import json
+
 import pkg_resources
 
-from mock import patch
-from freezegun import freeze_time
-
 from django.test import TestCase
-
-from sidekick.utils import clean_msisdn
+from freezegun import freeze_time
+from mock import patch
 from sidekick.tests.utils import create_org
+from sidekick.utils import clean_msisdn
 
 from ..models import TopupAttempt
-
+from .constants import TOPUP_ERROR_RESPONSE_DICT, TOPUP_RESPONSE_DICT
 from .utils import create_transferto_account
-from .constants import TOPUP_RESPONSE_DICT, TOPUP_ERROR_RESPONSE_DICT
 
 
 class TestTopupAttempt(TestCase):
@@ -88,10 +86,7 @@ class TestTopupAttempt(TestCase):
         from_string = "bob"
 
         topup_attempt = TopupAttempt.objects.create(
-            msisdn=msisdn,
-            from_string=from_string,
-            amount=airtime_amount,
-            org=self.org,
+            msisdn=msisdn, from_string=from_string, amount=airtime_amount, org=self.org
         )
         self.assertEqual(topup_attempt.status, TopupAttempt.CREATED)
 
@@ -115,10 +110,7 @@ class TestTopupAttempt(TestCase):
         from_string = "bob"
 
         topup_attempt = TopupAttempt.objects.create(
-            msisdn=msisdn,
-            from_string=from_string,
-            amount=airtime_amount,
-            org=self.org,
+            msisdn=msisdn, from_string=from_string, amount=airtime_amount, org=self.org
         )
         self.assertEqual(topup_attempt.status, TopupAttempt.CREATED)
 

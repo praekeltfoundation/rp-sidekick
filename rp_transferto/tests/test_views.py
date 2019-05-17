@@ -1,40 +1,34 @@
 import json
-
-from mock import patch
 from unittest.mock import MagicMock
 
-from pytest import raises
-
-from django.urls import reverse
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.test import TestCase
-
+from django.urls import reverse
+from mock import patch
+from pytest import raises
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.test import APITestCase, APIClient
-
-from sidekick.utils import clean_msisdn
-from sidekick.tests.utils import create_org
-
-from rp_transferto.views import process_status_code
+from rest_framework.test import APIClient, APITestCase
 from rp_transferto.models import MsisdnInformation
 from rp_transferto.tasks import topup_data
 from rp_transferto.utils import TransferToClient
+from rp_transferto.views import process_status_code
+from sidekick.tests.utils import create_org
+from sidekick.utils import clean_msisdn
 
 from ..models import TopupAttempt
-
-from .utils import create_transferto_account
 from .constants import (
-    PING_RESPONSE_DICT,
-    MSISDN_INFO_RESPONSE_DICT,
-    RESERVE_ID_RESPONSE_DICT,
     GET_COUNTRIES_RESPONSE_DICT,
-    GET_OPERATORS_RESPONSE_DICT,
-    GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT,
-    GET_PRODUCTS_RESPONSE_DICT,
     GET_COUNTRY_SERVICES_RESPONSE_DICT,
+    GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT,
+    GET_OPERATORS_RESPONSE_DICT,
+    GET_PRODUCTS_RESPONSE_DICT,
+    MSISDN_INFO_RESPONSE_DICT,
+    PING_RESPONSE_DICT,
+    RESERVE_ID_RESPONSE_DICT,
 )
+from .utils import create_transferto_account
 
 fake_ping = MagicMock(return_value=PING_RESPONSE_DICT)
 fake_msisdn_info = MagicMock(return_value=MSISDN_INFO_RESPONSE_DICT)
@@ -45,9 +39,7 @@ fake_get_operator_airtime_products = MagicMock(
     return_value=GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT
 )
 fake_get_operator_products = MagicMock(return_value=GET_PRODUCTS_RESPONSE_DICT)
-fake_get_country_services = MagicMock(
-    return_value=GET_COUNTRY_SERVICES_RESPONSE_DICT
-)
+fake_get_country_services = MagicMock(return_value=GET_COUNTRY_SERVICES_RESPONSE_DICT)
 fake_delay = MagicMock({"info_txt": "top_up_data"})
 
 
@@ -90,9 +82,7 @@ class TestTransferToViewsAbstract(APITestCase):
         self.org.users.remove(self.user)
 
         self.assertFalse(fake_ping.called)
-        response = self.api_client.get(
-            reverse("ping", kwargs={"org_id": self.org.id})
-        )
+        response = self.api_client.get(reverse("ping", kwargs={"org_id": self.org.id}))
         # check status
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         # check response body
@@ -114,9 +104,7 @@ class TestTransferToViewsAbstract(APITestCase):
     def test_ping_view_org_does_not_have_transferto_account(self):
         self.transferto_account.delete()
         self.assertFalse(fake_ping.called)
-        response = self.api_client.get(
-            reverse("ping", kwargs={"org_id": self.org.id})
-        )
+        response = self.api_client.get(reverse("ping", kwargs={"org_id": self.org.id}))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(json.loads(response.content), {})
         self.assertFalse(fake_ping.called)
@@ -142,30 +130,23 @@ class TestTransferToViews(APITestCase):
     @patch.object(TransferToClient, "ping", fake_ping)
     def test_ping_view_success(self):
         self.assertFalse(fake_ping.called)
-        response = self.api_client.get(
-            reverse("ping", kwargs={"org_id": self.org.id})
-        )
+        response = self.api_client.get(reverse("ping", kwargs={"org_id": self.org.id}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(json.loads(response.content), PING_RESPONSE_DICT)
         self.assertTrue(fake_ping.called)
 
     @patch("rp_transferto.utils.TransferToClient.get_misisdn_info")
-    def test_msisdn_info_view_object_does_not_exist(
-        self, fake_get_misisdn_info
-    ):
+    def test_msisdn_info_view_object_does_not_exist(self, fake_get_misisdn_info):
         fake_get_misisdn_info.return_value = MSISDN_INFO_RESPONSE_DICT
         self.assertEqual(MsisdnInformation.objects.count(), 0)
         self.assertFalse(fake_get_misisdn_info.called)
         response = self.api_client.get(
             reverse(
-                "msisdn_info",
-                kwargs={"msisdn": "+27820000001", "org_id": self.org.id},
+                "msisdn_info", kwargs={"msisdn": "+27820000001", "org_id": self.org.id}
             )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            json.loads(response.content), MSISDN_INFO_RESPONSE_DICT
-        )
+        self.assertEqual(json.loads(response.content), MSISDN_INFO_RESPONSE_DICT)
         self.assertTrue(fake_get_misisdn_info.called)
         self.assertEqual(MsisdnInformation.objects.count(), 1)
 
@@ -173,20 +154,14 @@ class TestTransferToViews(APITestCase):
     def test_msisdn_info_view_cached_object(self, fake_get_misisdn_info):
         fake_get_misisdn_info.return_value = MSISDN_INFO_RESPONSE_DICT
         msisdn = "+27820000000"
-        MsisdnInformation.objects.create(
-            msisdn=msisdn, data=MSISDN_INFO_RESPONSE_DICT
-        )
+        MsisdnInformation.objects.create(msisdn=msisdn, data=MSISDN_INFO_RESPONSE_DICT)
         self.assertEqual(MsisdnInformation.objects.count(), 1)
         self.assertFalse(fake_get_misisdn_info.called)
         response = self.api_client.get(
-            reverse(
-                "msisdn_info", kwargs={"msisdn": msisdn, "org_id": self.org.id}
-            )
+            reverse("msisdn_info", kwargs={"msisdn": msisdn, "org_id": self.org.id})
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            json.loads(response.content), MSISDN_INFO_RESPONSE_DICT
-        )
+        self.assertEqual(json.loads(response.content), MSISDN_INFO_RESPONSE_DICT)
         self.assertFalse(fake_get_misisdn_info.called)
         self.assertEqual(MsisdnInformation.objects.count(), 1)
 
@@ -194,23 +169,16 @@ class TestTransferToViews(APITestCase):
     def test_msisdn_info_no_cache(self, fake_get_misisdn_info):
         fake_get_misisdn_info.return_value = MSISDN_INFO_RESPONSE_DICT
         msisdn = "+27820000000"
-        MsisdnInformation.objects.create(
-            msisdn=msisdn, data=MSISDN_INFO_RESPONSE_DICT
-        )
+        MsisdnInformation.objects.create(msisdn=msisdn, data=MSISDN_INFO_RESPONSE_DICT)
         self.assertEqual(MsisdnInformation.objects.count(), 1)
         self.assertFalse(fake_get_misisdn_info.called)
         response = self.api_client.get(
             "{}?no_cache=True".format(
-                reverse(
-                    "msisdn_info",
-                    kwargs={"msisdn": msisdn, "org_id": self.org.id},
-                )
+                reverse("msisdn_info", kwargs={"msisdn": msisdn, "org_id": self.org.id})
             )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            json.loads(response.content), MSISDN_INFO_RESPONSE_DICT
-        )
+        self.assertEqual(json.loads(response.content), MSISDN_INFO_RESPONSE_DICT)
         self.assertTrue(fake_get_misisdn_info.called)
         self.assertEqual(MsisdnInformation.objects.count(), 2)
 
@@ -231,24 +199,17 @@ class TestTransferToViews(APITestCase):
             reverse("get_countries", kwargs={"org_id": self.org.id})
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            json.loads(response.content), GET_COUNTRIES_RESPONSE_DICT
-        )
+        self.assertEqual(json.loads(response.content), GET_COUNTRIES_RESPONSE_DICT)
         self.assertTrue(fake_get_countries.called)
 
     @patch.object(TransferToClient, "get_operators", fake_get_operators)
     def test_get_operators_view(self):
         self.assertFalse(fake_get_operators.called)
         response = self.api_client.get(
-            reverse(
-                "get_operators",
-                kwargs={"country_id": 111, "org_id": self.org.id},
-            )
+            reverse("get_operators", kwargs={"country_id": 111, "org_id": self.org.id})
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            json.loads(response.content), GET_OPERATORS_RESPONSE_DICT
-        )
+        self.assertEqual(json.loads(response.content), GET_OPERATORS_RESPONSE_DICT)
         self.assertTrue(fake_get_operators.called)
 
     @patch.object(
@@ -266,14 +227,11 @@ class TestTransferToViews(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content),
-            GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT,
+            json.loads(response.content), GET_OPERATOR_AIRTIME_PRODUCTS_RESPONSE_DICT
         )
         self.assertTrue(fake_get_operator_airtime_products.called)
 
-    @patch.object(
-        TransferToClient, "get_operator_products", fake_get_operator_products
-    )
+    @patch.object(TransferToClient, "get_operator_products", fake_get_operator_products)
     def test_get_operator_products_view(self):
         self.assertFalse(fake_get_operator_products.called)
         response = self.api_client.get(
@@ -283,14 +241,10 @@ class TestTransferToViews(APITestCase):
             )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            json.loads(response.content), GET_PRODUCTS_RESPONSE_DICT
-        )
+        self.assertEqual(json.loads(response.content), GET_PRODUCTS_RESPONSE_DICT)
         self.assertTrue(fake_get_operator_products.called)
 
-    @patch.object(
-        TransferToClient, "get_country_services", fake_get_country_services
-    )
+    @patch.object(TransferToClient, "get_country_services", fake_get_country_services)
     def test_get_country_services_view(self):
         self.assertFalse(fake_get_country_services.called)
         response = self.api_client.get(
@@ -317,15 +271,11 @@ class TestTransferToViews(APITestCase):
             )
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            json.loads(response.content), {"info_txt": "top_up_data"}
-        )
+        self.assertEqual(json.loads(response.content), {"info_txt": "top_up_data"})
         self.assertTrue(fake_delay.called)
 
     @patch("rp_transferto.tasks.BuyProductTakeAction.delay")
-    def test_buy_product_take_action_view_simple(
-        self, fake_buy_product_take_action
-    ):
+    def test_buy_product_take_action_view_simple(self, fake_buy_product_take_action):
         msisdn = "+27820006000"
         product_id = 444
         self.assertFalse(fake_buy_product_take_action.called)
@@ -342,8 +292,7 @@ class TestTransferToViews(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content),
-            {"info_txt": "buy_product_take_action"},
+            json.loads(response.content), {"info_txt": "buy_product_take_action"}
         )
         fake_buy_product_take_action.assert_called_with(
             self.org.id,
@@ -389,8 +338,7 @@ class TestTransferToViews(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content),
-            {"info_txt": "buy_product_take_action"},
+            json.loads(response.content), {"info_txt": "buy_product_take_action"}
         )
         fake_buy_product_take_action.assert_called_with(
             self.org.id,
@@ -427,8 +375,7 @@ class TestTransferToViews(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content),
-            {"info_txt": "buy_product_take_action"},
+            json.loads(response.content), {"info_txt": "buy_product_take_action"}
         )
         fake_buy_product_take_action.assert_called_with(
             self.org.id,
@@ -440,9 +387,7 @@ class TestTransferToViews(APITestCase):
         )
 
     @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
-    def test_buy_airtime_take_action_view_simple(
-        self, fake_buy_airtime_take_action
-    ):
+    def test_buy_airtime_take_action_view_simple(self, fake_buy_airtime_take_action):
         msisdn = "+27820006000"
         airtime_amount = 444
         from_string = "bob"
@@ -461,8 +406,7 @@ class TestTransferToViews(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content),
-            {"info_txt": "buy_airtime_take_action"},
+            json.loads(response.content), {"info_txt": "buy_airtime_take_action"}
         )
         fake_buy_airtime_take_action.assert_called_with(
             topup_attempt_id=TopupAttempt.objects.last().id,
@@ -508,8 +452,7 @@ class TestTransferToViews(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content),
-            {"info_txt": "buy_airtime_take_action"},
+            json.loads(response.content), {"info_txt": "buy_airtime_take_action"}
         )
         fake_buy_airtime_take_action.assert_called_with(
             topup_attempt_id=TopupAttempt.objects.last().id,
@@ -546,8 +489,7 @@ class TestTransferToViews(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content),
-            {"info_txt": "buy_airtime_take_action"},
+            json.loads(response.content), {"info_txt": "buy_airtime_take_action"}
         )
         fake_buy_airtime_take_action.assert_called_with(
             topup_attempt_id=TopupAttempt.objects.last().id,
@@ -586,8 +528,7 @@ class TestTransferToViews(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            json.loads(response.content),
-            {"info_txt": "buy_airtime_take_action"},
+            json.loads(response.content), {"info_txt": "buy_airtime_take_action"}
         )
         fake_buy_airtime_take_action.assert_called_with(
             topup_attempt_id=TopupAttempt.objects.last().id,

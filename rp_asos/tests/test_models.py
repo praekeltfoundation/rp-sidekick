@@ -1,11 +1,10 @@
 import datetime
 import json
-import responses
 
+import responses
 from django.test import TestCase
 from freezegun import freeze_time
 from mock import patch
-
 from rp_asos.models import Hospital, ScreeningRecord
 from rp_redcap.tests.base import RedcapBaseTestCase
 
@@ -152,9 +151,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
         self.assertFalse(hospital.is_active)
 
     @patch("sidekick.utils.create_whatsapp_group")
-    def test_create_hospital_wa_group_no_group_id(
-        self, mock_create_whatsapp_group
-    ):
+    def test_create_hospital_wa_group_no_group_id(self, mock_create_whatsapp_group):
         mock_create_whatsapp_group.return_value = "group-id-1"
 
         hospital = self.create_hospital()
@@ -167,9 +164,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
         )
 
     @patch("sidekick.utils.create_whatsapp_group")
-    def test_create_hospital_wa_group_with_group_id(
-        self, mock_create_whatsapp_group
-    ):
+    def test_create_hospital_wa_group_with_group_id(self, mock_create_whatsapp_group):
         hospital = self.create_hospital(whatsapp_group_id="group-id-2")
 
         hospital.create_hospital_wa_group()
@@ -200,9 +195,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
     @patch("sidekick.utils.get_whatsapp_contact_id")
     @patch("sidekick.utils.send_whatsapp_template_message")
     @patch("sidekick.utils.get_whatsapp_group_invite_link")
-    def test_invites_noop(
-        self, mock_get_invite_link, mock_send, mock_get_wa_id
-    ):
+    def test_invites_noop(self, mock_get_invite_link, mock_send, mock_get_wa_id):
         mock_get_wa_id.return_value = "wa-id-1"
 
         hospital = self.create_hospital()
@@ -238,9 +231,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
     @patch("sidekick.utils.get_whatsapp_contact_id")
     @patch("sidekick.utils.send_whatsapp_template_message")
     @patch("sidekick.utils.get_whatsapp_group_invite_link")
-    def test_invites_send(
-        self, mock_get_invite_link, mock_send, mock_get_wa_id
-    ):
+    def test_invites_send(self, mock_get_invite_link, mock_send, mock_get_wa_id):
         mock_get_invite_link.return_value = "test-link"
         mock_get_wa_id.return_value = "wa-id-1"
 
@@ -258,11 +249,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
             "wa-id-1",
             "whatsapp:hsm:npo:praekeltpbc",
             "asos2_notification_v2",
-            [
-                {
-                    "default": "Hi, please join the ASOS2 Whatsapp group: test-link"
-                }
-            ],
+            [{"default": "Hi, please join the ASOS2 Whatsapp group: test-link"}],
         )
         mock_get_wa_id.assert_called_with(self.org, "msisdn-1")
 
@@ -271,10 +258,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
         hospital = self.create_hospital()
 
         hospital.add_group_admins(
-            {
-                "participants": ["wa-id-1", "wa-id-2"],
-                "admins": ["wa-id-1", "wa-id-2"],
-            },
+            {"participants": ["wa-id-1", "wa-id-2"], "admins": ["wa-id-1", "wa-id-2"]},
             ["wa-id-1", "wa-id-2"],
         )
         mock_add_admin.assert_not_called()
@@ -370,9 +354,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
     @responses.activate
     @patch("sidekick.utils.get_whatsapp_group_info")
     @patch("sidekick.utils.send_whatsapp_group_message")
-    def test_send_message_in_group(
-        self, mock_send_group, mock_get_whatsapp_group_info
-    ):
+    def test_send_message_in_group(self, mock_send_group, mock_get_whatsapp_group_info):
         mock_get_whatsapp_group_info.return_value = {"participants": ["27123"]}
 
         hospital = self.create_hospital(
@@ -381,9 +363,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
 
         hospital.send_message("Test message")
 
-        mock_send_group.assert_called_with(
-            self.org, "group-id-1", "Test message"
-        )
+        mock_send_group.assert_called_with(self.org, "group-id-1", "Test message")
 
     @responses.activate
     @patch("sidekick.utils.get_whatsapp_group_info")
@@ -391,9 +371,7 @@ class TestHospitalModelTask(RedcapBaseTestCase, TestCase):
     def test_send_message_in_group_with_nomination(
         self, mock_send_group, mock_get_whatsapp_group_info
     ):
-        mock_get_whatsapp_group_info.return_value = {
-            "participants": ["27123", "27321"]
-        }
+        mock_get_whatsapp_group_info.return_value = {"participants": ["27123", "27321"]}
 
         hospital = self.create_hospital(whatsapp_group_id="group-id-1")
 

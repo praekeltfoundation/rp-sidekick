@@ -1,14 +1,10 @@
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.views import APIView
-
-from .tasks import (
-    patient_data_check,
-    create_hospital_groups,
-    screening_record_check,
-)
 from rp_redcap.views import validate_project
 from sidekick.utils import validate_organization
+
+from .tasks import create_hospital_groups, patient_data_check, screening_record_check
 
 
 class StartPatientDataCheckView(APIView):

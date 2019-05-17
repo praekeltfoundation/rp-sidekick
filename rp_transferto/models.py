@@ -1,12 +1,12 @@
 import json
+
 import pkg_resources
 
-from django.utils import timezone
 from django.contrib.postgres.fields import JSONField
 from django.db import models
-
-from sidekick.utils import clean_msisdn
+from django.utils import timezone
 from sidekick.models import Organization
+from sidekick.utils import clean_msisdn
 
 from .utils import TransferToClient
 
@@ -54,9 +54,7 @@ class TransferToAccount(models.Model):
     )
 
     def get_transferto_client(self):
-        return TransferToClient(
-            self.login, self.token, self.apikey, self.apisecret
-        )
+        return TransferToClient(self.login, self.token, self.apikey, self.apisecret)
 
     def __str__(self):
         return self.login
@@ -89,9 +87,7 @@ class TopupAttempt(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
 
     def make_request(self):
-        transferto_client = (
-            self.org.transferto_account.first().get_transferto_client()
-        )
+        transferto_client = self.org.transferto_account.first().get_transferto_client()
 
         self.status = self.WAITING
         topup_result = transferto_client.make_topup(
@@ -107,16 +103,15 @@ class TopupAttempt(models.Model):
 
         # update status based on response field
         if isinstance(self.response, dict):
-            if "error_code" in self.response and self.response[
-                "error_code"
-            ] in ["0", 0]:
+            if "error_code" in self.response and self.response["error_code"] in [
+                "0",
+                0,
+            ]:
                 self.status = self.SUCEEDED
             else:
                 self.status = self.FAILED
 
-        self.sidekick_version = pkg_resources.get_distribution(
-            "rp-sidekick"
-        ).version
+        self.sidekick_version = pkg_resources.get_distribution("rp-sidekick").version
         self.msisdn = clean_msisdn(self.msisdn)
         super().save(*args, **kwargs)
 

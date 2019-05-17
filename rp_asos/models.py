@@ -1,8 +1,6 @@
 from django.db import models
-
-from sidekick import utils
-
 from rp_redcap.models import Project
+from sidekick import utils
 
 
 class Hospital(models.Model):
@@ -41,9 +39,7 @@ class Hospital(models.Model):
 
             total_cases = 0
             for i in range(1, week_number + 1):
-                week_count = getattr(
-                    screening_record, "week_{}_case_count".format(i)
-                )
+                week_count = getattr(screening_record, "week_{}_case_count".format(i))
                 if week_count:
                     total_cases += week_count
 
@@ -146,10 +142,7 @@ class Hospital(models.Model):
 class ScreeningRecord(models.Model):
     record_id = models.CharField(max_length=30, null=False, blank=False)
     hospital = models.ForeignKey(
-        Hospital,
-        related_name="screening_records",
-        null=False,
-        on_delete=models.CASCADE,
+        Hospital, related_name="screening_records", null=False, on_delete=models.CASCADE
     )
     date = models.DateField(null=True)
     week_1_case_count = models.IntegerField(null=True, blank=True)
@@ -210,10 +203,7 @@ class PatientRecord(models.Model):
 
 class PatientValue(models.Model):
     patient = models.ForeignKey(
-        PatientRecord,
-        related_name="values",
-        null=False,
-        on_delete=models.CASCADE,
+        PatientRecord, related_name="values", null=False, on_delete=models.CASCADE
     )
     name = models.CharField(max_length=200, blank=False)
     value = models.TextField(null=True)

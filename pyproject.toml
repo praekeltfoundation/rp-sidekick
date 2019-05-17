@@ -3,7 +3,7 @@
 # see https://raw.githubusercontent.com/ambv/black/master/pyproject.toml
 
 [tool.black]
-line-length = 80
+line-length = 88
 include = '\.pyi?$'
 exclude = '''
 /(

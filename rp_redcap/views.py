@@ -2,8 +2,8 @@ from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.views import APIView
 
-from .tasks import project_check
 from .models import Project
+from .tasks import project_check
 
 
 def validate_project(project_id, request):
