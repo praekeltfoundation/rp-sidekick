@@ -4,6 +4,11 @@ VERSIONS
 Next Release
 ------------
 
+1.5.9
+------------
+ASOS: Only update screening record timestamp if something actually changes
+ASOS: Use correct redcap week key
+
 1.5.8
 ------------
 ASOS: Stop reminders when recruitment is over for hospitals.
