@@ -3,7 +3,6 @@ from collections import defaultdict
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
-
 from sidekick import utils
 
 from .models import Contact, Project, SurveyAnswer
@@ -26,9 +25,7 @@ class BaseTask(Task):
                 condition = "True"
                 if field["branching_logic"]:
                     condition = field["branching_logic"].replace("]", '"]')
-                    condition = condition.replace(
-                        "[", 'data[row["record_id"]]["'
-                    )
+                    condition = condition.replace("[", 'data[row["record_id"]]["')
                     condition = condition.replace(" = ", " == ")
                     condition = re.sub(r"\b[(](?=[0-9]{1,5})", "___", condition)
                     condition = re.sub(r"\b[)](?!=[0-9])", "", condition)
@@ -61,9 +58,7 @@ class ProjectCheck(BaseTask):
                 choices.update(
                     dict(
                         item.split(", ", 1)
-                        for item in field[
-                            "select_choices_or_calculations"
-                        ].split(" | ")
+                        for item in field["select_choices_or_calculations"].split(" | ")
                     )
                 )
         return choices
@@ -95,9 +90,7 @@ class ProjectCheck(BaseTask):
             contact = Contact.objects.get(id=contact_id)
 
             if contact.urn:
-                utils.update_rapidpro_whatsapp_urn(
-                    org, contact.urn.replace("tel:", "")
-                )
+                utils.update_rapidpro_whatsapp_urn(org, contact.urn.replace("tel:", ""))
 
                 missing_fields_count = []
                 for survey, count in missing_fields.items():
@@ -119,10 +112,7 @@ class ProjectCheck(BaseTask):
                 }
 
                 rapidpro_client.create_flow_start(
-                    flow,
-                    [contact.urn],
-                    restart_participants=True,
-                    extra=extra_info,
+                    flow, [contact.urn], restart_participants=True, extra=extra_info
                 )
 
     def run(self, project_id, **kwargs):
@@ -156,9 +146,7 @@ class ProjectCheck(BaseTask):
                 contact_update = {}
 
                 if survey.urn_field in row and row[survey.urn_field]:
-                    contact_update["urn"] = "tel:{}".format(
-                        row[survey.urn_field]
-                    )
+                    contact_update["urn"] = "tel:{}".format(row[survey.urn_field])
 
                 if roles:
                     for role_id, role in roles.items():
@@ -175,9 +163,7 @@ class ProjectCheck(BaseTask):
                     contact_update["title"] = titles.get(row["title"])
 
                 if contact_update:
-                    Contact.objects.filter(id=contact.id).update(
-                        **contact_update
-                    )
+                    Contact.objects.filter(id=contact.id).update(**contact_update)
 
                 self.save_answers(row, survey, contact)
 
@@ -194,16 +180,10 @@ class ProjectCheck(BaseTask):
                             missing_fields.append(field)
 
                     if missing_fields:
-                        reminders[contact.id][survey.description] = len(
-                            missing_fields
-                        )
+                        reminders[contact.id][survey.description] = len(missing_fields)
 
         self.start_flows(
-            rapidpro_client,
-            survey.rapidpro_flow,
-            project.name,
-            reminders,
-            project.org,
+            rapidpro_client, survey.rapidpro_flow, project.name, reminders, project.org
         )
 
 

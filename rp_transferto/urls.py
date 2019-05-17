@@ -9,9 +9,7 @@ urlpatterns = [
         views.MsisdnInfo.as_view(),
         name="msisdn_info",
     ),
-    path(
-        "<int:org_id>/reserve_id/", views.ReserveId.as_view(), name="reserve_id"
-    ),
+    path("<int:org_id>/reserve_id/", views.ReserveId.as_view(), name="reserve_id"),
     path(
         "<int:org_id>/get_countries/",
         views.GetCountries.as_view(),
@@ -39,11 +37,7 @@ urlpatterns = [
         views.GetCountryServices.as_view(),
         name="get_country_services",
     ),
-    path(
-        "<int:org_id>/top_up_data/",
-        views.TopUpData.as_view(),
-        name="top_up_data",
-    ),
+    path("<int:org_id>/top_up_data/", views.TopUpData.as_view(), name="top_up_data"),
     path(
         "<int:org_id>/buy/<int:product_id>/<str:msisdn>/",
         views.BuyProductTakeAction.as_view(),
