@@ -2,7 +2,6 @@ import json
 from urllib.parse import urljoin
 
 import pkg_resources
-
 import requests
 from django.utils import timezone
 from requests.adapters import HTTPAdapter

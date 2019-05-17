@@ -4,6 +4,7 @@ from mock import patch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
+
 from rp_redcap.tests.base import RedcapBaseTestCase
 
 

@@ -20,6 +20,11 @@ repos:
       - id: yamllint
         files: ^.*\.(yml|yaml)$
 
+  - repo: https://github.com/asottile/seed-isort-config
+    rev: v1.9.0
+    hooks:
+      - id: seed-isort-config
+
   - repo: https://github.com/pre-commit/mirrors-isort
     rev: v4.3.4
     hooks:

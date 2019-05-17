@@ -4,6 +4,7 @@ from celery.task import Task
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db.models import Max, Q, Sum
+
 from rp_redcap.models import Project
 from rp_redcap.tasks import BaseTask
 from sidekick import utils

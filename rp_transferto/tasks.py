@@ -1,7 +1,6 @@
 import json
 
 import pkg_resources
-
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -11,6 +10,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.html import strip_tags
 from json2html import json2html
+
 from sidekick.models import Organization
 from sidekick.utils import clean_msisdn, get_flow_url
 

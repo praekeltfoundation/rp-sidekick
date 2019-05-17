@@ -5,6 +5,7 @@ import responses
 from django.test import TestCase
 from django.utils import timezone
 from mock import patch
+
 from rp_redcap.models import Contact, Survey, SurveyAnswer
 from rp_redcap.tasks import BaseTask, project_check
 
