@@ -1,5 +1,6 @@
 import redcap
 from django.db import models
+
 from sidekick.models import Organization
 
 

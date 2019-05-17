@@ -1,4 +1,5 @@
 from django.db import models
+
 from rp_redcap.models import Project
 from sidekick import utils
 

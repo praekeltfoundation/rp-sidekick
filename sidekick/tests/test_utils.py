@@ -1,11 +1,11 @@
 import json
 
 import pkg_resources
-
 import responses
 from django.test import TestCase
 from django.utils import timezone
 from mock import patch
+
 from sidekick import utils
 
 from .utils import create_org

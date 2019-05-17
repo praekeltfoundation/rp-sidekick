@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from celery.task import Task
 from celery.utils.log import get_task_logger
+
 from sidekick import utils
 
 from .models import Contact, Project, SurveyAnswer
