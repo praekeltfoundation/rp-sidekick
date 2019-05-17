@@ -1,11 +1,11 @@
 import json
 
 import pkg_resources
+
 import responses
 from django.test import TestCase
 from django.utils import timezone
 from mock import patch
-
 from sidekick import utils
 
 from .utils import create_org
@@ -22,9 +22,7 @@ class UtilsTests(TestCase):
 
         responses.add(
             method=responses.GET,
-            url="http://localhost:8002/api/v2/contacts.json?urn=tel:{}".format(
-                msisdn
-            ),
+            url="http://localhost:8002/api/v2/contacts.json?urn=tel:{}".format(msisdn),
             json={
                 "count": count,
                 "next": None,
@@ -69,10 +67,7 @@ class UtilsTests(TestCase):
                 "language": "eng",
                 "urns": urns,
                 "groups": [
-                    {
-                        "name": "Devs",
-                        "uuid": "6685e933-26e1-4363-a468-8f7268ab63a9",
-                    }
+                    {"name": "Devs", "uuid": "6685e933-26e1-4363-a468-8f7268ab63a9"}
                 ],
                 "fields": {"nickname": "Macklemore", "side_kick": "Ryan Lewis"},
                 "blocked": False,
@@ -90,9 +85,7 @@ class UtilsTests(TestCase):
     def test_clean_message(self):
 
         self.assertEqual(
-            utils.clean_message(
-                "No new lines\nNo tabs\t              No huge spaces"
-            ),
+            utils.clean_message("No new lines\nNo tabs\t              No huge spaces"),
             "No new lines No tabs No huge spaces",
         )
 
@@ -130,25 +123,19 @@ class UtilsTests(TestCase):
             url="http://whatsapp/v1/contacts",
             json={
                 "contacts": [
-                    {
-                        "input": "+27820001001",
-                        "status": "valid",
-                        "wa_id": "27820001001",
-                    }
+                    {"input": "+27820001001", "status": "valid", "wa_id": "27820001001"}
                 ]
             },
             status=200,
         )
 
         self.assertEqual(
-            utils.get_whatsapp_contact_id(self.org, "+27820001001"),
-            "27820001001",
+            utils.get_whatsapp_contact_id(self.org, "+27820001001"), "27820001001"
         )
         request = responses.calls[-1].request
         self.assertEqual(request.headers["Authorization"], "Bearer test-token")
         self.assertEqual(
-            json.loads(request.body),
-            {"blocking": "wait", "contacts": ["+27820001001"]},
+            json.loads(request.body), {"blocking": "wait", "contacts": ["+27820001001"]}
         )
 
     @responses.activate
@@ -160,21 +147,16 @@ class UtilsTests(TestCase):
             status=200,
         )
 
-        self.assertEqual(
-            utils.get_whatsapp_contact_id(self.org, "+27820001001"), None
-        )
+        self.assertEqual(utils.get_whatsapp_contact_id(self.org, "+27820001001"), None)
         request = responses.calls[-1].request
         self.assertEqual(request.headers["Authorization"], "Bearer test-token")
         self.assertEqual(
-            json.loads(request.body),
-            {"blocking": "wait", "contacts": ["+27820001001"]},
+            json.loads(request.body), {"blocking": "wait", "contacts": ["+27820001001"]}
         )
 
     @responses.activate
     @patch("sidekick.utils.get_whatsapp_contact_id")
-    def test_update_rapidpro_whatsapp_urn_no_wa_id(
-        self, mock_get_whatsapp_contact_id
-    ):
+    def test_update_rapidpro_whatsapp_urn_no_wa_id(self, mock_get_whatsapp_contact_id):
         msisdn = "+27820001001"
 
         mock_get_whatsapp_contact_id.return_value = None

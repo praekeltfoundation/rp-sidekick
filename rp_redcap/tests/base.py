@@ -16,7 +16,5 @@ class RedcapBaseTestCase(object):
 
     def create_org(self):
         return Organization.objects.create(
-            name="Test Organization",
-            url="http://localhost:8002/",
-            token="REPLACEME",
+            name="Test Organization", url="http://localhost:8002/", token="REPLACEME"
         )
