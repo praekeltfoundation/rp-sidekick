@@ -47,9 +47,9 @@ class PatientDataCheck(BaseTask):
             new_values["total_eligible"] = total
 
             for i in range(1, 5):
-                if record["week_{}_case_count".format(i)]:
+                if record["asos2_week{}".format(i)]:
                     new_values["week_{}_case_count".format(i)] = int(
-                        record["week_{}_case_count".format(i)]
+                        record["asos2_week{}".format(i)]
                     )
 
             if record["date"]:
