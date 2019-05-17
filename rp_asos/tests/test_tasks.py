@@ -25,7 +25,7 @@ SCREENING_RECORD_TEMPLATE = {}
 for i in range(1, 29):
     SCREENING_RECORD_TEMPLATE["day{}".format(i)] = "1"
 for i in range(1, 5):
-    SCREENING_RECORD_TEMPLATE["week_{}_case_count".format(i)] = "7"
+    SCREENING_RECORD_TEMPLATE["asos2_week{}".format(i)] = "7"
 
 
 class MockRedCapPatients(object):
@@ -76,7 +76,7 @@ class MockRedCapPatients(object):
                     "record_id": "1",
                     "date": "2018-06-06",
                     "day4": "",
-                    "week_1_case_count": "6",
+                    "asos2_week1": "6",
                     "redcap_data_access_group": "my_test_hospital",
                 }
             )
@@ -87,7 +87,7 @@ class MockRedCapPatients(object):
                     "record_id": "1",
                     "date": "2017-06-06",
                     "day4": "",
-                    "week_1_case_count": "6",
+                    "asos2_week1": "6",
                     "redcap_data_access_group": "other_hospital",
                 }
             )
@@ -427,8 +427,8 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "date": "",
                 "day2": "",
                 "day3": "",
-                "week_1_case_count": "4",
-                "week_4_case_count": "",
+                "asos2_week1": "4",
+                "asos2_week4": "",
             }
         )
 
@@ -492,7 +492,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
                 "day3": "",
                 "day4": "",
                 "day5": "",
-                "week_1_case_count": "3",
+                "asos2_week1": "3",
             }
         )
 
