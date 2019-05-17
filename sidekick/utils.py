@@ -1,14 +1,15 @@
 import json
-import requests
-from django.utils import timezone
-from rest_framework import status
-from six.moves import urllib_parse
 from urllib.parse import urljoin
-from temba_client.v2 import TembaClient
+
 import pkg_resources
 
+import requests
+from django.utils import timezone
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from rest_framework import status
+from six.moves import urllib_parse
+from temba_client.v2 import TembaClient
 
 from .models import Organization
 
@@ -116,9 +117,7 @@ def update_rapidpro_whatsapp_urn(org, msisdn):
     if whatsapp_id:
         contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
         if not contact:
-            contact = client.get_contacts(
-                urn="whatsapp:{}".format(whatsapp_id)
-            ).first()
+            contact = client.get_contacts(urn="whatsapp:{}".format(whatsapp_id)).first()
 
         urns = ["tel:{}".format(msisdn), "whatsapp:{}".format(whatsapp_id)]
 

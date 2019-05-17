@@ -3,7 +3,7 @@ from django.urls import reverse
 from mock import patch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APIClient, APITestCase
 
 from .base import RedcapBaseTestCase
 
@@ -20,9 +20,7 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         )
         token = Token.objects.get(user=self.user)
         self.token = token.key
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token {}".format(self.token)
-        )
+        self.client.credentials(HTTP_AUTHORIZATION="Token {}".format(self.token))
 
         self.org = self.create_org()
         self.project = self.create_project(self.org)
@@ -35,9 +33,7 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         If there is no or invalid auth supplied, a 401 error should be
         returned and the task should not be started.
         """
-        survey_url = reverse(
-            "rp_redcap.start_project_check", args=[self.project.id]
-        )
+        survey_url = reverse("rp_redcap.start_project_check", args=[self.project.id])
 
         response = self.client_noauth.post(
             survey_url, {}, content_type="application/json"
@@ -56,9 +52,7 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         """
         survey_url = reverse("rp_redcap.start_project_check", args=[999])
 
-        response = self.client.post(
-            survey_url, {}, content_type="application/json"
-        )
+        response = self.client.post(survey_url, {}, content_type="application/json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         mock_project_check.assert_not_called()
@@ -71,13 +65,9 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         If the user is not linked to the organization of the project, a 401
         error should be returned and the task should not be started.
         """
-        survey_url = reverse(
-            "rp_redcap.start_project_check", args=[self.project.id]
-        )
+        survey_url = reverse("rp_redcap.start_project_check", args=[self.project.id])
 
-        response = self.client.post(
-            survey_url, {}, content_type="application/json"
-        )
+        response = self.client.post(survey_url, {}, content_type="application/json")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         mock_project_check.assert_not_called()
@@ -92,13 +82,9 @@ class CheckViewTests(RedcapBaseTestCase, APITestCase):
         """
         self.org.users.add(self.user)
 
-        survey_url = reverse(
-            "rp_redcap.start_project_check", args=[self.project.id]
-        )
+        survey_url = reverse("rp_redcap.start_project_check", args=[self.project.id])
 
-        response = self.client.post(
-            survey_url, {}, content_type="application/json"
-        )
+        response = self.client.post(survey_url, {}, content_type="application/json")
 
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         mock_project_check.assert_called_with(self.project.id)

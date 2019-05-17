@@ -1,7 +1,6 @@
 from .base import *  # noqa
 from .base import env
 
-
 DEBUG = True
 
 SECRET_KEY = env.str("SECRET_KEY", "dev_secret_key")

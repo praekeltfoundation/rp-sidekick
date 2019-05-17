@@ -6,6 +6,7 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 from datetime import datetime
+
 from recommonmark.parser import CommonMarkParser
 
 # -- Path setup --------------------------------------------------------------
@@ -147,13 +148,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (
-        master_doc,
-        "rapidprosidekick",
-        "RapidPro Sidekick Documentation",
-        [author],
-        1,
-    )
+    (master_doc, "rapidprosidekick", "RapidPro Sidekick Documentation", [author], 1)
 ]
 
 

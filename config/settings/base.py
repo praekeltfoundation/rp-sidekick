@@ -9,12 +9,11 @@ https://docs.djangoproject.com/en/2.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.1/ref/settings/
 """
-import environ
-
-from kombu import Exchange, Queue
-
 from os.path import join
+
 import djcelery
+import environ
+from kombu import Exchange, Queue
 
 root = environ.Path(__file__) - 3
 env = environ.Env(DEBUG=(bool, False))
@@ -66,8 +65,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 DATABASES = {
     "default": env.db(
-        "RP_SIDEKICK_DATABASE",
-        default="postgres://postgres@localhost:5432/rp_sidekick",
+        "RP_SIDEKICK_DATABASE", default="postgres://postgres@localhost:5432/rp_sidekick"
     )
 }
 
@@ -81,9 +79,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
@@ -141,12 +137,8 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.TokenAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
-    "DEFAULT_FILTER_BACKENDS": (
-        "django_filters.rest_framework.DjangoFilterBackend",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
 }
 
 # Celery configuration options

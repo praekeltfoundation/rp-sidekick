@@ -1,5 +1,4 @@
 import redcap
-
 from django.db import models
 from sidekick.models import Organization
 
@@ -10,10 +9,7 @@ class Project(models.Model):
     token = models.CharField(max_length=200, null=False, blank=False)
     crf_token = models.CharField(max_length=200, null=True)
     org = models.ForeignKey(
-        Organization,
-        related_name="projects",
-        null=False,
-        on_delete=models.CASCADE,
+        Organization, related_name="projects", null=False, on_delete=models.CASCADE
     )
     pre_operation_fields = models.TextField(null=True)
     post_operation_fields = models.TextField(null=True)

@@ -1,15 +1,13 @@
-import requests
-import time
+import base64
 import hashlib
 import hmac
-import base64
+import time
 
+import requests
 from prometheus_client import Histogram
 
 transferto_request_time = Histogram(
-    "transferto_request_time",
-    "request time for calls to transferto",
-    ["action"],
+    "transferto_request_time", "request time for calls to transferto", ["action"]
 )
 transferto_goods_and_services_request_time = Histogram(
     "transferto_goods_and_services_request_time",
@@ -44,9 +42,7 @@ class TransferToClient:
         Reduces the boilerplate for constructing TransferTo requests
         """
         key = str(int(1000000 * time.time()))
-        md5 = hashlib.md5(
-            (self.login + self.token + key).encode("UTF-8")
-        ).hexdigest()
+        md5 = hashlib.md5((self.login + self.token + key).encode("UTF-8")).hexdigest()
         data = dict(login=self.login, key=key, md5=md5, action=action, **kwargs)
         with transferto_request_time.labels(action=action).time():
             response = requests.post(self.url, data=data)
@@ -76,9 +72,7 @@ class TransferToClient:
         """
         Returns list of countries offered to your TransferTo account
         """
-        return self._make_transferto_request(
-            action="pricelist", info_type="countries"
-        )
+        return self._make_transferto_request(action="pricelist", info_type="countries")
 
     def get_operators(self, country_id):
         """
@@ -143,9 +137,7 @@ class TransferToClient:
         headers["X-TransferTo-nonce"] = str(nonce)
         headers["x-transferto-hmac"] = transferto_hmac
 
-        with transferto_goods_and_services_request_time.labels(
-            action=action
-        ).time():
+        with transferto_goods_and_services_request_time.labels(action=action).time():
             if not body:
                 response = requests.get(url, headers=headers)
             else:
@@ -156,18 +148,14 @@ class TransferToClient:
         product_url = "https://api.transferto.com/v1.1/operators/{}/products".format(
             operator_id
         )
-        return self._make_transferto_api_request(
-            "get_operator_products", product_url
-        )
+        return self._make_transferto_api_request("get_operator_products", product_url)
 
     def get_country_services(self, country_id):
 
         service_url = "https://api.transferto.com/v1.1/countries/{}/services".format(
             country_id
         )
-        return self._make_transferto_api_request(
-            "get_country_services", service_url
-        )
+        return self._make_transferto_api_request("get_country_services", service_url)
 
     def topup_data(self, msisdn, product_id, simulate=False):
         external_id = str(int(time.time() * 1000000))
@@ -199,9 +187,5 @@ class TransferToClient:
             },
         }
 
-        url = (
-            "https://api.transferto.com/v1.1/transactions/fixed_value_recharges"
-        )
-        return self._make_transferto_api_request(
-            "topup_data", url, body=fixed_recharge
-        )
+        url = "https://api.transferto.com/v1.1/transactions/fixed_value_recharges"
+        return self._make_transferto_api_request("topup_data", url, body=fixed_recharge)

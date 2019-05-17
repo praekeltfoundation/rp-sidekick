@@ -1,21 +1,19 @@
 import json
-import responses
-from mock import patch
 from os import environ
 from urllib.parse import urlencode
 
-from django.urls import reverse
+import responses
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.utils import OperationalError
 from django.test.utils import override_settings
-
+from django.urls import reverse
+from mock import patch
 from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
 from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient, APITestCase
 
 from .utils import create_org
-
 
 FAKE_ENGAGE_URL = "http://localhost:8005"
 
@@ -83,9 +81,7 @@ class DetailedHealthViewTest(APITestCase):
 
         response = self.api_client.get(reverse("detailed-health"))
 
-        self.assertEqual(
-            response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertTrue(response.json()["queues"][0]["stuck"])
 
     @override_settings(RABBITMQ_MANAGEMENT_INTERFACE=False)
@@ -102,9 +98,7 @@ class DetailedHealthViewTest(APITestCase):
         mock_cursor.side_effect = OperationalError()
         response = self.api_client.get(reverse("detailed-health"))
 
-        self.assertEqual(
-            response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertFalse(response.json()["db_available"])
 
 
@@ -198,10 +192,7 @@ class TestSendTemplateView(SidekickAPITestCase):
                     "namespace": "test.namespace",
                     "element_name": "el",
                     "language": {"policy": "fallback", "code": "en_US"},
-                    "localizable_params": [
-                        {"default": "Ola"},
-                        {"default": "R25"},
-                    ],
+                    "localizable_params": [{"default": "Ola"}, {"default": "R25"}],
                 },
             },
         )
@@ -297,8 +288,7 @@ class TestCheckContactView(SidekickAPITestCase):
 
         turn_request_body = json.loads(responses.calls[0].request.body)
         self.assertEqual(
-            turn_request_body,
-            {"blocking": "wait", "contacts": [telephone_number]},
+            turn_request_body, {"blocking": "wait", "contacts": [telephone_number]}
         )
 
         # inspect response from Sidekick
@@ -315,9 +305,7 @@ class TestCheckContactView(SidekickAPITestCase):
         responses.add(
             responses.POST,
             "{}/v1/contacts".format(FAKE_ENGAGE_URL),
-            json={
-                "contacts": [{"input": telephone_number, "status": "invalid"}]
-            },
+            json={"contacts": [{"input": telephone_number, "status": "invalid"}]},
             status=201,
             match_querystring=True,
         )
@@ -335,8 +323,7 @@ class TestCheckContactView(SidekickAPITestCase):
 
         turn_request_body = json.loads(responses.calls[0].request.body)
         self.assertEqual(
-            turn_request_body,
-            {"blocking": "wait", "contacts": [telephone_number]},
+            turn_request_body, {"blocking": "wait", "contacts": [telephone_number]}
         )
 
         # inspect response from Sidekick
@@ -392,8 +379,7 @@ class TestCheckContactView(SidekickAPITestCase):
         # get result
         response = self.api_client.get(
             reverse(
-                "check_contact",
-                kwargs={"org_id": self.org.id, "msisdn": "16315551003"},
+                "check_contact", kwargs={"org_id": self.org.id, "msisdn": "16315551003"}
             )
         )
 

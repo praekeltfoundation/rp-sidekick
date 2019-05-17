@@ -1,23 +1,20 @@
 import json
+
 import pkg_resources
 
-from json2html import json2html
-
-from django.utils import timezone
-from django.utils.html import strip_tags
+from celery.task import Task
+from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMessage, send_mail
 from django.template.loader import render_to_string
-
-from celery.task import Task
-from celery.utils.log import get_task_logger
-
-from sidekick.utils import clean_msisdn, get_flow_url
+from django.utils import timezone
+from django.utils.html import strip_tags
+from json2html import json2html
 from sidekick.models import Organization
+from sidekick.utils import clean_msisdn, get_flow_url
 
 from .models import MsisdnInformation, TopupAttempt
-
 
 log = get_task_logger(__name__)
 
@@ -62,9 +59,7 @@ def update_values(org, user_uuid, values_to_update, transferto_response):
 
     fields = {}
     for (rapidpro_field, transferto_field) in values_to_update.items():
-        fields[rapidpro_field] = transferto_response.get(
-            transferto_field, "NONE"
-        )
+        fields[rapidpro_field] = transferto_response.get(transferto_field, "NONE")
 
     rapidpro_client.update_contact(user_uuid, fields=fields)
 
@@ -89,9 +84,7 @@ class TopupData(Task):
 
     def run(self, org_id, msisdn, user_uuid, recharge_value, *args, **kwargs):
         org = Organization.objects.get(id=org_id)
-        transferto_client = (
-            org.transferto_account.first().get_transferto_client()
-        )
+        transferto_client = org.transferto_account.first().get_transferto_client()
         # get msisdn number info
         try:
             msisdn_object = MsisdnInformation.objects.filter(
@@ -108,9 +101,7 @@ class TopupData(Task):
         operator_id = int(operator_id_info["operatorid"])
 
         # check the product available and id
-        available_products = transferto_client.get_operator_products(
-            operator_id
-        )
+        available_products = transferto_client.get_operator_products(operator_id)
         log.info(json.dumps(available_products, indent=2))
 
         # TODO: refactor
@@ -126,9 +117,7 @@ class TopupData(Task):
         log.info("product_id: {}".format(product_id))
         log.info("product_description: {}".format(product_description))
 
-        topup_result = transferto_client.topup_data(
-            msisdn, product_id, simulate=False
-        )
+        topup_result = transferto_client.topup_data(msisdn, product_id, simulate=False)
 
         log.info(json.dumps(topup_result, indent=2))
 
@@ -181,9 +170,7 @@ class BuyProductTakeAction(Task):
             )
         )
         org = Organization.objects.get(id=org_id)
-        transferto_client = (
-            org.transferto_account.first().get_transferto_client()
-        )
+        transferto_client = org.transferto_account.first().get_transferto_client()
 
         purchase_result = transferto_client.topup_data(
             msisdn, product_id, simulate=False
@@ -268,9 +255,7 @@ class BuyProductTakeAction(Task):
                 flow_start,
             )
             from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
-            email = EmailMessage(
-                subject, message, from_string, [org.point_of_contact]
-            )
+            email = EmailMessage(subject, message, from_string, [org.point_of_contact])
             email.send()
 
         else:
@@ -309,9 +294,7 @@ class BuyAirtimeTakeAction(Task):
         # take action
         topup_attempt_failed = topup_attempt.status == TopupAttempt.FAILED
         should_update_fields = (
-            True
-            if (values_to_update and topup_attempt.rapidpro_user_uuid)
-            else False
+            True if (values_to_update and topup_attempt.rapidpro_user_uuid) else False
         )
         should_start_success_flow = (
             True
@@ -398,9 +381,7 @@ class BuyAirtimeTakeAction(Task):
                     "flow_start": get_flow_url(topup_attempt.org, flow_start)
                     if flow_start
                     else None,
-                    "fail_flow_start": get_flow_url(
-                        topup_attempt.org, fail_flow_start
-                    )
+                    "fail_flow_start": get_flow_url(topup_attempt.org, fail_flow_start)
                     if fail_flow_start
                     else None,
                     "should_update_fields": should_update_fields,
@@ -431,8 +412,7 @@ class BuyAirtimeTakeAction(Task):
                         }
                     )
                 html_message = render_to_string(
-                    "rp_transferto/topup_airtime_take_action_email.html",
-                    context,
+                    "rp_transferto/topup_airtime_take_action_email.html", context
                 )
                 send_mail(
                     subject="FAILURE: {}".format(self.name),

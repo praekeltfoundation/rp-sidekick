@@ -1,14 +1,14 @@
-import time
+import base64
 import hashlib
 import hmac
-import base64
 import json
-import responses
-from mock import patch
-from freezegun import freeze_time
-from pytest import raises
+import time
 from unittest import TestCase
 
+import responses
+from freezegun import freeze_time
+from mock import patch
+from pytest import raises
 from rp_transferto.utils import TransferToClient
 
 
@@ -103,15 +103,11 @@ class TestTransferToClient(TestCase):
     def test_make_topup_throws_exception_product_must_be_int(self):
         with raises(TypeError) as exception_info:
             self.client.make_topup("fake_msisdn", "10", from_string="test_name")
-        self.assertEqual(
-            exception_info.value.__str__(), "product arg must be an int"
-        )
+        self.assertEqual(exception_info.value.__str__(), "product arg must be an int")
 
     def test_make_topup_1(self):
         with patch.object(self.client, "_make_transferto_request") as mock:
-            self.client.make_topup(
-                "+27820000001", 10, from_string="+27820000002"
-            )
+            self.client.make_topup("+27820000001", 10, from_string="+27820000002")
 
         mock.assert_called_once_with(
             action="topup",
@@ -125,10 +121,7 @@ class TestTransferToClient(TestCase):
             self.client.make_topup("+27820000001", 10, from_string="john")
 
         mock.assert_called_once_with(
-            action="topup",
-            destination_msisdn="+27820000001",
-            product=10,
-            msisdn="john",
+            action="topup", destination_msisdn="+27820000001", product=10, msisdn="john"
         )
 
     def test_make_topup_3(self):

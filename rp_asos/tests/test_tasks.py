@@ -1,25 +1,18 @@
 import datetime
-from freezegun import freeze_time
-from mock import patch
 
 from django.conf import settings
 from django.test import TestCase
 from django.utils import timezone
-
-from rp_asos.models import (
-    Hospital,
-    PatientRecord,
-    PatientValue,
-    ScreeningRecord,
-)
+from freezegun import freeze_time
+from mock import patch
+from rp_asos.models import Hospital, PatientRecord, PatientValue, ScreeningRecord
 from rp_asos.tasks import (
-    patient_data_check,
     create_hospital_groups,
+    patient_data_check,
     screening_record_check,
 )
-from sidekick import utils
-
 from rp_redcap.tests.base import RedcapBaseTestCase
+from sidekick import utils
 
 SCREENING_RECORD_TEMPLATE = {}
 for i in range(1, 29):
@@ -170,9 +163,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
     ):
         self.create_hospital()
 
-        patient_data_check(
-            {"project_id": str(self.project.id), "tz_code": "CAT"}
-        )
+        patient_data_check({"project_id": str(self.project.id), "tz_code": "CAT"})
 
         message = (
             "Daily data update for My Test Hospital:\n"
@@ -205,18 +196,14 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         )
 
         self.create_patient_records(datetime.date(2018, 1, 16), hospital)
-        patient = self.create_patient_records(
-            datetime.date(2018, 1, 16), hospital, "2"
-        )
+        patient = self.create_patient_records(datetime.date(2018, 1, 16), hospital, "2")
         self.create_patient_records(datetime.date(2018, 1, 16), hospital, "3")
 
         patient.pre_operation_status = PatientRecord.COMPLETE_STATUS
         patient.post_operation_status = PatientRecord.COMPLETE_STATUS
         patient.save()
 
-        patient_data_check(
-            {"project_id": str(self.project.id), "tz_code": "CAT"}
-        )
+        patient_data_check({"project_id": str(self.project.id), "tz_code": "CAT"})
 
         message = (
             "Daily data update for My Test Hospital:\n"
@@ -255,18 +242,14 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
         )
 
         self.create_patient_records(datetime.date(2018, 1, 16), hospital)
-        patient = self.create_patient_records(
-            datetime.date(2018, 1, 16), hospital, "2"
-        )
+        patient = self.create_patient_records(datetime.date(2018, 1, 16), hospital, "2")
         self.create_patient_records(datetime.date(2018, 1, 16), hospital, "3")
 
         patient.pre_operation_status = PatientRecord.COMPLETE_STATUS
         patient.post_operation_status = PatientRecord.COMPLETE_STATUS
         patient.save()
 
-        patient_data_check(
-            {"project_id": str(self.project.id), "tz_code": "CAT"}
-        )
+        patient_data_check({"project_id": str(self.project.id), "tz_code": "CAT"})
 
         message = (
             "Daily data update for My Test Hospital:\n"
@@ -304,9 +287,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "date_surg": "2018-10-24",
         }
 
-        patient_data_check.save_patient_records(
-            self.project, hospital, [new_data]
-        )
+        patient_data_check.save_patient_records(self.project, hospital, [new_data])
 
         # check
         patient_record = PatientRecord.objects.all()[0]
@@ -318,8 +299,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             patient_record.pre_operation_status, PatientRecord.COMPLETE_STATUS
         )
         self.assertEqual(
-            patient_record.post_operation_status,
-            PatientRecord.INCOMPLETE_STATUS,
+            patient_record.post_operation_status, PatientRecord.INCOMPLETE_STATUS
         )
         self.assertEqual(patient_value.value, "new_value")
 
@@ -341,17 +321,14 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "date_surg": "2018-10-24",
         }
 
-        patient_data_check.save_patient_records(
-            self.project, hospital, [new_data]
-        )
+        patient_data_check.save_patient_records(self.project, hospital, [new_data])
 
         # check
         patient_record = PatientRecord.objects.all()[0]
         patient_value = PatientValue.objects.all()[0]
 
         self.assertEqual(
-            patient_record.post_operation_status,
-            PatientRecord.INCOMPLETE_STATUS,
+            patient_record.post_operation_status, PatientRecord.INCOMPLETE_STATUS
         )
         self.assertEqual(patient_value.value, "new_value")
 
@@ -403,8 +380,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         self.assertEqual(patients[0]["missing_pre_op_fields"], ["Pre Field 2"])
         self.assertEqual(
-            patients[0]["missing_post_op_fields"],
-            ["Post Field 1", "Post Field 2"],
+            patients[0]["missing_post_op_fields"], ["Post Field 1", "Post Field 2"]
         )
 
     def test_save_screening_records_empty(self):
@@ -423,13 +399,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
 
         record = SCREENING_RECORD_TEMPLATE.copy()
         record.update(
-            {
-                "date": "",
-                "day2": "",
-                "day3": "",
-                "asos2_week1": "4",
-                "asos2_week4": "",
-            }
+            {"date": "", "day2": "", "day3": "", "asos2_week1": "4", "asos2_week4": ""}
         )
 
         patient_data_check.save_screening_records(hospital, [record])
@@ -540,8 +510,7 @@ class SurveyCheckPatientTaskTests(RedcapBaseTestCase, TestCase):
             "post_op_field_2",
         ]:
             self.assertEqual(
-                PatientValue.objects.filter(name=field, value="value").count(),
-                1,
+                PatientValue.objects.filter(name=field, value="value").count(), 1
             )
 
 
@@ -571,11 +540,7 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
     @patch("rp_asos.models.Hospital.send_group_invites")
     @patch("rp_asos.models.Hospital.add_group_admins")
     def test_create_hospitals_group_noop(
-        self,
-        mock_add_admins,
-        mock_send_invites,
-        mock_get_info,
-        mock_create_group,
+        self, mock_add_admins, mock_send_invites, mock_get_info, mock_create_group
     ):
         self.create_hospital(tz_code="NOT_CAT")
 
@@ -591,11 +556,7 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
     @patch("rp_asos.models.Hospital.send_group_invites")
     @patch("rp_asos.models.Hospital.add_group_admins")
     def test_create_hospitals_group_with_nomination(
-        self,
-        mock_add_admins,
-        mock_send_invites,
-        mock_get_info,
-        mock_create_group,
+        self, mock_add_admins, mock_send_invites, mock_get_info, mock_create_group
     ):
         hospital = self.create_hospital(whatsapp_group_id="group-id-a")
 
@@ -607,23 +568,15 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
 
         mock_create_group.assert_called_with()
         mock_get_info.assert_called_with()
-        mock_send_invites.assert_called_with(
-            {"id": "group-id-a"}, ["+27123", "+27321"]
-        )
-        mock_add_admins.assert_called_with(
-            {"id": "group-id-a"}, ["+27123", "+27321"]
-        )
+        mock_send_invites.assert_called_with({"id": "group-id-a"}, ["+27123", "+27321"])
+        mock_add_admins.assert_called_with({"id": "group-id-a"}, ["+27123", "+27321"])
 
     @patch("rp_asos.models.Hospital.create_hospital_wa_group")
     @patch("rp_asos.models.Hospital.get_wa_group_info")
     @patch("rp_asos.models.Hospital.send_group_invites")
     @patch("rp_asos.models.Hospital.add_group_admins")
     def test_create_hospitals_group_with_lead_only(
-        self,
-        mock_add_admins,
-        mock_send_invites,
-        mock_get_info,
-        mock_create_group,
+        self, mock_add_admins, mock_send_invites, mock_get_info, mock_create_group
     ):
         hospital = self.create_hospital(
             nomination_urn=None, whatsapp_group_id="group-id-a"

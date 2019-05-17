@@ -3,14 +3,13 @@ import datetime
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from django.conf import settings
-from django.db.models import Sum, Max, Q
-
-from sidekick import utils
-
-from .models import PatientRecord, PatientValue, ScreeningRecord
+from django.db.models import Max, Q, Sum
 from rp_redcap.models import Project
 from rp_redcap.tasks import BaseTask
+from sidekick import utils
 from sidekick.models import Organization
+
+from .models import PatientRecord, PatientValue, ScreeningRecord
 
 
 class PatientDataCheck(BaseTask):
@@ -19,9 +18,7 @@ class PatientDataCheck(BaseTask):
     name = "rp_redcap.tasks.patient_data_check"
     log = get_task_logger(__name__)
 
-    def get_redcap_records(
-        self, redcap_client, form, filter=None, record_ids=None
-    ):
+    def get_redcap_records(self, redcap_client, form, filter=None, record_ids=None):
         return redcap_client.export_records(
             forms=[form],
             export_survey_fields=True,
@@ -78,17 +75,11 @@ class PatientDataCheck(BaseTask):
             )
 
             if not created and (
-                patient_obj.pre_operation_status
-                != patient["pre_operation_status"]
-                or patient_obj.post_operation_status
-                != patient["post_operation_status"]
+                patient_obj.pre_operation_status != patient["pre_operation_status"]
+                or patient_obj.post_operation_status != patient["post_operation_status"]
             ):
-                patient_obj.pre_operation_status = patient[
-                    "pre_operation_status"
-                ]
-                patient_obj.post_operation_status = patient[
-                    "post_operation_status"
-                ]
+                patient_obj.pre_operation_status = patient["pre_operation_status"]
+                patient_obj.post_operation_status = patient["post_operation_status"]
                 patient_obj.save()
 
             for field, value in patient.items():
@@ -107,9 +98,7 @@ class PatientDataCheck(BaseTask):
                     and value != ""
                 ):
                     obj, created = PatientValue.objects.get_or_create(
-                        patient=patient_obj,
-                        name=field,
-                        defaults={"value": value},
+                        patient=patient_obj, name=field, defaults={"value": value}
                     )
 
                     if not created and obj.value != value:
@@ -131,11 +120,7 @@ class PatientDataCheck(BaseTask):
             data[row["record_id"]] = row
 
         def check_field(field, status_fields, row, data):
-            if (
-                value == ""
-                and field in status_fields
-                and field in required_fields
-            ):
+            if value == "" and field in status_fields and field in required_fields:
                 try:
                     return eval(required_fields[field]["condition"])
                 except TypeError:
@@ -150,17 +135,11 @@ class PatientDataCheck(BaseTask):
             row["missing_post_op_fields"] = []
             for field, value in row.items():
                 if check_field(field, pre_op_fields, row, data):
-                    row[
-                        "pre_operation_status"
-                    ] = PatientRecord.INCOMPLETE_STATUS
-                    row["missing_pre_op_fields"].append(
-                        required_fields[field]["label"]
-                    )
+                    row["pre_operation_status"] = PatientRecord.INCOMPLETE_STATUS
+                    row["missing_pre_op_fields"].append(required_fields[field]["label"])
 
                 if check_field(field, post_op_fields, row, data):
-                    row[
-                        "post_operation_status"
-                    ] = PatientRecord.INCOMPLETE_STATUS
+                    row["post_operation_status"] = PatientRecord.INCOMPLETE_STATUS
                     row["missing_post_op_fields"].append(
                         required_fields[field]["label"]
                     )
@@ -169,9 +148,7 @@ class PatientDataCheck(BaseTask):
 
     def save_all_data_from_redcap(self, project, tz_code):
         screening_client = project.get_redcap_client()
-        screening_records = self.get_redcap_records(
-            screening_client, "screening_tool"
-        )
+        screening_records = self.get_redcap_records(screening_client, "screening_tool")
 
         patient_client = project.get_redcap_crf_client()
 
@@ -184,9 +161,7 @@ class PatientDataCheck(BaseTask):
             project, patient_records, required_fields
         )
 
-        for hospital in project.hospitals.filter(
-            tz_code=tz_code, is_active=True
-        ):
+        for hospital in project.hospitals.filter(tz_code=tz_code, is_active=True):
 
             hospital_screening_records = [
                 d
@@ -201,17 +176,13 @@ class PatientDataCheck(BaseTask):
                 if d["redcap_data_access_group"] == hospital.data_access_group
             ]
 
-            self.save_patient_records(
-                project, hospital, hospital_patient_records
-            )
+            self.save_patient_records(project, hospital, hospital_patient_records)
 
     def run(self, context):
         project_id = context["project_id"]
         tz_code = context["tz_code"]
 
-        project = Project.objects.prefetch_related("hospitals").get(
-            id=project_id
-        )
+        project = Project.objects.prefetch_related("hospitals").get(id=project_id)
 
         message_template = (
             "Daily data update for {hospital_name}:\n"
@@ -229,9 +200,7 @@ class PatientDataCheck(BaseTask):
 
         self.save_all_data_from_redcap(project, tz_code)
 
-        for hospital in project.hospitals.filter(
-            tz_code=tz_code, is_active=True
-        ):
+        for hospital in project.hospitals.filter(tz_code=tz_code, is_active=True):
             total_screening = 0
             last_update = "The screening log has not been updated."
             update_warning = (
@@ -285,13 +254,9 @@ class CreateHospitalGroups(Task):
     log = get_task_logger(__name__)
 
     def run(self, project_id, tz_code, **kwargs):
-        project = Project.objects.prefetch_related("hospitals").get(
-            id=project_id
-        )
+        project = Project.objects.prefetch_related("hospitals").get(id=project_id)
 
-        for hospital in project.hospitals.filter(
-            tz_code=tz_code, is_active=True
-        ):
+        for hospital in project.hospitals.filter(tz_code=tz_code, is_active=True):
             msisdns = [hospital.hospital_lead_urn]
             if hospital.nomination_urn:
                 msisdns.append(hospital.nomination_urn)
@@ -320,23 +285,18 @@ class ScreeningRecordCheck(Task):
 
     def run(self, org_id):
         org = Organization.objects.prefetch_related(
-            "projects",
-            "projects__hospitals",
-            "projects__hospitals__screening_records",
+            "projects", "projects__hospitals", "projects__hospitals__screening_records"
         ).get(id=org_id)
 
         outdated_hospitals = []
 
         for project in org.projects.all():
             for hospital in project.hospitals.filter(is_active=True):
-                aggregate_data = hospital.screening_records.aggregate(
-                    Max("updated_at")
-                )
+                aggregate_data = hospital.screening_records.aggregate(Max("updated_at"))
 
                 if aggregate_data["updated_at__max"]:
                     if (
-                        utils.get_today()
-                        - aggregate_data["updated_at__max"].date()
+                        utils.get_today() - aggregate_data["updated_at__max"].date()
                     ).days > 3:
                         outdated_hospitals.append(hospital.name)
                 else:

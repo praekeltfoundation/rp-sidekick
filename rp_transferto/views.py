@@ -1,13 +1,11 @@
 from django.http import JsonResponse
-
-from rest_framework.views import APIView
 from rest_framework import status
-
-from sidekick.utils import clean_msisdn
+from rest_framework.views import APIView
 from sidekick.models import Organization
+from sidekick.utils import clean_msisdn
 
 from .models import MsisdnInformation, TopupAttempt
-from .tasks import topup_data, buy_product_take_action, buy_airtime_take_action
+from .tasks import buy_airtime_take_action, buy_product_take_action, topup_data
 
 
 def process_status_code(info):
@@ -55,9 +53,7 @@ class TransferToView(APIView):
             kwargs_for_client = {
                 key: kwargs[key] for key in self.args_for_client_method
             }
-            response = getattr(client, self.client_method_name)(
-                **kwargs_for_client
-            )
+            response = getattr(client, self.client_method_name)(**kwargs_for_client)
         else:
             response = getattr(client, self.client_method_name)()
         if "error_code" in response:

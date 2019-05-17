@@ -5,9 +5,8 @@ import responses
 from django.test import TestCase
 from django.utils import timezone
 from mock import patch
-
 from rp_redcap.models import Contact, Survey, SurveyAnswer
-from rp_redcap.tasks import project_check, BaseTask
+from rp_redcap.tasks import BaseTask, project_check
 
 from .base import RedcapBaseTestCase
 
@@ -72,10 +71,7 @@ class MockRedCapSurveys(object):
         return metadata
 
     def export_records(
-        self,
-        forms=[],
-        export_survey_fields=True,
-        export_data_access_groups=False,
+        self, forms=[], export_survey_fields=True, export_data_access_groups=False
     ):
         if "survey_1" in forms:
             return [
@@ -479,9 +475,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
     @responses.activate
     @patch("rp_redcap.tasks.project_check.get_records")
     @patch("rp_redcap.models.Project.get_redcap_client")
-    def test_project_check_no_urn(
-        self, mock_get_redcap_client, mock_get_records
-    ):
+    def test_project_check_no_urn(self, mock_get_redcap_client, mock_get_records):
         """
         Project task no missing fields test.
 
@@ -492,12 +486,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_redcap_client.return_value = MockRedCapSurveys()
 
         mock_get_records.return_value = [
-            {
-                "record_id": "1",
-                "mobile": "",
-                "survey_3_complete": "0",
-                "name": "",
-            }
+            {"record_id": "1", "mobile": "", "survey_3_complete": "0", "name": ""}
         ]
 
         Survey.objects.create(
@@ -545,10 +534,7 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
             project=self.project, record_id=1, urn="+27123"
         )
         answer = SurveyAnswer.objects.create(
-            contact=contact,
-            survey=survey,
-            name="my_field",
-            value="original_value",
+            contact=contact, survey=survey, name="my_field", value="original_value"
         )
 
         yesterday = timezone.now() - datetime.timedelta(days=1)
@@ -565,6 +551,4 @@ class SurveyCheckTaskTests(RedcapBaseTestCase, TestCase):
         # check that it is updated
         project_check.save_answers(update_row, survey, contact)
         answer.refresh_from_db()
-        self.assertEqual(
-            answer.updated_at.date(), datetime.datetime.now().date()
-        )
+        self.assertEqual(answer.updated_at.date(), datetime.datetime.now().date())
