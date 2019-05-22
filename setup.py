@@ -24,6 +24,7 @@ setup(
         "redis==2.10.6",
         "whitenoise==3.3.1",
         "raven==6.9.0",
+        "hashids==1.2.0",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
