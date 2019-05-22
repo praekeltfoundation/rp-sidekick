@@ -25,6 +25,7 @@ setup(
         "whitenoise==3.3.1",
         "raven==6.9.0",
         "hashids==1.2.0",
+        "django-filter==2.1.0",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
