@@ -16,4 +16,12 @@ urlpatterns = [
         views.CheckContactView.as_view(),
         name="check_contact",
     ),
+    path(
+        "api/consent/<int:pk>",
+        views.GetConsentURLView.as_view(),
+        name="get-consent-url",
+    ),
+    path(
+        "consent/<str:code>", views.ProvideConsentView.as_view(), name="provide-consent"
+    ),
 ]

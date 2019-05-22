@@ -1,17 +1,22 @@
 import json
 from os import environ
 from urllib.parse import urlencode
+from uuid import uuid4
 
 import responses
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.db.utils import OperationalError
+from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from mock import patch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
+
+from sidekick.models import Consent, Organization
 
 from .utils import create_org
 
@@ -390,4 +395,115 @@ class TestCheckContactView(SidekickAPITestCase):
         self.assertEquals(
             content["error"],
             "Authenticated user does not belong to specified Organization",
+        )
+
+
+class GetConsentURLViewTest(APITestCase):
+    def test_auth_required(self):
+        """
+        Authorization is required to access the endpoint
+        """
+        url = reverse("get-consent-url", args=[1])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_permission_required(self):
+        """
+        The user needs the appropriate permission to access the endpoint
+        """
+        url = reverse("get-consent-url", args=[1])
+        user = get_user_model().objects.create_user("test")
+        self.client.force_authenticate(user)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def login_user(self):
+        user = get_user_model().objects.create_user("test")
+        permission = Permission.objects.get(name="Can add consent")
+        user.user_permissions.add(permission)
+        user.save()
+        self.client.force_authenticate(user)
+
+    def test_invalid_body(self):
+        """
+        If the body of the request is invalid, we should return a Bad Request error
+        """
+        url = reverse("get-consent-url", args=[1])
+        self.login_user()
+
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_invalid_id(self):
+        """
+        If a Consent with the specified ID doesn't exist in the database, we should
+        return a Not Found
+        """
+        url = reverse("get-consent-url", args=[1])
+        self.login_user()
+
+        response = self.client.post(
+            url, {"contact": {"uuid": str(uuid4())}}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_url(self):
+        """
+        A successful request should return a valid URL
+        """
+        org = Organization.objects.create()
+        consent = Consent.objects.create(org=org, flow_id=uuid4())
+        url = reverse("get-consent-url", args=[consent.id])
+        self.login_user()
+
+        contact_uuid = uuid4()
+        response = self.client.post(
+            url, {"contact": {"uuid": str(contact_uuid)}}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.json()["url"],
+            consent.generate_url(response.wsgi_request, contact_uuid),
+        )
+
+
+class ProvideConsentViewTest(APITestCase):
+    def test_invalid_code(self):
+        """
+        If an invalid code is given, we should respond with a Bad Request error
+        """
+        url = reverse("provide-consent", args=["foo"])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("rp_transferto.tasks.start_flow")
+    def test_flow_id(self, start_flow_mock):
+        """
+        If there's a flow id configured on the Consent, then we should trigger that flow
+        """
+        org = Organization.objects.create()
+        consent = Consent.objects.create(org=org, flow_id=uuid4())
+        contact_uuid = uuid4()
+        factory = RequestFactory()
+        request = factory.get("/")
+
+        response = self.client.get(consent.generate_url(request, contact_uuid))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        start_flow_mock.assert_called_once_with(
+            org, str(contact_uuid), str(consent.flow_id)
+        )
+
+    def test_redirect_url(self):
+        """
+        If the Consent has a redirect url configured, we should redirect to that URL
+        """
+        org = Organization.objects.create()
+        consent = Consent.objects.create(org=org, redirect_url="http://example.org")
+        contact_uuid = uuid4()
+        factory = RequestFactory()
+        request = factory.get("/")
+
+        response = self.client.get(consent.generate_url(request, contact_uuid))
+        self.assertRedirects(
+            response, "http://example.org", fetch_redirect_response=False
         )
