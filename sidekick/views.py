@@ -6,10 +6,17 @@ from django.conf import settings
 from django.db import connections
 from django.db.utils import OperationalError
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from rest_framework import status
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import AllowAny, DjangoModelPermissions
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Organization
+from rp_transferto.tasks import start_flow_task
+
+from .models import Consent, Organization
+from .serializers import RapidProFlowWebhookSerializer
 from .utils import clean_message, get_whatsapp_contacts, send_whatsapp_template_message
 
 
@@ -139,3 +146,42 @@ class CheckContactView(APIView):
         return JsonResponse(
             json.loads(turn_response.content)["contacts"][0], status=status.HTTP_200_OK
         )
+
+
+class GetConsentURLView(GenericAPIView):
+    queryset = Consent.objects.all()
+    permission_classes = (DjangoModelPermissions,)
+    serializer_class = RapidProFlowWebhookSerializer
+
+    def post(self, request, pk):
+        """
+        Returns the URL that the user can visit to give their consent
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        consent = self.get_object()
+        contact_uuid = serializer.validated_data["contact"]["uuid"]
+        return JsonResponse({"url": consent.generate_url(request, contact_uuid)})
+
+
+class ProvideConsentView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request, code):
+        """
+        The user visiting the URL counts as consent. We should run the configured flow
+        and redirect the user to the configured URL.
+        """
+        try:
+            consent, contact_uuid = Consent.from_code(code)
+        except (ValueError, Consent.DoesNotExist):
+            return Response("invalid code", status=status.HTTP_400_BAD_REQUEST)
+
+        if consent.flow_id:
+            start_flow_task.delay(
+                consent.org_id, str(contact_uuid), str(consent.flow_id)
+            )
+        if consent.redirect_url:
+            return redirect(consent.redirect_url)
+
+        return Response()
