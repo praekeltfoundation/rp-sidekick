@@ -1,9 +1,16 @@
+from uuid import UUID
+
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.urls import reverse
+from hashids import Hashids
 from rest_framework.authtoken.models import Token
 from temba_client.v2 import TembaClient
+
+hashids = Hashids(salt=settings.SECRET_KEY)
 
 
 class Organization(models.Model):
@@ -26,3 +33,42 @@ class Organization(models.Model):
 def user_token_creation(sender, instance, created, **kwargs):
     if created:
         Token.objects.create(user=instance)
+
+
+class Consent(models.Model):
+    org = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    label = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Human readable label describing this consent",
+    )
+    flow_id = models.UUIDField(
+        blank=True,
+        null=True,
+        help_text="The flow to trigger when the user visits the URL",
+    )
+    redirect_url = models.URLField(
+        blank=True, help_text="The URL to redirect to when the user visits the URL"
+    )
+
+    def generate_url(self, request, contact_uuid):
+        """
+        Returns the full URL for the user to consent
+        """
+        code = hashids.encode(self.id, contact_uuid.int)
+        path = reverse("provide-consent", args=[code])
+        return request.build_absolute_uri(path)
+
+    @classmethod
+    def from_code(cls, code):
+        """
+        Returns (consent, contact_uuid) for the given code, where consent is a Consent
+        model instance, and contact_uuid is the UUID of the RapidPro contact.
+        """
+        id, contact_uuid = hashids.decode(code)
+        consent = Consent.objects.get(id=id)
+        contact_uuid = UUID(int=contact_uuid)
+        return consent, contact_uuid
+
+    def __str__(self):
+        return self.label
