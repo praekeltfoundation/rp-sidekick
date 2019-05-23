@@ -188,3 +188,18 @@ def validate_organization(org_id, request):
         return status.HTTP_401_UNAUTHORIZED
 
     return status.HTTP_202_ACCEPTED
+
+
+def start_flow(org, user_uuid, flow_uuid):
+    """
+    Start rapidpro contact  on a flow
+
+    :parma obj org: Organization object
+    :param str user_uuid: contact UUID in RapidPro
+    :param str flow_uuid: flow UUID in RapidPro
+    """
+    rapidpro_client = org.get_rapidpro_client()
+
+    rapidpro_client.create_flow_start(
+        flow_uuid, contacts=[user_uuid], restart_participants=True
+    )

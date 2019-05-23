@@ -487,7 +487,7 @@ class ProvideConsentViewTest(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    @patch("rp_transferto.tasks.start_flow")
+    @patch("sidekick.tasks.start_flow")
     def test_flow_id(self, start_flow_mock):
         """
         If there's a flow id configured on the Consent, then we should trigger that flow

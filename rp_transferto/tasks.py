@@ -1,7 +1,6 @@
 import json
 
 import pkg_resources
-from celery.exceptions import SoftTimeLimitExceeded
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -11,11 +10,9 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.html import strip_tags
 from json2html import json2html
-from requests.exceptions import RequestException
 
-from config.celery import app
 from sidekick.models import Organization
-from sidekick.utils import clean_msisdn, get_flow_url
+from sidekick.utils import clean_msisdn, get_flow_url, start_flow
 
 from .models import MsisdnInformation, TopupAttempt
 
@@ -65,34 +62,6 @@ def update_values(org, user_uuid, values_to_update, transferto_response):
         fields[rapidpro_field] = transferto_response.get(transferto_field, "NONE")
 
     rapidpro_client.update_contact(user_uuid, fields=fields)
-
-
-@app.task(
-    autoretry_for=(RequestException, SoftTimeLimitExceeded),
-    retry_backoff=True,
-    max_retries=15,
-    acks_late=True,
-    soft_time_limit=10,
-    time_limit=15,
-)
-def start_flow_task(org_id, user_uuid, flow_uuid):
-    org = Organization.objects.get(id=org_id)
-    start_flow(org, user_uuid, flow_uuid)
-
-
-def start_flow(org, user_uuid, flow_uuid):
-    """
-    Start rapidpro contact  on a flow
-
-    :parma obj org: Organization object
-    :param str user_uuid: contact UUID in RapidPro
-    :param str flow_uuid: flow UUID in RapidPro
-    """
-    rapidpro_client = org.get_rapidpro_client()
-
-    rapidpro_client.create_flow_start(
-        flow_uuid, contacts=[user_uuid], restart_participants=True
-    )
 
 
 class TopupData(Task):

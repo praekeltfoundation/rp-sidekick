@@ -14,10 +14,9 @@ from rest_framework.permissions import AllowAny, DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from rp_transferto.tasks import start_flow_task
-
 from .models import Consent, Organization
 from .serializers import RapidProFlowWebhookSerializer
+from .tasks import start_flow_task
 from .utils import clean_message, get_whatsapp_contacts, send_whatsapp_template_message
 
 
