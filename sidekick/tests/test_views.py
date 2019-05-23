@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.db.utils import OperationalError
-from django.test.client import RequestFactory
+from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from mock import patch
@@ -467,6 +467,17 @@ class GetConsentURLViewTest(APITestCase):
         )
 
 
+class ConsentRedirectViewTests(TestCase):
+    def test_redirects(self):
+        """
+        The response should contain a redirect meta tag
+        """
+        url = reverse("redirect-consent", args=["test-code"])
+        redirect_url = reverse("provide-consent", args=["test-code"])
+        response = self.client.get(url)
+        self.assertContains(response, redirect_url)
+
+
 class ProvideConsentViewTest(APITestCase):
     def test_invalid_code(self):
         """
@@ -484,10 +495,10 @@ class ProvideConsentViewTest(APITestCase):
         org = Organization.objects.create()
         consent = Consent.objects.create(org=org, flow_id=uuid4())
         contact_uuid = uuid4()
-        factory = RequestFactory()
-        request = factory.get("/")
+        code = consent.generate_code(contact_uuid)
 
-        response = self.client.get(consent.generate_url(request, contact_uuid))
+        url = reverse("provide-consent", args=[code])
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         start_flow_mock.assert_called_once_with(
             org, str(contact_uuid), str(consent.flow_id)
@@ -500,10 +511,10 @@ class ProvideConsentViewTest(APITestCase):
         org = Organization.objects.create()
         consent = Consent.objects.create(org=org, redirect_url="http://example.org")
         contact_uuid = uuid4()
-        factory = RequestFactory()
-        request = factory.get("/")
+        code = consent.generate_code(contact_uuid)
 
-        response = self.client.get(consent.generate_url(request, contact_uuid))
+        url = reverse("provide-consent", args=[code])
+        response = self.client.get(url)
         self.assertRedirects(
             response, "http://example.org", fetch_redirect_response=False
         )

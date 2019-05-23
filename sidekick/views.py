@@ -6,7 +6,8 @@ from django.conf import settings
 from django.db import connections
 from django.db.utils import OperationalError
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, reverse
+from django.views.generic import TemplateView
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, DjangoModelPermissions
@@ -162,6 +163,22 @@ class GetConsentURLView(GenericAPIView):
         consent = self.get_object()
         contact_uuid = serializer.validated_data["contact"]["uuid"]
         return JsonResponse({"url": consent.generate_url(request, contact_uuid)})
+
+
+class ConsentRedirectView(TemplateView):
+    """
+    This is a view to redirect the user to the actual consent page. This is done using
+    a meta refresh tag, so that only when the user visits using a browser does it count
+    as consent. This is to avoid the request from WhatsApp to get the media-embed tags
+    counting as an opt-in.
+    """
+
+    template_name = "sidekick/consent.html"
+
+    def get_context_data(self, code, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["url"] = reverse("provide-consent", args=[code])
+        return context
 
 
 class ProvideConsentView(APIView):
