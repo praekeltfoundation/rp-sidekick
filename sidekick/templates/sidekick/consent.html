@@ -3,7 +3,30 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="refresh" content="0; url={{ url }}">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% if consent.preview_title %}
+        <meta property="og:title" content="{{ consent.preview_title }}">
+        <title>{{ consent.preview_title }}</title>
+        {% endif %}
+        {% if consent.preview_url %}
+        <meta property="og:url" content="{{ consent.preview_url }}">
+        {% endif %}
+        {% if consent.preview_description %}
+        <meta property="og:description" content="{{ consent.preview_description }}">
+        <meta name="description" content="{{ consent.preview_description }}">
+        {% endif %}
+        {% if consent.preview_image_url %}
+        <meta property="og:image" content="{{ consent.preview_image_url }}">
+        {% endif %}
+        <style>
+            body {
+                text-align: center;
+                font-size: 2em;
+                font-family: sans-serif;
+            }
+        </style>
     </head>
     <body>
+        {{ consent.body_text }}
     </body>
 </html>

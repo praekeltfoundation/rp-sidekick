@@ -5,7 +5,7 @@ import requests
 from django.conf import settings
 from django.db import connections
 from django.db.utils import OperationalError
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, reverse
 from django.views.generic import TemplateView
 from rest_framework import status
@@ -174,9 +174,17 @@ class ConsentRedirectView(TemplateView):
 
     template_name = "sidekick/consent.html"
 
-    def get_context_data(self, code, **kwargs):
+    def get(self, request, code):
+        try:
+            consent, _ = Consent.from_code(code)
+        except (ValueError, Consent.DoesNotExist):
+            return HttpResponse("invalid code", status=status.HTTP_400_BAD_REQUEST)
+        return super().get(request, code=code, consent=consent)
+
+    def get_context_data(self, code, consent, **kwargs):
         context = super().get_context_data(**kwargs)
         context["url"] = reverse("provide-consent", args=[code])
+        context["consent"] = consent
         return context
 
 
