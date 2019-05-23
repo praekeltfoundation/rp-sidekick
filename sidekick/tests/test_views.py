@@ -472,10 +472,38 @@ class ConsentRedirectViewTests(TestCase):
         """
         The response should contain a redirect meta tag
         """
-        url = reverse("redirect-consent", args=["test-code"])
-        redirect_url = reverse("provide-consent", args=["test-code"])
+        org = Organization.objects.create()
+        consent = Consent.objects.create(org=org, flow_id=uuid4())
+        contact_uuid = uuid4()
+        code = consent.generate_code(contact_uuid)
+        url = reverse("redirect-consent", args=[code])
+        redirect_url = reverse("provide-consent", args=[code])
+
         response = self.client.get(url)
         self.assertContains(response, redirect_url)
+
+    def test_metadata(self):
+        """
+        The response should contain all the configured metadata
+        """
+        org = Organization.objects.create()
+        consent = Consent.objects.create(
+            org=org,
+            flow_id=uuid4(),
+            preview_title="test title",
+            preview_description="test description",
+            preview_url="example.org/preview",
+            preview_image_url="example.org/image",
+        )
+        contact_uuid = uuid4()
+        code = consent.generate_code(contact_uuid)
+        url = reverse("redirect-consent", args=[code])
+
+        response = self.client.get(url)
+        self.assertContains(response, "test title")
+        self.assertContains(response, "test description")
+        self.assertContains(response, "example.org/preview")
+        self.assertContains(response, "example.org/image")
 
 
 class ProvideConsentViewTest(APITestCase):
