@@ -468,6 +468,14 @@ class GetConsentURLViewTest(APITestCase):
 
 
 class ConsentRedirectViewTests(TestCase):
+    def test_bad_code(self):
+        """
+        A 400 error should be returned for an invalid code
+        """
+        url = reverse("redirect-consent", args=["foo"])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_redirects(self):
         """
         The response should contain a redirect meta tag
