@@ -17,7 +17,7 @@ setup(
         "django-environ==0.4.5",
         "django-extensions==2.1.0",
         "django-prometheus>=1.0.15,<2",
-        "djangorestframework==3.8.2",
+        "djangorestframework>=3.9.1,<4",
         "json2html==1.2.1",
         "psycopg2==2.7.1",
         "rapidpro-python==2.4",
