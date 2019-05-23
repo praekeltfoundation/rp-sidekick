@@ -51,12 +51,15 @@ class Consent(models.Model):
         blank=True, help_text="The URL to redirect to when the user visits the URL"
     )
 
+    def generate_code(self, contact_uuid):
+        return hashids.encode(self.id, contact_uuid.int)
+
     def generate_url(self, request, contact_uuid):
         """
         Returns the full URL for the user to consent
         """
-        code = hashids.encode(self.id, contact_uuid.int)
-        path = reverse("provide-consent", args=[code])
+        code = self.generate_code(contact_uuid)
+        path = reverse("redirect-consent", args=[code])
         return request.build_absolute_uri(path)
 
     @classmethod

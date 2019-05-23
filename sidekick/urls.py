@@ -22,6 +22,13 @@ urlpatterns = [
         name="get-consent-url",
     ),
     path(
-        "consent/<str:code>", views.ProvideConsentView.as_view(), name="provide-consent"
+        "consent/<str:code>",
+        views.ConsentRedirectView.as_view(),
+        name="redirect-consent",
+    ),
+    path(
+        "give_consent/<str:code>",
+        views.ProvideConsentView.as_view(),
+        name="provide-consent",
     ),
 ]
