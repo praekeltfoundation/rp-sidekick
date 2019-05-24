@@ -230,7 +230,8 @@ class PatientDataCheck(BaseTask):
                 | Q(post_operation_status=PatientRecord.COMPLETE_STATUS)
             ).values_list("record_id", flat=True)
 
-            hospital.send_message(
+            send_hospital_reminder.delay(
+                hospital.id,
                 message_template.format(
                     hospital_name=hospital.name,
                     total_eligible=total_screening,
@@ -239,13 +240,28 @@ class PatientDataCheck(BaseTask):
                     total_crfs=crf_total_count,
                     total_incomplete_crfs=len(record_ids),
                     record_ids="; ".join(record_ids),
-                )
+                ),
             )
 
             hospital.check_and_update_status()
 
 
 patient_data_check = PatientDataCheck()
+
+
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def send_hospital_reminder(hospital_id, message):
+    hospital = Hospital.objects.get(id=hospital_id)
+
+    hospital.send_message(message)
 
 
 class CreateHospitalGroups(Task):
