@@ -1,16 +1,19 @@
 import datetime
 
+from celery.exceptions import SoftTimeLimitExceeded
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db.models import Max, Q, Sum
+from requests.exceptions import ConnectionError, HTTPError, Timeout
 
+from config.celery import app
 from rp_redcap.models import Project
 from rp_redcap.tasks import BaseTask
 from sidekick import utils
 from sidekick.models import Organization
 
-from .models import PatientRecord, PatientValue, ScreeningRecord
+from .models import Hospital, PatientRecord, PatientValue, ScreeningRecord
 
 
 class PatientDataCheck(BaseTask):
@@ -258,20 +261,35 @@ class CreateHospitalGroups(Task):
         project = Project.objects.prefetch_related("hospitals").get(id=project_id)
 
         for hospital in project.hospitals.filter(tz_code=tz_code, is_active=True):
-            msisdns = [hospital.hospital_lead_urn]
-            if hospital.nomination_urn:
-                msisdns.append(hospital.nomination_urn)
-
-            hospital.create_hospital_wa_group()
-            group_info = hospital.get_wa_group_info()
-
-            wa_ids = hospital.send_group_invites(group_info, msisdns)
-            hospital.add_group_admins(group_info, wa_ids)
+            create_hospital_group.delay(hospital.id)
 
         return {"project_id": project_id, "tz_code": tz_code}
 
 
 create_hospital_groups = CreateHospitalGroups()
+
+
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def create_hospital_group(hospital_id):
+    hospital = Hospital.objects.get(id=hospital_id)
+
+    msisdns = [hospital.hospital_lead_urn]
+    if hospital.nomination_urn:
+        msisdns.append(hospital.nomination_urn)
+
+    hospital.create_hospital_wa_group()
+    group_info = hospital.get_wa_group_info()
+
+    wa_ids = hospital.add_group_admins(group_info, msisdns)
+    hospital.send_group_invites(group_info, wa_ids)
 
 
 class ScreeningRecordCheck(Task):

@@ -563,14 +563,14 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
 
         mock_create_group.return_value = hospital
         mock_get_info.return_value = {"id": "group-id-a"}
-        mock_send_invites.return_value = ["+27123", "+27321"]
+        mock_add_admins.return_value = ["27123", "27321"]
 
         create_hospital_groups(str(self.project.id), "CAT")
 
         mock_create_group.assert_called_with()
         mock_get_info.assert_called_with()
-        mock_send_invites.assert_called_with({"id": "group-id-a"}, ["+27123", "+27321"])
         mock_add_admins.assert_called_with({"id": "group-id-a"}, ["+27123", "+27321"])
+        mock_send_invites.assert_called_with({"id": "group-id-a"}, ["27123", "27321"])
 
     @patch("rp_asos.models.Hospital.create_hospital_wa_group")
     @patch("rp_asos.models.Hospital.get_wa_group_info")
@@ -585,14 +585,14 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
 
         mock_create_group.return_value = hospital
         mock_get_info.return_value = {"id": "group-id-a"}
-        mock_send_invites.return_value = ["+27123"]
+        mock_add_admins.return_value = ["27123"]
 
         create_hospital_groups(str(self.project.id), "CAT")
 
         mock_create_group.assert_called_with()
         mock_get_info.assert_called_with()
-        mock_send_invites.assert_called_with({"id": "group-id-a"}, ["+27123"])
         mock_add_admins.assert_called_with({"id": "group-id-a"}, ["+27123"])
+        mock_send_invites.assert_called_with({"id": "group-id-a"}, ["27123"])
 
 
 class ScreeningRecordTaskTests(RedcapBaseTestCase, TestCase):
