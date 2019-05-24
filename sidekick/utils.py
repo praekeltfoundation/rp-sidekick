@@ -136,7 +136,7 @@ def create_whatsapp_group(org, subject):
         headers=build_turn_headers(org.engage_token),
         data=json.dumps({"subject": subject}),
     )
-
+    result.raise_for_status()
     return json.loads(result.content)["groups"][0]["id"]
 
 
@@ -148,6 +148,7 @@ def get_whatsapp_group_invite_link(org, group_id):
         urljoin(org.engage_url, "v1/groups/{}/invite".format(group_id)),
         headers=build_turn_headers(org.engage_token),
     )
+    response.raise_for_status()
     return json.loads(response.content)["groups"][0]["link"]
 
 
@@ -159,7 +160,7 @@ def get_whatsapp_group_info(org, group_id):
         urljoin(org.engage_url, "v1/groups/{}".format(group_id)),
         headers=build_turn_headers(org.engage_token),
     )
-
+    result.raise_for_status()
     return json.loads(result.content)["groups"][0]
 
 
@@ -167,11 +168,13 @@ def add_whatsapp_group_admin(org, group_id, wa_id):
     """
     Adds a existing Whatsapp group member to the list of admins on the group
     """
-    return requests.patch(
+    result = requests.patch(
         urljoin(org.engage_url, "v1/groups/{}/admins".format(group_id)),
         headers=build_turn_headers(org.engage_token),
         data=json.dumps({"wa_ids": [wa_id]}),
     )
+    result.raise_for_status()
+    return result
 
 
 def get_flow_url(org, flow_uuid):
