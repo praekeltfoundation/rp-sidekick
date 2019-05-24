@@ -552,6 +552,24 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
         mock_get_info.assert_not_called()
         mock_create_group.assert_not_called()
 
+    @patch("rp_asos.models.Hospital.create_hospital_wa_group")
+    @patch("rp_asos.models.Hospital.get_wa_group_info")
+    @patch("sidekick.utils.send_whatsapp_template_message")
+    @patch("rp_asos.models.Hospital.add_group_admins")
+    def test_create_hospitals_group_no_invites(
+        self, mock_add_admins, mock_send_invite, mock_get_info, mock_create_group
+    ):
+        self.create_hospital(whatsapp_group_id="group-id-a")
+
+        group_info = {"id": "group-id-a", "participants": ["27123"]}
+
+        mock_get_info.return_value = group_info
+        mock_add_admins.return_value = ["27123"]
+
+        create_hospital_groups(str(self.project.id), "CAT")
+
+        mock_send_invite.assert_not_called()
+
     @patch("sidekick.utils.get_whatsapp_group_invite_link")
     @patch("rp_asos.models.Hospital.create_hospital_wa_group")
     @patch("rp_asos.models.Hospital.get_wa_group_info")

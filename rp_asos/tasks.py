@@ -307,7 +307,7 @@ def create_hospital_group(hospital_id):
 
     invites = []
     for wa_id in wa_ids:
-        if wa_id and wa_id not in group_info["participants"]:
+        if wa_id not in group_info["participants"]:
             invites.append(wa_id)
 
     if invites:
