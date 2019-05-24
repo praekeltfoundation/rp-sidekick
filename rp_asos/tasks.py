@@ -260,7 +260,6 @@ patient_data_check = PatientDataCheck()
 )
 def send_hospital_reminder(hospital_id, message):
     hospital = Hospital.objects.get(id=hospital_id)
-
     hospital.send_message(message)
 
 
@@ -305,7 +304,44 @@ def create_hospital_group(hospital_id):
     group_info = hospital.get_wa_group_info()
 
     wa_ids = hospital.add_group_admins(group_info, msisdns)
-    hospital.send_group_invites(group_info, wa_ids)
+
+    invites = []
+    for wa_id in wa_ids:
+        if wa_id and wa_id not in group_info["participants"]:
+            invites.append(wa_id)
+
+    if invites:
+        invite_link = utils.get_whatsapp_group_invite_link(
+            hospital.project.org, group_info["id"]
+        )
+        for wa_id in invites:
+            send_group_invite.delay(hospital.project.org.id, wa_id, invite_link)
+
+
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def send_group_invite(org_id, wa_id, invite_link):
+    org = Organization.objects.get(id=org_id)
+    utils.send_whatsapp_template_message(
+        org,
+        wa_id,
+        "whatsapp:hsm:npo:praekeltpbc",
+        "asos2_notification_v2",
+        [
+            {
+                "default": "Hi, please join the ASOS2 Whatsapp group: {}".format(
+                    invite_link
+                )
+            }
+        ],
+    )
 
 
 class ScreeningRecordCheck(Task):
