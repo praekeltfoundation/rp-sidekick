@@ -4,6 +4,13 @@ VERSIONS
 Next Release
 ------------
 
+1.5.10
+------------
+Added isort
+Add out-of-band consent for WhatsApp
+ASOS: Updated documentation
+ASOS: Refactoring group create and patient check task with retry strategy
+
 1.5.9
 ------------
 ASOS: Only update screening record timestamp if something actually changes

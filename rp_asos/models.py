@@ -67,34 +67,13 @@ class Hospital(models.Model):
             group_info["id"] = self.whatsapp_group_id
         return group_info
 
-    def send_group_invites(self, group_info, msisdns):
-        invites = []
+    def add_group_admins(self, group_info, msisdns):
+        wa_ids = []
         for msisdn in msisdns:
             wa_id = utils.get_whatsapp_contact_id(self.project.org, msisdn)
-            if wa_id and wa_id not in group_info["participants"]:
-                invites.append(wa_id)
+            if wa_id:
+                wa_ids.append(wa_id)
 
-        if invites:
-            invite_link = utils.get_whatsapp_group_invite_link(
-                self.project.org, group_info["id"]
-            )
-            for wa_id in invites:
-                utils.send_whatsapp_template_message(
-                    self.project.org,
-                    wa_id,
-                    "whatsapp:hsm:npo:praekeltpbc",
-                    "asos2_notification_v2",
-                    [
-                        {
-                            "default": "Hi, please join the ASOS2 Whatsapp group: {}".format(
-                                invite_link
-                            )
-                        }
-                    ],
-                )
-        return invites
-
-    def add_group_admins(self, group_info, wa_ids):
         for wa_id in wa_ids:
             if (
                 wa_id in group_info["participants"]
@@ -103,6 +82,8 @@ class Hospital(models.Model):
                 utils.add_whatsapp_group_admin(
                     self.project.org, group_info["id"], wa_id
                 )
+
+        return wa_ids
 
     def send_message(self, message):
         group_info = self.get_wa_group_info()

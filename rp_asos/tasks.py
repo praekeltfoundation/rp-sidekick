@@ -1,16 +1,19 @@
 import datetime
 
+from celery.exceptions import SoftTimeLimitExceeded
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db.models import Max, Q, Sum
+from requests.exceptions import ConnectionError, HTTPError, Timeout
 
+from config.celery import app
 from rp_redcap.models import Project
 from rp_redcap.tasks import BaseTask
 from sidekick import utils
 from sidekick.models import Organization
 
-from .models import PatientRecord, PatientValue, ScreeningRecord
+from .models import Hospital, PatientRecord, PatientValue, ScreeningRecord
 
 
 class PatientDataCheck(BaseTask):
@@ -227,7 +230,8 @@ class PatientDataCheck(BaseTask):
                 | Q(post_operation_status=PatientRecord.COMPLETE_STATUS)
             ).values_list("record_id", flat=True)
 
-            hospital.send_message(
+            send_hospital_reminder.delay(
+                hospital.id,
                 message_template.format(
                     hospital_name=hospital.name,
                     total_eligible=total_screening,
@@ -236,13 +240,27 @@ class PatientDataCheck(BaseTask):
                     total_crfs=crf_total_count,
                     total_incomplete_crfs=len(record_ids),
                     record_ids="; ".join(record_ids),
-                )
+                ),
             )
 
             hospital.check_and_update_status()
 
 
 patient_data_check = PatientDataCheck()
+
+
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def send_hospital_reminder(hospital_id, message):
+    hospital = Hospital.objects.get(id=hospital_id)
+    hospital.send_message(message)
 
 
 class CreateHospitalGroups(Task):
@@ -258,20 +276,72 @@ class CreateHospitalGroups(Task):
         project = Project.objects.prefetch_related("hospitals").get(id=project_id)
 
         for hospital in project.hospitals.filter(tz_code=tz_code, is_active=True):
-            msisdns = [hospital.hospital_lead_urn]
-            if hospital.nomination_urn:
-                msisdns.append(hospital.nomination_urn)
-
-            hospital.create_hospital_wa_group()
-            group_info = hospital.get_wa_group_info()
-
-            wa_ids = hospital.send_group_invites(group_info, msisdns)
-            hospital.add_group_admins(group_info, wa_ids)
+            create_hospital_group.delay(hospital.id)
 
         return {"project_id": project_id, "tz_code": tz_code}
 
 
 create_hospital_groups = CreateHospitalGroups()
+
+
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def create_hospital_group(hospital_id):
+    hospital = Hospital.objects.get(id=hospital_id)
+
+    msisdns = [hospital.hospital_lead_urn]
+    if hospital.nomination_urn:
+        msisdns.append(hospital.nomination_urn)
+
+    hospital.create_hospital_wa_group()
+    group_info = hospital.get_wa_group_info()
+
+    wa_ids = hospital.add_group_admins(group_info, msisdns)
+
+    invites = []
+    for wa_id in wa_ids:
+        if wa_id not in group_info["participants"]:
+            invites.append(wa_id)
+
+    if invites:
+        invite_link = utils.get_whatsapp_group_invite_link(
+            hospital.project.org, group_info["id"]
+        )
+        for wa_id in invites:
+            send_group_invite.delay(hospital.project.org.id, wa_id, invite_link)
+
+
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def send_group_invite(org_id, wa_id, invite_link):
+    org = Organization.objects.get(id=org_id)
+    utils.send_whatsapp_template_message(
+        org,
+        wa_id,
+        "whatsapp:hsm:npo:praekeltpbc",
+        "asos2_notification_v2",
+        [
+            {
+                "default": "Hi, please join the ASOS2 Whatsapp group: {}".format(
+                    invite_link
+                )
+            }
+        ],
+    )
 
 
 class ScreeningRecordCheck(Task):

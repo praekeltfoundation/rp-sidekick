@@ -4,7 +4,7 @@ from django.conf import settings
 from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
-from mock import patch
+from mock import call, patch
 
 from rp_asos.models import Hospital, PatientRecord, PatientValue, ScreeningRecord
 from rp_asos.tasks import (
@@ -538,61 +538,137 @@ class CreateHospitalGroupsTaskTests(RedcapBaseTestCase, TestCase):
 
     @patch("rp_asos.models.Hospital.create_hospital_wa_group")
     @patch("rp_asos.models.Hospital.get_wa_group_info")
-    @patch("rp_asos.models.Hospital.send_group_invites")
+    @patch("sidekick.utils.send_whatsapp_template_message")
     @patch("rp_asos.models.Hospital.add_group_admins")
     def test_create_hospitals_group_noop(
-        self, mock_add_admins, mock_send_invites, mock_get_info, mock_create_group
+        self, mock_add_admins, mock_send_invite, mock_get_info, mock_create_group
     ):
         self.create_hospital(tz_code="NOT_CAT")
 
         create_hospital_groups(str(self.project.id), "CAT")
 
         mock_add_admins.assert_not_called()
-        mock_send_invites.assert_not_called()
+        mock_send_invite.assert_not_called()
         mock_get_info.assert_not_called()
         mock_create_group.assert_not_called()
 
     @patch("rp_asos.models.Hospital.create_hospital_wa_group")
     @patch("rp_asos.models.Hospital.get_wa_group_info")
-    @patch("rp_asos.models.Hospital.send_group_invites")
+    @patch("sidekick.utils.send_whatsapp_template_message")
     @patch("rp_asos.models.Hospital.add_group_admins")
-    def test_create_hospitals_group_with_nomination(
-        self, mock_add_admins, mock_send_invites, mock_get_info, mock_create_group
+    def test_create_hospitals_group_no_invites(
+        self, mock_add_admins, mock_send_invite, mock_get_info, mock_create_group
     ):
-        hospital = self.create_hospital(whatsapp_group_id="group-id-a")
+        self.create_hospital(whatsapp_group_id="group-id-a")
 
-        mock_create_group.return_value = hospital
-        mock_get_info.return_value = {"id": "group-id-a"}
-        mock_send_invites.return_value = ["+27123", "+27321"]
+        group_info = {"id": "group-id-a", "participants": ["27123"]}
+
+        mock_get_info.return_value = group_info
+        mock_add_admins.return_value = ["27123"]
 
         create_hospital_groups(str(self.project.id), "CAT")
 
-        mock_create_group.assert_called_with()
-        mock_get_info.assert_called_with()
-        mock_send_invites.assert_called_with({"id": "group-id-a"}, ["+27123", "+27321"])
-        mock_add_admins.assert_called_with({"id": "group-id-a"}, ["+27123", "+27321"])
+        mock_send_invite.assert_not_called()
 
+    @patch("sidekick.utils.get_whatsapp_group_invite_link")
     @patch("rp_asos.models.Hospital.create_hospital_wa_group")
     @patch("rp_asos.models.Hospital.get_wa_group_info")
-    @patch("rp_asos.models.Hospital.send_group_invites")
+    @patch("sidekick.utils.send_whatsapp_template_message")
+    @patch("rp_asos.models.Hospital.add_group_admins")
+    def test_create_hospitals_group_with_nomination(
+        self,
+        mock_add_admins,
+        mock_send_invite,
+        mock_get_info,
+        mock_create_group,
+        mock_get_invite_link,
+    ):
+        self.create_hospital(whatsapp_group_id="group-id-a")
+
+        group_info = {"id": "group-id-a", "participants": []}
+
+        mock_get_info.return_value = group_info
+        mock_add_admins.return_value = ["27123", "27321"]
+        mock_get_invite_link.return_value = "test-link"
+
+        create_hospital_groups(str(self.project.id), "CAT")
+
+        mock_create_group.assert_called_once()
+        mock_get_info.assert_called_once()
+        mock_add_admins.assert_called_with(group_info, ["+27123", "+27321"])
+        mock_send_invite.assert_has_calls(
+            [
+                call(
+                    self.org,
+                    "27123",
+                    "whatsapp:hsm:npo:praekeltpbc",
+                    "asos2_notification_v2",
+                    [
+                        {
+                            "default": "Hi, please join the ASOS2 Whatsapp group: test-link"
+                        }
+                    ],
+                ),
+                call(
+                    self.org,
+                    "27321",
+                    "whatsapp:hsm:npo:praekeltpbc",
+                    "asos2_notification_v2",
+                    [
+                        {
+                            "default": "Hi, please join the ASOS2 Whatsapp group: test-link"
+                        }
+                    ],
+                ),
+            ]
+        )
+        mock_get_invite_link.assert_called_once()
+
+    @patch("sidekick.utils.get_whatsapp_group_invite_link")
+    @patch("rp_asos.models.Hospital.create_hospital_wa_group")
+    @patch("rp_asos.models.Hospital.get_wa_group_info")
+    @patch("sidekick.utils.send_whatsapp_template_message")
     @patch("rp_asos.models.Hospital.add_group_admins")
     def test_create_hospitals_group_with_lead_only(
-        self, mock_add_admins, mock_send_invites, mock_get_info, mock_create_group
+        self,
+        mock_add_admins,
+        mock_send_invite,
+        mock_get_info,
+        mock_create_group,
+        mock_get_invite_link,
     ):
         hospital = self.create_hospital(
             nomination_urn=None, whatsapp_group_id="group-id-a"
         )
 
+        group_info = {"id": "group-id-a", "participants": []}
+
         mock_create_group.return_value = hospital
-        mock_get_info.return_value = {"id": "group-id-a"}
-        mock_send_invites.return_value = ["+27123"]
+        mock_get_info.return_value = group_info
+        mock_add_admins.return_value = ["27123"]
+        mock_get_invite_link.return_value = "test-link"
 
         create_hospital_groups(str(self.project.id), "CAT")
 
-        mock_create_group.assert_called_with()
-        mock_get_info.assert_called_with()
-        mock_send_invites.assert_called_with({"id": "group-id-a"}, ["+27123"])
-        mock_add_admins.assert_called_with({"id": "group-id-a"}, ["+27123"])
+        mock_create_group.assert_called_once()
+        mock_get_info.assert_called_once()
+        mock_add_admins.assert_called_with(group_info, ["+27123"])
+        mock_send_invite.assert_has_calls(
+            [
+                call(
+                    self.org,
+                    "27123",
+                    "whatsapp:hsm:npo:praekeltpbc",
+                    "asos2_notification_v2",
+                    [
+                        {
+                            "default": "Hi, please join the ASOS2 Whatsapp group: test-link"
+                        }
+                    ],
+                )
+            ]
+        )
+        mock_get_invite_link.assert_called_once()
 
 
 class ScreeningRecordTaskTests(RedcapBaseTestCase, TestCase):
