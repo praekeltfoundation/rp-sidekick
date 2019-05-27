@@ -27,3 +27,12 @@ RapidPro does not yet provide first-class support for [WhatsApp templates](https
 ### Localized Parameters
 Templated messages allow you to pass in variables. See the [Turn documentation](https://whatsapp.praekelt.org/docs/index.html#localizable-parameters-for-templated-messages) for more details. These can be passed to the endpoint by numbering your param arguments. e.g. `0=R25&1=24` will pass the parameters `R25` and `24` to the template, in that order.
 Note that this endpoint only orders the arguments, it does not attempt to skip over arguments. Thus `0=R25&1=24`, `1=R25&2=24` and `1=R25&99=24` will all be treated in an identical manner.
+
+You will also need to make sure that the values you pass as parameters should be encoded. For example, `&` should be represented by `%26`. You can do this using python's `urllib` library:
+
+```{python}
+>>> from urllib.parse import urlencode
+>>> params = {'lang':'en','tag':'python is great 10% of the time'}
+>>> urlencode(params)
+'lang=en&tag=python+is+great+10%25+of+the+time'
+```
