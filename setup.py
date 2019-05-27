@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="rp-sidekick",
-    version="1.5.9",
+    version="1.5.10",
     url="http://github.com/praekeltfoundation/rp-sidekick",
     license="BSD",
     author="Praekelt Foundation",
