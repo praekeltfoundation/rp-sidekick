@@ -25,6 +25,7 @@ matrix:
         - black --check .
         - isort -c -rc .
         - flake8
+        - pydocstyle
         - py.test --cov=./ --color=yes
         - python manage.py makemigrations --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)   # yamllint disable-line
       after_success:
