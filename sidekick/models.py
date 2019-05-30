@@ -28,6 +28,9 @@ class Organization(models.Model):
     def get_rapidpro_client(self):
         return TembaClient(self.url, self.token)
 
+    class Meta:
+        permissions = [("label_turn_conversation", "Can label a Turn Conversation")]
+
 
 @receiver(post_save, sender=User)
 def user_token_creation(sender, instance, created, **kwargs):
