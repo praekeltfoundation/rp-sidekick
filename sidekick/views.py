@@ -15,8 +15,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Consent, Organization
-from .serializers import RapidProFlowWebhookSerializer
-from .tasks import start_flow_task
+from .serializers import (
+    URN_REGEX,
+    LabelTurnConversationSerializer,
+    RapidProFlowWebhookSerializer,
+)
+from .tasks import add_label_to_turn_conversation, start_flow_task
 from .utils import clean_message, get_whatsapp_contacts, send_whatsapp_template_message
 
 
@@ -209,3 +213,32 @@ class ProvideConsentView(APIView):
             return redirect(consent.redirect_url)
 
         return Response()
+
+
+class LabelTurnCoversationPermission(DjangoModelPermissions):
+    """
+    Allows POST requests if the user has the label_turn_conversation permission
+    """
+
+    perms_map = {"POST": ["%(app_label)s.label_turn_conversation"]}
+
+
+class LabelTurnConversationView(GenericAPIView):
+    queryset = Organization.objects.all()
+    permission_classes = (LabelTurnCoversationPermission,)
+    serializer_class = RapidProFlowWebhookSerializer
+
+    def post(self, request, pk):
+        self.get_object()
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        match = URN_REGEX.match(serializer.validated_data["contact"]["urn"])
+        address = match.group("address").lstrip("+")
+
+        qs_serializer = LabelTurnConversationSerializer(data=request.query_params)
+        qs_serializer.is_valid(raise_exception=True)
+        labels = qs_serializer.validated_data["label"]
+
+        task = add_label_to_turn_conversation.delay(pk, address, labels)
+        return Response({"task_id": task.id}, status=status.HTTP_201_CREATED)

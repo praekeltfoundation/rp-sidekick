@@ -13,7 +13,22 @@ from sidekick.utils import start_flow
     acks_late=True,
     soft_time_limit=10,
     time_limit=15,
+    ignore_result=True,
 )
 def start_flow_task(org_id, user_uuid, flow_uuid):
     org = Organization.objects.get(id=org_id)
     start_flow(org, user_uuid, flow_uuid)
+
+
+@app.task(
+    autoretry_for=(RequestException, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    max_retries=15,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+    ignore_result=True,
+)
+def add_label_to_turn_conversation(org_id, wa_id, labels):
+    # TODO: implement
+    pass
