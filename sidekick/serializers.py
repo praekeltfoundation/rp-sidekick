@@ -1,4 +1,8 @@
+import re
+
 from rest_framework import serializers
+
+URN_REGEX = re.compile(r"(?P<scheme>.+):(?P<address>.+)")
 
 
 class RapidProFlowWebhookSerializer(serializers.Serializer):
@@ -8,5 +12,14 @@ class RapidProFlowWebhookSerializer(serializers.Serializer):
 
     class Contact(serializers.Serializer):
         uuid = serializers.UUIDField()
+        urn = serializers.RegexField(URN_REGEX)
 
     contact = Contact()
+
+
+class LabelTurnConversationSerializer(serializers.Serializer):
+    """"
+    Serializer for the query parameters of the LabelTurnConversationView
+    """
+
+    label = serializers.ListField(child=serializers.CharField())

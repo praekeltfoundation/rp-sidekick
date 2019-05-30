@@ -11,7 +11,7 @@ from django.db.utils import OperationalError
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
-from mock import patch
+from mock import MagicMock, patch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
@@ -443,7 +443,9 @@ class GetConsentURLViewTest(APITestCase):
         self.login_user()
 
         response = self.client.post(
-            url, {"contact": {"uuid": str(uuid4())}}, format="json"
+            url,
+            {"contact": {"uuid": str(uuid4()), "urn": "whatsapp:27820001001"}},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -458,7 +460,9 @@ class GetConsentURLViewTest(APITestCase):
 
         contact_uuid = uuid4()
         response = self.client.post(
-            url, {"contact": {"uuid": str(contact_uuid)}}, format="json"
+            url,
+            {"contact": {"uuid": str(contact_uuid), "urn": "whatsapp:27820001001"}},
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
@@ -554,3 +558,79 @@ class ProvideConsentViewTest(APITestCase):
         self.assertRedirects(
             response, "http://example.org", fetch_redirect_response=False
         )
+
+
+class LabelTurnConversationViewTests(APITestCase):
+    def test_auth_required(self):
+        """
+        Authorization is required to access the endpoint
+        """
+        url = reverse("label-turn-conversation", args=[1])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_permission_required(self):
+        """
+        The user needs the appropriate permission to access the endpoint
+        """
+        url = reverse("label-turn-conversation", args=[1])
+        user = get_user_model().objects.create_user("test")
+        self.client.force_authenticate(user)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def login_user(self):
+        user = get_user_model().objects.create_user("test")
+        permission = Permission.objects.get(name="Can label a Turn Conversation")
+        user.user_permissions.add(permission)
+        user.save()
+        self.client.force_authenticate(user)
+
+    def test_invalid_id(self):
+        """
+        If an Org with the specified ID doesn't exist in the database, we should return
+        a Not Found
+        """
+        url = reverse("label-turn-conversation", args=[1])
+        self.login_user()
+
+        response = self.client.post(
+            url,
+            {"contact": {"uuid": str(uuid4()), "urn": "whatsapp:27820001001"}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_invalid_body(self):
+        """
+        If the body of the request is invalid, we should return a Bad Request error
+        """
+        org = Organization.objects.create()
+        url = reverse("label-turn-conversation", args=[org.id])
+        self.login_user()
+
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("sidekick.views.add_label_to_turn_conversation")
+    def test_post_url(self, task):
+        """
+        A successful request should start the task and return the task ID
+        """
+        task_instance = MagicMock()
+        task_instance.id = "test-task-id"
+        task.delay.return_value = task_instance
+
+        org = Organization.objects.create()
+        url = reverse("label-turn-conversation", args=[org.id])
+        url = "{}?{}".format(url, urlencode((("label", "foo"), ("label", "bar"))))
+        self.login_user()
+
+        response = self.client.post(
+            url,
+            {"contact": {"uuid": str(uuid4()), "urn": "whatsapp:27820001001"}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.json(), {"task_id": "test-task-id"})
+        task.delay.assert_called_once_with(org.id, "27820001001", ["foo", "bar"])

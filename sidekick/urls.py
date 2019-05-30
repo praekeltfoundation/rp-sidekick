@@ -31,4 +31,9 @@ urlpatterns = [
         views.ProvideConsentView.as_view(),
         name="provide-consent",
     ),
+    path(
+        "api/label_turn_conversation/<int:pk>",
+        views.LabelTurnConversationView.as_view(),
+        name="label-turn-conversation",
+    ),
 ]
