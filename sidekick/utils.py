@@ -205,6 +205,25 @@ def label_whatsapp_message(org, message_id, labels):
     return result.json()
 
 
+def archive_whatsapp_conversation(org, wa_id, message_id, reason):
+    """
+    Archives the whatsapp conversation
+
+    Args:
+        org (Organization): The organisation that this request belongs to
+        wa_id (str): The ID of the user to archive the conversation for
+        message_id (str): the ID of the message to archive up until
+        reason (str): The reason for archiving the conversation
+    """
+    result = requests.post(
+        urljoin(org.engage_url, "v1/chats/{}/archive".format(wa_id)),
+        headers=build_turn_headers(org.engage_token, api_extensions=True),
+        json={"before": message_id, "reason": reason},
+    )
+    result.raise_for_status()
+    return result.json()
+
+
 def get_flow_url(org, flow_uuid):
     return urljoin(urljoin(org.url, "/flow/editor/"), flow_uuid)
 

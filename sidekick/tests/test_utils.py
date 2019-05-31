@@ -366,6 +366,27 @@ class UtilsTests(TestCase):
         request = responses.calls[-1].request
         self.assertEqual(json.loads(request.body), {"labels": ["label1", "label2"]})
 
+    @responses.activate
+    def test_archive_whatsapp_conversation(self):
+        message_id = "message_1"
+        wa_id = "contact_1"
+
+        responses.add(
+            method=responses.POST,
+            url="http://whatsapp/v1/chats/{}/archive".format(wa_id),
+            json={},
+        )
+
+        result = utils.archive_whatsapp_conversation(
+            self.org, wa_id, message_id, "Test reason"
+        )
+        self.assertEqual(result, {})
+
+        request = responses.calls[-1].request
+        self.assertEqual(
+            json.loads(request.body), {"before": message_id, "reason": "Test reason"}
+        )
+
     def test_clean_msisdn_1(self):
         self.assertEqual(utils.clean_msisdn("+2782653"), "2782653")
 
