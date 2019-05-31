@@ -32,13 +32,16 @@ def clean_msisdn(msisdn):
     return msisdn.replace("+", "")
 
 
-def build_turn_headers(token):
+def build_turn_headers(token, api_extensions=False):
     distribution = pkg_resources.get_distribution("rp-sidekick")
-    return {
+    headers = {
         "Authorization": "Bearer {}".format(token),
         "User-Agent": "rp-sidekick/{}".format(distribution.version),
         "Content-Type": "application/json",
     }
+    if api_extensions:
+        headers["Accept"] = "application/vnd.v1+json"
+    return headers
 
 
 def send_whatsapp_template_message(
@@ -175,6 +178,18 @@ def add_whatsapp_group_admin(org, group_id, wa_id):
     )
     result.raise_for_status()
     return result
+
+
+def get_whatsapp_contact_messages(org, wa_id):
+    """
+    Gets the list of messages for the contact "wa_id"
+    """
+    result = requests.get(
+        urljoin(org.engage_url, "v1/contacts/{}/messages".format(wa_id)),
+        headers=build_turn_headers(org.engage_token, api_extensions=True),
+    )
+    result.raise_for_status()
+    return result.json()
 
 
 def get_flow_url(org, flow_uuid):
