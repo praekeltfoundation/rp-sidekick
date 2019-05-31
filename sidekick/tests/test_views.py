@@ -632,3 +632,76 @@ class LabelTurnConversationViewTests(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.json(), {"task_id": "test-task-id"})
         task.delay.assert_called_once_with(self.org.id, "27820001001", ["foo", "bar"])
+
+
+class ArchiveTurnConversationViewTests(SidekickAPITestCase):
+    def test_auth_required(self):
+        """
+        Authorization is required to access the endpoint
+        """
+        url = reverse("archive-turn-conversation", args=[1])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_permission_required(self):
+        """
+        The user needs the appropriate permission to access the endpoint
+        """
+        url = reverse("archive-turn-conversation", args=[1])
+        user = get_user_model().objects.create_user("test")
+        self.client.force_authenticate(user)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def login_user(self):
+        user = get_user_model().objects.create_user("test")
+        permission = Permission.objects.get(name="Can archive a Turn Conversation")
+        user.user_permissions.add(permission)
+        user.save()
+        self.client.force_authenticate(user)
+
+    def test_invalid_id(self):
+        """
+        If an Org with the specified ID doesn't exist in the database, we should return
+        a Not Found
+        """
+        url = reverse("archive-turn-conversation", args=[0])
+        self.login_user()
+
+        response = self.client.post(
+            url,
+            {"contact": {"uuid": str(uuid4()), "urn": "whatsapp:27820001001"}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_invalid_body(self):
+        """
+        If the body of the request is invalid, we should return a Bad Request error
+        """
+        url = reverse("archive-turn-conversation", args=[self.org.id])
+        self.login_user()
+
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("sidekick.views.archive_turn_conversation")
+    def test_post_url(self, task):
+        """
+        A successful request should start the task and return the task ID
+        """
+        task_instance = MagicMock()
+        task_instance.id = "test-task-id"
+        task.delay.return_value = task_instance
+
+        url = reverse("archive-turn-conversation", args=[self.org.id])
+        self.login_user()
+
+        response = self.client.post(
+            url,
+            {"contact": {"uuid": str(uuid4()), "urn": "whatsapp:27820001001"}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.json(), {"task_id": "test-task-id"})
+        task.delay.assert_called_once_with(self.org.id, "27820001001")
