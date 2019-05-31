@@ -560,7 +560,7 @@ class ProvideConsentViewTest(APITestCase):
         )
 
 
-class LabelTurnConversationViewTests(APITestCase):
+class LabelTurnConversationViewTests(SidekickAPITestCase):
     def test_auth_required(self):
         """
         Authorization is required to access the endpoint
@@ -591,7 +591,7 @@ class LabelTurnConversationViewTests(APITestCase):
         If an Org with the specified ID doesn't exist in the database, we should return
         a Not Found
         """
-        url = reverse("label-turn-conversation", args=[1])
+        url = reverse("label-turn-conversation", args=[0])
         self.login_user()
 
         response = self.client.post(
@@ -605,8 +605,7 @@ class LabelTurnConversationViewTests(APITestCase):
         """
         If the body of the request is invalid, we should return a Bad Request error
         """
-        org = Organization.objects.create()
-        url = reverse("label-turn-conversation", args=[org.id])
+        url = reverse("label-turn-conversation", args=[self.org.id])
         self.login_user()
 
         response = self.client.post(url)
@@ -621,8 +620,7 @@ class LabelTurnConversationViewTests(APITestCase):
         task_instance.id = "test-task-id"
         task.delay.return_value = task_instance
 
-        org = Organization.objects.create()
-        url = reverse("label-turn-conversation", args=[org.id])
+        url = reverse("label-turn-conversation", args=[self.org.id])
         url = "{}?{}".format(url, urlencode((("label", "foo"), ("label", "bar"))))
         self.login_user()
 
@@ -633,4 +631,4 @@ class LabelTurnConversationViewTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.json(), {"task_id": "test-task-id"})
-        task.delay.assert_called_once_with(org.id, "27820001001", ["foo", "bar"])
+        task.delay.assert_called_once_with(self.org.id, "27820001001", ["foo", "bar"])
