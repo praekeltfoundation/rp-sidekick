@@ -29,7 +29,10 @@ class Organization(models.Model):
         return TembaClient(self.url, self.token)
 
     class Meta:
-        permissions = [("label_turn_conversation", "Can label a Turn Conversation")]
+        permissions = [
+            ("label_turn_conversation", "Can label a Turn Conversation"),
+            ("archive_turn_conversation", "Can archive a Turn Conversation"),
+        ]
 
 
 @receiver(post_save, sender=User)
