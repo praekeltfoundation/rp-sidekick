@@ -23,3 +23,11 @@ class LabelTurnConversationSerializer(serializers.Serializer):
     """
 
     label = serializers.ListField(child=serializers.CharField())
+
+
+class ArchiveTurnConversationSerializer(serializers.Serializer):
+    """"
+    Serializer for the query parameters of the ArchiveTurnConversationView
+    """
+
+    reason = serializers.CharField()

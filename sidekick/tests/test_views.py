@@ -695,6 +695,7 @@ class ArchiveTurnConversationViewTests(SidekickAPITestCase):
         task.delay.return_value = task_instance
 
         url = reverse("archive-turn-conversation", args=[self.org.id])
+        url = "{}?{}".format(url, urlencode({"reason": "Test reason"}))
         self.login_user()
 
         response = self.client.post(
@@ -704,4 +705,4 @@ class ArchiveTurnConversationViewTests(SidekickAPITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.json(), {"task_id": "test-task-id"})
-        task.delay.assert_called_once_with(self.org.id, "27820001001")
+        task.delay.assert_called_once_with(self.org.id, "27820001001", "Test reason")
