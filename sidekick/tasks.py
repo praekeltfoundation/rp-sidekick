@@ -3,7 +3,11 @@ from requests import RequestException
 
 from config.celery import app
 from sidekick.models import Organization
-from sidekick.utils import start_flow
+from sidekick.utils import (
+    get_whatsapp_contact_messages,
+    label_whatsapp_message,
+    start_flow,
+)
 
 
 @app.task(
@@ -30,5 +34,13 @@ def start_flow_task(org_id, user_uuid, flow_uuid):
     ignore_result=True,
 )
 def add_label_to_turn_conversation(org_id, wa_id, labels):
-    # TODO: implement
-    pass
+    org = Organization.objects.get(id=org_id)
+
+    result = get_whatsapp_contact_messages(org, wa_id)
+    inbounds = filter(
+        lambda m: m.get("_vnd", {}).get("v1", {}).get("direction") == "inbound",
+        result.get("messages", []),
+    )
+    last_inbound = max(inbounds, key=lambda m: m.get("timestamp"))
+
+    label_whatsapp_message(org, last_inbound["id"], labels)
