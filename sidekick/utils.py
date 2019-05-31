@@ -192,6 +192,19 @@ def get_whatsapp_contact_messages(org, wa_id):
     return result.json()
 
 
+def label_whatsapp_message(org, message_id, labels):
+    """
+    Labels the message with id "message_id" with the labels in the list "labels"
+    """
+    result = requests.post(
+        urljoin(org.engage_url, "v1/messages/{}/labels".format(message_id)),
+        headers=build_turn_headers(org.engage_token, api_extensions=True),
+        json={"labels": labels},
+    )
+    result.raise_for_status()
+    return result.json()
+
+
 def get_flow_url(org, flow_uuid):
     return urljoin(urljoin(org.url, "/flow/editor/"), flow_uuid)
 

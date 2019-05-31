@@ -348,6 +348,24 @@ class UtilsTests(TestCase):
         result = utils.get_whatsapp_contact_messages(self.org, contact_id)
         self.assertEqual(result, data)
 
+    @responses.activate
+    def test_label_whatsapp_message(self):
+        message_id = "message_1"
+
+        responses.add(
+            method=responses.POST,
+            url="http://whatsapp/v1/messages/{}/labels".format(message_id),
+            json={},
+        )
+
+        result = utils.label_whatsapp_message(
+            self.org, message_id, ["label1", "label2"]
+        )
+        self.assertEqual(result, {})
+
+        request = responses.calls[-1].request
+        self.assertEqual(json.loads(request.body), {"labels": ["label1", "label2"]})
+
     def test_clean_msisdn_1(self):
         self.assertEqual(utils.clean_msisdn("+2782653"), "2782653")
 
