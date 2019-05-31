@@ -320,6 +320,34 @@ class UtilsTests(TestCase):
         request = responses.calls[-1].request
         self.assertEqual(json.loads(request.body), {"wa_ids": ["wa_id_1"]})
 
+    @responses.activate
+    def test_get_whatsapp_contact_messages(self):
+        contact_id = "contact_1"
+
+        data = {
+            "messages": [
+                {
+                    "_vnd": {"v1": {"direction": "outbound"}},
+                    "id": "ignore_id",
+                    "timestamp": "1559793270",
+                },
+                {
+                    "_vnd": {"v1": {"direction": "inbound"}},
+                    "id": "return_id",
+                    "timestamp": "1558692160",
+                },
+            ]
+        }
+
+        responses.add(
+            method=responses.GET,
+            url="http://whatsapp/v1/contacts/{}/messages".format(contact_id),
+            json=data,
+        )
+
+        result = utils.get_whatsapp_contact_messages(self.org, contact_id)
+        self.assertEqual(result, data)
+
     def test_clean_msisdn_1(self):
         self.assertEqual(utils.clean_msisdn("+2782653"), "2782653")
 
