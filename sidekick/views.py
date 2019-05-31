@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from .models import Consent, Organization
 from .serializers import (
     URN_REGEX,
+    ArchiveTurnConversationSerializer,
     LabelTurnConversationSerializer,
     RapidProFlowWebhookSerializer,
 )
@@ -269,5 +270,9 @@ class ArchiveTurnConversationView(GenericAPIView):
         match = URN_REGEX.match(serializer.validated_data["contact"]["urn"])
         address = match.group("address").lstrip("+")
 
-        task = archive_turn_conversation.delay(pk, address)
+        qs_serializer = ArchiveTurnConversationSerializer(data=request.query_params)
+        qs_serializer.is_valid(raise_exception=True)
+        reason = qs_serializer.validated_data["reason"]
+
+        task = archive_turn_conversation.delay(pk, address, reason)
         return Response({"task_id": task.id}, status=status.HTTP_201_CREATED)
