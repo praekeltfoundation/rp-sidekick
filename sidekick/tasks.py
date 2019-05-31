@@ -44,3 +44,17 @@ def add_label_to_turn_conversation(org_id, wa_id, labels):
     last_inbound = max(inbounds, key=lambda m: m.get("timestamp"))
 
     label_whatsapp_message(org, last_inbound["id"], labels)
+
+
+@app.task(
+    autoretry_for=(RequestException, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    max_retries=15,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+    ignore_result=True,
+)
+def archive_turn_conversation(org_id, wa_id):
+    # TODO: implement
+    pass

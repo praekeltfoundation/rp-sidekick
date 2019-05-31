@@ -20,7 +20,11 @@ from .serializers import (
     LabelTurnConversationSerializer,
     RapidProFlowWebhookSerializer,
 )
-from .tasks import add_label_to_turn_conversation, start_flow_task
+from .tasks import (
+    add_label_to_turn_conversation,
+    archive_turn_conversation,
+    start_flow_task,
+)
 from .utils import clean_message, get_whatsapp_contacts, send_whatsapp_template_message
 
 
@@ -241,4 +245,29 @@ class LabelTurnConversationView(GenericAPIView):
         labels = qs_serializer.validated_data["label"]
 
         task = add_label_to_turn_conversation.delay(pk, address, labels)
+        return Response({"task_id": task.id}, status=status.HTTP_201_CREATED)
+
+
+class ArchiveTurnCoversationPermission(DjangoModelPermissions):
+    """
+    Allows POST requests if the user has the archive_turn_conversation permission
+    """
+
+    perms_map = {"POST": ["%(app_label)s.archive_turn_conversation"]}
+
+
+class ArchiveTurnConversationView(GenericAPIView):
+    queryset = Organization.objects.all()
+    permission_classes = (ArchiveTurnCoversationPermission,)
+    serializer_class = RapidProFlowWebhookSerializer
+
+    def post(self, request, pk):
+        self.get_object()
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        match = URN_REGEX.match(serializer.validated_data["contact"]["urn"])
+        address = match.group("address").lstrip("+")
+
+        task = archive_turn_conversation.delay(pk, address)
         return Response({"task_id": task.id}, status=status.HTTP_201_CREATED)

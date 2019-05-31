@@ -36,4 +36,9 @@ urlpatterns = [
         views.LabelTurnConversationView.as_view(),
         name="label-turn-conversation",
     ),
+    path(
+        "api/archive_turn_conversation/<int:pk>",
+        views.ArchiveTurnConversationView.as_view(),
+        name="archive-turn-conversation",
+    ),
 ]
