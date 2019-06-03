@@ -26,7 +26,7 @@ from .tasks import (
     archive_turn_conversation,
     start_flow_task,
 )
-from .utils import clean_message, get_whatsapp_contacts, send_whatsapp_template_message
+from .utils import get_whatsapp_contacts, send_whatsapp_template_message
 
 
 def health(request):
@@ -92,7 +92,7 @@ class SendWhatsAppTemplateMessageView(APIView):
             )
 
         localizable_params = [
-            {"default": clean_message(data[_key])}
+            {"default": data[_key]}
             for _key in sorted([key for key in data.keys() if key.isdigit()])
         ]
 
