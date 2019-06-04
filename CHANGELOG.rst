@@ -4,6 +4,9 @@ VERSIONS
 Next Release
 ------------
 Sidekick: Allow space character to be submitted as variables to whatsapp template endpoint
+Sidekick: Add out-of-band consent feature for WhatsApp
+Sidekick: Add feature for labelling the last received message in a Turn conversation
+Sidekick: Add feature for archiving a Turn conversation
 
 1.5.10
 ------------
