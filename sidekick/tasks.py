@@ -60,6 +60,10 @@ def archive_turn_conversation(org_id, wa_id, reason):
     org = Organization.objects.get(id=org_id)
 
     result = get_whatsapp_contact_messages(org, wa_id)
-    last_message = max(result["messages"], key=lambda m: m.get("timestamp"))
+    inbounds = filter(
+        lambda m: m.get("_vnd", {}).get("v1", {}).get("direction") == "inbound",
+        result["messages"],
+    )
+    last_inbound_message = max(inbounds, key=lambda m: m.get("timestamp"))
 
-    archive_whatsapp_conversation(org, wa_id, last_message["id"], reason)
+    archive_whatsapp_conversation(org, wa_id, last_inbound_message["id"], reason)

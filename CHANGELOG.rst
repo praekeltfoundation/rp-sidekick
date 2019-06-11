@@ -3,6 +3,7 @@ VERSIONS
 
 Next Release
 ------------
+Sidekick: Bugfix, reference last inbound message, not last message, for archiving Turn conversation
 
 1.6.0
 ------------

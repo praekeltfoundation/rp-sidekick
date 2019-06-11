@@ -72,6 +72,11 @@ class ArchiveTurnConversationTests(TestCase):
                     "id": "second-inbound",
                     "timestamp": "3",
                 },
+                {
+                    "_vnd": {"v1": {"direction": "outbound"}},
+                    "id": "ignore-outbound-2",
+                    "timestamp": "4",
+                },
             ]
         }
         archive.return_value = {}
