@@ -14,8 +14,8 @@ matrix:
       services:
         - postgresql
       install:
-        - pip install -r requirements.txt --use-wheel
-        - pip install -r requirements-dev.txt --use-wheel
+        - pip install -r requirements.txt
+        - pip install -r requirements-dev.txt
         # temporary until there is a new PyCap Release
         - pip install git+git://github.com/redcap-tools/PyCap.git@d9d3dea68640920eefb5d5d095cc62d2968c202d   # yamllint disable-line
         - pip install codecov
