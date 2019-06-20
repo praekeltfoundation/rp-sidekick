@@ -18,15 +18,8 @@
         {% if consent.preview_image_url %}
         <meta property="og:image" content="{{ consent.preview_image_url }}">
         {% endif %}
-        <style>
-            body {
-                text-align: center;
-                font-size: 2em;
-                font-family: sans-serif;
-            }
-        </style>
     </head>
     <body>
-        {{ consent.body_text }}
+        {{ consent.body | safe }}
     </body>
 </html>

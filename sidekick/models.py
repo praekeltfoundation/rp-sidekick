@@ -72,10 +72,9 @@ class Consent(models.Model):
     preview_image_url = models.URLField(
         blank=True, help_text="The URL of the imgae to display on the WhatsApp preview"
     )
-    body_text = models.CharField(
-        max_length=200,
+    body = models.TextField(
         blank=True,
-        help_text="The text to display to the user while they're redirecting",
+        help_text="The HTML body to display to the user while redirecting. Not escaped",
     )
 
     def generate_code(self, contact_uuid):
