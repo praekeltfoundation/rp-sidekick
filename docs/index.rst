@@ -15,6 +15,7 @@
    apps/asos.rst
    apps/redcap.md
    apps/transferto.md
+   apps/recruit.md
 
    ways-of-working.md
 

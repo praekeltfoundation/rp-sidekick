@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="py-5 text-center">
+    {% if not missing_info %}
+        <p class="lead">Thanks for registering</p>
+        <h2>{{name}}!</h2>
+        <p class="lead">
+            You will receive a whatsapp message asking you for a pin.<br>
+            Please respond with this pin:
+        </p>
+        <h1>{{ pin }}</h1>
+    {% else %}
+        <p class="lead">{{ error_message }}</p>
+    {% endif %}
+</div>
+{% endblock %}

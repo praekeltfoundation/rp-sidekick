@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "rp_asos",
     "rp_redcap",
     "rp_transferto",
+    "rp_recruit",
 ]
 
 MIDDLEWARE = [
