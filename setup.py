@@ -22,6 +22,7 @@ setup(
         "json2html>=1.2.1,<2",
         "phonenumbers>=8.10.13,<8.11",
         "psycopg2-binary>=2.8.3,<2.9",
+        "pycap>=1.0.2",
         "rapidpro-python>=2.6.1,<2.7",
         "redis>=3.2.1,<3.3",
         "whitenoise>=4.1.2,<4.2",
