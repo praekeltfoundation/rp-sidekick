@@ -3,7 +3,12 @@ VERSIONS
 
 Next Release
 ------------
+
+1.6.1
+------------
+Sidekick: Allow custom body for consent redirect
 TransferTo: updated docs to better show how to use asynch endpoints.
+Upgrade Django to >=2.2.2<2.3
 Sidekick: Bugfix, reference last inbound message, not last message, for archiving Turn conversation
 
 1.6.0
