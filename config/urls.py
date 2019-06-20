@@ -18,4 +18,5 @@ urlpatterns = [
             permission_classes=[IsAdminUser],
         ),
     ),
+    path("recruit/", include("rp_recruit.urls"), name="rp_recruit"),
 ]
