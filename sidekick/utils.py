@@ -57,7 +57,7 @@ def send_whatsapp_template_message(
                 "hsm": {
                     "namespace": namespace,
                     "element_name": element_name,
-                    "language": {"policy": "fallback", "code": "en_US"},
+                    "language": {"policy": "fallback", "code": "en"},
                     "localizable_params": localizable_params,
                 },
             }

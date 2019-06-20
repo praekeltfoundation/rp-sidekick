@@ -163,7 +163,7 @@ class TestSendTemplateView(SidekickAPITestCase):
                 "hsm": {
                     "namespace": "test.namespace",
                     "element_name": "el",
-                    "language": {"policy": "fallback", "code": "en_US"},
+                    "language": {"policy": "fallback", "code": "en"},
                     "localizable_params": [],
                 },
             },
@@ -196,7 +196,7 @@ class TestSendTemplateView(SidekickAPITestCase):
                 "hsm": {
                     "namespace": "test.namespace",
                     "element_name": "el",
-                    "language": {"policy": "fallback", "code": "en_US"},
+                    "language": {"policy": "fallback", "code": "en"},
                     "localizable_params": [{"default": "Ola"}, {"default": "R25"}],
                 },
             },
