@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.6.2
+------------
+Sidekick: Fix WA templated messsage send.
+
 1.6.1
 ------------
 Sidekick: Allow custom body for consent redirect
