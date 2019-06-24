@@ -1,5 +1,6 @@
 import json
 from os import environ
+from unittest.mock import MagicMock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -11,7 +12,6 @@ from django.db.utils import OperationalError
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
-from mock import MagicMock, patch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
@@ -217,7 +217,7 @@ class TestSendTemplateView(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         content = json.loads(response.content)
         self.assertTrue("error" in content)
-        self.assertEquals(content["error"], "Organization not found")
+        self.assertEqual(content["error"], "Organization not found")
 
     def test_send_wa_template_message_does_not_belong_to_org(self):
         self.org.users.remove(self.user)
@@ -235,7 +235,7 @@ class TestSendTemplateView(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         content = json.loads(response.content)
         self.assertTrue("error" in content)
-        self.assertEquals(
+        self.assertEqual(
             content["error"],
             "Authenticated user does not belong to specified Organization",
         )
@@ -255,7 +255,7 @@ class TestSendTemplateView(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         content = json.loads(response.content)
         self.assertTrue("error" in content)
-        self.assertEquals(content["error"], "Missing fields: element_name")
+        self.assertEqual(content["error"], "Missing fields: element_name")
 
 
 class TestCheckContactView(SidekickAPITestCase):
@@ -300,7 +300,7 @@ class TestCheckContactView(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         content = json.loads(response.content)
         self.assertTrue("status" in content)
-        self.assertEquals(content["status"], "valid")
+        self.assertEqual(content["status"], "valid")
 
     @responses.activate
     def test_wa_check_contact_invalid(self):
@@ -335,7 +335,7 @@ class TestCheckContactView(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         content = json.loads(response.content)
         self.assertTrue("status" in content)
-        self.assertEquals(content["status"], "invalid")
+        self.assertEqual(content["status"], "invalid")
 
     @responses.activate
     def test_wa_check_contact_error(self):
@@ -362,7 +362,7 @@ class TestCheckContactView(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         content = json.loads(response.content)
         self.assertTrue("error" in content)
-        self.assertEquals(content["error"], "Invalid WhatsApp Token")
+        self.assertEqual(content["error"], "Invalid WhatsApp Token")
 
     def test_wa_check_contact_no_org(self):
         # get result
@@ -377,7 +377,7 @@ class TestCheckContactView(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         content = json.loads(response.content)
         self.assertTrue("error" in content)
-        self.assertEquals(content["error"], "Organization not found")
+        self.assertEqual(content["error"], "Organization not found")
 
     def test_wa_check_contact_does_not_belong_to_org(self):
         self.org.users.remove(self.user)
@@ -392,7 +392,7 @@ class TestCheckContactView(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         content = json.loads(response.content)
         self.assertTrue("error" in content)
-        self.assertEquals(
+        self.assertEqual(
             content["error"],
             "Authenticated user does not belong to specified Organization",
         )

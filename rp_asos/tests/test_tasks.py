@@ -1,10 +1,10 @@
 import datetime
+from unittest.mock import call, patch
 
 from django.conf import settings
 from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
-from mock import call, patch
 
 from rp_asos.models import Hospital, PatientRecord, PatientValue, ScreeningRecord
 from rp_asos.tasks import (
