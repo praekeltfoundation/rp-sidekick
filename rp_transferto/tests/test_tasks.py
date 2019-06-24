@@ -1,8 +1,7 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 from django.test.utils import override_settings
-from mock import patch
 from pytest import raises
 
 from rp_transferto.models import MsisdnInformation, TopupAttempt

@@ -1,11 +1,10 @@
 import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.test import TestCase
 from django.urls import reverse
-from mock import patch
 from pytest import raises
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -359,7 +358,7 @@ class TestTransferToViews(APITestCase):
         user_uuid = "3333-abc"
         flow_uuid = "123412341234"
 
-        url = ("{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}").format(
+        url = "{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}".format(
             base_url=reverse(
                 "buy_product_take_action",
                 kwargs={
@@ -472,7 +471,7 @@ class TestTransferToViews(APITestCase):
         user_uuid = "3333-abc"
         flow_uuid = "123412341234"
 
-        url = ("{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}").format(
+        url = "{base_url}?user_uuid={user_uuid}&flow_uuid={flow_uuid}".format(
             base_url=reverse(
                 "buy_airtime_take_action",
                 kwargs={

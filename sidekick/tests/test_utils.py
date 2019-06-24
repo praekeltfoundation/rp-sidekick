@@ -1,10 +1,10 @@
 import json
+from unittest.mock import Mock, patch
 
 import pkg_resources
 import responses
 from django.test import TestCase
 from django.utils import timezone
-from mock import patch
 
 from sidekick import utils
 
@@ -15,68 +15,45 @@ class UtilsTests(TestCase):
     def setUp(self):
         self.org = create_org()
 
-    def mock_rapidpro_contact_get(self, msisdn, count=1, wa_id=None):
-        urns = ["tel:{}".format(msisdn)]
-        if wa_id:
-            urns.append("whatsapp:{}".format(wa_id))
+    def assertCallMadeWith(self, call, **kwargs):
+        """
+        Check a sub-list of function calls, rather than the entire function call
 
-        responses.add(
-            method=responses.GET,
-            url="http://localhost:8002/api/v2/contacts.json?urn=tel:{}".format(msisdn),
-            json={
-                "count": count,
-                "next": None,
-                "previous": None,
-                "results": [
-                    {
-                        "uuid": "bfff9984-38f4-4e59-998d-3663ec3c650d",
-                        "name": "John Smith",
-                        "language": None,
-                        "group_uuids": ["04a4752b-0f49-480e-ae60-3a3f2bea485c"],
-                        "urns": urns,
-                        "fields": {"nickname": "Hannibal"},
-                        "blocked": False,
-                        "failed": False,
-                        "stopped": False,
-                        "modified_on": "2014-10-01T06:54:09.817Z",
-                        "created_on": "2014-10-01T06:54:09.817Z",
-                        "phone": "+27820001001",
-                        "groups": [],
-                    }
+        This is particularly useful when a Call contains a reference to self,
+        which is difficult to reference in a test
+        """
+        call_args, call_kwargs = call
+
+        if call_kwargs:
+            missing_keys = []
+            matching_keys_incorrect_value = []
+            for key in kwargs:
+                # get a list of all of the keywords that are _not_ in kwargs
+                if key not in call_kwargs.keys():
+                    missing_keys.append(key)
+                # get a list of all of the keywords that do not have matching objects
+                elif call_kwargs[key] != kwargs[key]:
+                    matching_keys_incorrect_value.append(
+                        (key, call_kwargs[key], kwargs[key])
+                    )
+
+            error_messages = []
+            if any(missing_keys):
+                error_messages.append("missing keyword args from call:")
+                [
+                    error_messages.append(f"\t{missing_key}")
+                    for missing_key in missing_keys
                 ]
-                * count,
-            },
-            status=200,
-        )
-
-    def mock_rapidpro_contact_post(self, msisdn, uuid=None, wa_id=None):
-        urns = ["tel:{}".format(msisdn)]
-        if wa_id:
-            urns.append("whatsapp:{}".format(wa_id))
-
-        url = "http://localhost:8002/api/v2/contacts.json"
-        if uuid:
-            url = "{}?uuid={}".format(url, uuid)
-
-        responses.add(
-            method=responses.POST,
-            url=url,
-            json={
-                "uuid": "09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
-                "name": "Ben Haggerty",
-                "language": "eng",
-                "urns": urns,
-                "groups": [
-                    {"name": "Devs", "uuid": "6685e933-26e1-4363-a468-8f7268ab63a9"}
-                ],
-                "fields": {"nickname": "Macklemore", "side_kick": "Ryan Lewis"},
-                "blocked": False,
-                "stopped": False,
-                "created_on": "2015-11-11T13:05:57.457742Z",
-                "modified_on": "2015-11-11T13:05:57.576056Z",
-            },
-            status=200,
-        )
+            if any(matching_keys_incorrect_value):
+                error_messages.append("incorrect args for given keyword:")
+                [
+                    error_messages.append(
+                        f"{_key}:\n\texpected: {expected_value}\n\tactual: {actual_value}"
+                    )
+                    for _key, actual_value, expected_value in matching_keys_incorrect_value
+                ]
+            if error_messages:
+                raise AssertionError("\n".join(error_messages))
 
     def test_get_today(self):
 
@@ -154,89 +131,133 @@ class UtilsTests(TestCase):
             json.loads(request.body), {"blocking": "wait", "contacts": ["+27820001001"]}
         )
 
-    @responses.activate
-    @patch("sidekick.utils.get_whatsapp_contact_id")
-    def test_update_rapidpro_whatsapp_urn_no_wa_id(self, mock_get_whatsapp_contact_id):
+    @patch("temba_client.v2.TembaClient.create_contact", autospec=True)
+    @patch("temba_client.v2.TembaClient.update_contact", autospec=True)
+    @patch("temba_client.v2.TembaClient.get_contacts", autospec=True)
+    @patch("sidekick.utils.get_whatsapp_contact_id", autospec=True)
+    def test_update_rapidpro_whatsapp_urn_no_wa_id(
+        self,
+        mock_get_whatsapp_contact_id,
+        mock_get_contacts,
+        mock_update_contact,
+        mock_create_contact,
+    ):
         msisdn = "+27820001001"
 
         mock_get_whatsapp_contact_id.return_value = None
 
         utils.update_rapidpro_whatsapp_urn(self.org, msisdn)
 
-        self.assertEqual(len(responses.calls), 0)
         mock_get_whatsapp_contact_id.assert_called_with(self.org, msisdn)
+        mock_get_contacts.assert_not_called()
+        mock_update_contact.assert_not_called()
+        mock_create_contact.assert_not_called()
 
-    @responses.activate
+    @patch("temba_client.v2.TembaClient.create_contact")
+    @patch("temba_client.v2.TembaClient.update_contact")
+    @patch("temba_client.v2.TembaClient.get_contacts")
     @patch("sidekick.utils.get_whatsapp_contact_id")
     def test_update_rapidpro_whatsapp_existing_contact_new_wa(
-        self, mock_get_whatsapp_contact_id
+        self,
+        mock_get_whatsapp_contact_id,
+        mock_get_contacts,
+        mock_update_contact,
+        mock_create_contact,
     ):
-        msisdn = "+27820001001"
+        MSISDN = "+27820001001"
+        OLD_URNS = ["tel:{}".format(MSISDN)]
 
-        mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
+        NEW_WA_MSISDN = MSISDN.replace("+", "")
+        NEW_URNS = ["tel:{}".format(MSISDN), "whatsapp:{}".format(NEW_WA_MSISDN)]
 
-        self.mock_rapidpro_contact_get(msisdn)
-        self.mock_rapidpro_contact_post(
-            msisdn, uuid="123", wa_id=msisdn.replace("+", "")
+        UUID = "1234"
+
+        # mock call to WhatsApp
+        mock_get_whatsapp_contact_id.return_value = NEW_WA_MSISDN
+
+        # set up mock responses from RapidPro
+        mock_contact_object = Mock()
+        mock_contact_object.uuid = UUID
+        mock_contact_object.urns = OLD_URNS
+
+        mock_get_contacts.return_value.first.return_value = mock_contact_object
+
+        utils.update_rapidpro_whatsapp_urn(self.org, MSISDN)
+
+        mock_get_whatsapp_contact_id.assert_called_once_with(self.org, MSISDN)
+
+        self.assertEqual(mock_get_contacts.call_count, 1)
+        self.assertCallMadeWith(
+            mock_update_contact.call_args, contact=UUID, urns=NEW_URNS
         )
 
-        utils.update_rapidpro_whatsapp_urn(self.org, "+27820001001")
+        mock_create_contact.assert_not_called()
 
-        self.assertEqual(len(responses.calls), 2)
-        request = responses.calls[-1].request
-        self.assertEqual(
-            json.loads(request.body),
-            {
-                "urns": [
-                    "tel:{}".format(msisdn),
-                    "whatsapp:{}".format(msisdn.replace("+", "")),
-                ]
-            },
-        )
-
-    @responses.activate
-    @patch("sidekick.utils.get_whatsapp_contact_id")
+    @patch("temba_client.v2.TembaClient.create_contact", autospec=True)
+    @patch("temba_client.v2.TembaClient.update_contact", autospec=True)
+    @patch("temba_client.v2.TembaClient.get_contacts", autospec=True)
+    @patch("sidekick.utils.get_whatsapp_contact_id", autospec=True)
     def test_update_rapidpro_whatsapp_existing_contact_and_wa(
-        self, mock_get_whatsapp_contact_id
+        self,
+        mock_get_whatsapp_contact_id,
+        mock_get_contacts,
+        mock_update_contact,
+        mock_create_contact,
     ):
-        msisdn = "+27820001001"
+        """
+        Contact exists and WA remain unchanged
+        """
+        UUID = "1234"
+        MSISDN = "+27822222222"
+        WA_MSISDN = MSISDN.replace("+", "")
+        URNS = ["tel:{}".format(MSISDN), "whatsapp:{}".format(WA_MSISDN)]
 
-        mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
+        mock_get_whatsapp_contact_id.return_value = WA_MSISDN
 
-        self.mock_rapidpro_contact_get(msisdn, wa_id=msisdn.replace("+", ""))
-        self.mock_rapidpro_contact_post(
-            msisdn, uuid="123", wa_id=msisdn.replace("+", "")
-        )
+        # return contact
+        mock_contact_object = Mock()
+        mock_contact_object.uuid = UUID
+        mock_contact_object.urns = URNS
+        mock_get_contacts.return_value.first.return_value = mock_contact_object
 
-        utils.update_rapidpro_whatsapp_urn(self.org, "+27820001001")
+        utils.update_rapidpro_whatsapp_urn(self.org, MSISDN)
 
-        self.assertEqual(len(responses.calls), 1)
+        # check function calls
+        mock_get_whatsapp_contact_id.assert_called_once_with(self.org, MSISDN)
+        mock_get_contacts.assert_called()
+        mock_update_contact.assert_not_called()
+        mock_create_contact.assert_not_called()
 
-    @responses.activate
-    @patch("sidekick.utils.get_whatsapp_contact_id")
+    @patch("temba_client.v2.TembaClient.create_contact", autospec=True)
+    @patch("temba_client.v2.TembaClient.update_contact", autospec=True)
+    @patch("temba_client.v2.TembaClient.get_contacts", autospec=True)
+    @patch("sidekick.utils.get_whatsapp_contact_id", autospec=True)
     def test_update_rapidpro_whatsapp_new_contact_and_wa(
-        self, mock_get_whatsapp_contact_id
+        self,
+        mock_get_whatsapp_contact_id,
+        mock_get_contacts,
+        mock_update_contact,
+        mock_create_contact,
     ):
-        msisdn = "+27820001001"
+        MSISDN = "+27822222222"
+        WA_MSISDN = MSISDN.replace("+", "")
+        URNS = ["tel:{}".format(MSISDN), "whatsapp:{}".format(WA_MSISDN)]
 
-        mock_get_whatsapp_contact_id.return_value = msisdn.replace("+", "")
+        mock_get_whatsapp_contact_id.return_value = WA_MSISDN
 
-        self.mock_rapidpro_contact_get(msisdn, count=0)
-        self.mock_rapidpro_contact_post(msisdn, wa_id=msisdn.replace("+", ""))
+        mock_get_contacts.return_value.first.side_effect = [None, None]
 
-        utils.update_rapidpro_whatsapp_urn(self.org, "+27820001001")
+        utils.update_rapidpro_whatsapp_urn(self.org, MSISDN)
 
-        self.assertEqual(len(responses.calls), 3)
-        request = responses.calls[-1].request
-        self.assertEqual(
-            json.loads(request.body),
-            {
-                "urns": [
-                    "tel:{}".format(msisdn),
-                    "whatsapp:{}".format(msisdn.replace("+", "")),
-                ]
-            },
-        )
+        self.assertEqual(mock_get_contacts.call_count, 2)
+        # check each call was made to the client
+        call_1, call_2 = mock_get_contacts.call_args_list
+        self.assertCallMadeWith(call_1, urn=f"tel:{MSISDN}")
+        self.assertCallMadeWith(call_2, urn=f"whatsapp:{WA_MSISDN}")
+
+        mock_update_contact.assert_not_called()
+
+        self.assertCallMadeWith(mock_create_contact.call_args, urns=URNS)
 
     @responses.activate
     def test_create_whatsapp_group(self):

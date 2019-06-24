@@ -1,9 +1,9 @@
 import json
+from unittest.mock import patch
 
 import pkg_resources
 from django.test import TestCase
 from freezegun import freeze_time
-from mock import patch
 
 from sidekick.tests.utils import create_org
 from sidekick.utils import clean_msisdn
