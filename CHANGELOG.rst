@@ -3,6 +3,8 @@ VERSIONS
 
 Next Release
 ------------
+Sidekick: Created a test util function to investigate only some arguments of a mocked method
+Recruit: Added a new Django app called rp_recruit, which will onboard users on to a RapidPro campaign from an external source. Currently only supports the WhatsApp channel.
 
 1.6.2
 ------------
