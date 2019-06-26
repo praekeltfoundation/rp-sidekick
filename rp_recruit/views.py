@@ -107,7 +107,6 @@ class SignupSuccessView(View):
         name = request.GET.get("name", False)
         pin = request.GET.get("pin", False)
         if (not name) or (not pin):
-            print("+++++++++++++++")
             return render(
                 request,
                 "recruit/signup_success.html",
