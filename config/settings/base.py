@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "rp_redcap",
     "rp_transferto",
     "rp_recruit",
+    "rp_gpconnect",
 ]
 
 MIDDLEWARE = [
