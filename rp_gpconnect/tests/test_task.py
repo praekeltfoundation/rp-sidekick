@@ -1,15 +1,15 @@
 import tempfile
+from unittest.mock import Mock, patch
+
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
 from openpyxl import Workbook
-from unittest.mock import Mock, patch
-
-from sidekick.models import Organization
-from sidekick.tests.utils import assertCallMadeWith
 
 from rp_gpconnect.models import ContactImport, trigger_contact_import
 from rp_gpconnect.tasks import process_contact_import
+from sidekick.models import Organization
+from sidekick.tests.utils import assertCallMadeWith
 
 
 def create_temp_xlsx_file(temp_file, msisdns):
