@@ -3,7 +3,6 @@ from .models import ContactImport
 
 
 class ContactImportForm(forms.ModelForm):
-
     class Meta:
         model = ContactImport
-        fields = ['file', 'org']
+        fields = ["file", "org"]
