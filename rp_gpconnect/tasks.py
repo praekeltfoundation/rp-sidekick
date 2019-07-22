@@ -19,13 +19,12 @@ class ProcessContactImport(Task):
     def run(self, contact_import_id, **kwargs):
         # org = Organization.objects.get(id=org_id)
         contact_import = ContactImport.objects.get(id=contact_import_id)
-        log.info(
-            "Importing contacts for file: %s" % contact_import.file.name)
+        log.info("Importing contacts for file: %s" % contact_import.file.name)
 
         wb = load_workbook(
-            filename=os.path.join(
-                settings.MEDIA_ROOT, contact_import.file.name),
-            data_only=True)
+            filename=os.path.join(settings.MEDIA_ROOT, contact_import.file.name),
+            data_only=True,
+        )
         sheet = wb["GP Connect daily report"]
         max_row = sheet.max_row
         max_column = sheet.max_column
@@ -44,21 +43,20 @@ class ProcessContactImport(Task):
 
             whatsapp_id = get_whatsapp_contact_id(org, msisdn)
             if not whatsapp_id:
-                log.info(
-                    "Skipping contact {}. No WhatsApp Id.".format(msisdn))
+                log.info("Skipping contact {}. No WhatsApp Id.".format(msisdn))
                 continue
 
             contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
             if not contact:
                 contact = client.get_contacts(
-                    urn="whatsapp:{}".format(whatsapp_id)).first()
+                    urn="whatsapp:{}".format(whatsapp_id)
+                ).first()
 
             urns = ["tel:{}".format(msisdn), "whatsapp:{}".format(whatsapp_id)]
 
             if contact:
                 if urns != contact.urns:
-                    contact = client.update_contact(
-                        contact=contact.uuid, urns=urns)
+                    contact = client.update_contact(contact=contact.uuid, urns=urns)
             else:
                 contact = client.create_contact(urns=urns)
 
