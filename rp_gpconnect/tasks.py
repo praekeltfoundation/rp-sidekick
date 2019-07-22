@@ -1,4 +1,5 @@
 import os
+
 from celery.task import Task
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -8,7 +9,6 @@ from temba_client.v2 import TembaClient
 from sidekick.utils import get_whatsapp_contact_id
 
 from .models import ContactImport
-
 
 log = get_task_logger(__name__)
 
