@@ -44,14 +44,13 @@ class ContactImportViewTests(TestCase):
 
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_request_user_added_to_object(self):
+        self.client.login(username="username", password="password")
         # Create file for upload
         temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx")
         Workbook().save(temp_file)
         temp_file.seek(0)
 
-        response = self.client.post(
-            reverse_lazy("contact_import"), {"org": 1, "file": temp_file}
-        )
+        self.client.post(reverse_lazy("contact_import"), {"org": 1, "file": temp_file})
         imports = ContactImport.objects.all()
         self.assertEqual(len(imports), 1)
         self.assertEqual(imports[0].created_by, self.user)
