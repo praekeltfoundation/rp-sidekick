@@ -50,7 +50,9 @@ class ContactImportViewTests(TestCase):
         Workbook().save(temp_file)
         temp_file.seek(0)
 
-        self.client.post(reverse_lazy("contact_import"), {"org": 1, "file": temp_file})
+        self.client.post(
+            reverse_lazy("contact_import"), {"org": self.org.pk, "file": temp_file}
+        )
         imports = ContactImport.objects.all()
         self.assertEqual(len(imports), 1)
         self.assertEqual(imports[0].created_by, self.user)
