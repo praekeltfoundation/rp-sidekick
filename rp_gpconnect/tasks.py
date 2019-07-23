@@ -17,7 +17,6 @@ class ProcessContactImport(Task):
     name = "rp_gpconnect.tasks.process_contact_import"
 
     def run(self, contact_import_id, **kwargs):
-        # org = Organization.objects.get(id=org_id)
         contact_import = ContactImport.objects.get(id=contact_import_id)
         log.info("Importing contacts for file: %s" % contact_import.file.name)
 
