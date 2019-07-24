@@ -1,8 +1,10 @@
 import os
 
+from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from openpyxl import load_workbook
+from requests.exceptions import ConnectionError, HTTPError, Timeout
 from temba_client.v2 import TembaClient
 
 from config.celery import app
@@ -13,7 +15,13 @@ from .models import ContactImport
 log = get_task_logger(__name__)
 
 
-@app.task()
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+)
 def process_contact_import(contact_import_id):
     contact_import = ContactImport.objects.get(id=contact_import_id)
     log.info("Importing contacts for file: %s" % contact_import.file.name)
