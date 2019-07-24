@@ -36,7 +36,6 @@ def process_contact_import(contact_import_id):
     headers = []
     for cell in sheet[1]:
         headers.append(cell.value)
-    msisdn_index = headers.index("msisdn")
 
     org = contact_import.org
     client = TembaClient(org.url, org.token)
@@ -48,8 +47,10 @@ def process_contact_import(contact_import_id):
             current_row += 1
             continue
 
+        row_dict = dict(zip(headers, row))
+
         # TODO: Get indicator fields
-        msisdn = row[msisdn_index]
+        msisdn = row_dict["msisdn"]
 
         whatsapp_id = get_whatsapp_contact_id(org, msisdn)
         if not whatsapp_id:
