@@ -31,20 +31,25 @@ def process_contact_import(contact_import_id):
         data_only=True,
     )
     sheet = wb["GP Connect daily report"]
-    max_row = sheet.max_row
-    max_column = sheet.max_column
 
+    # Get the headers
     headers = []
-    for y in range(max_column):
-        headers.append(sheet.cell(row=1, column=y + 1).value)
-    msisdn_index = headers.index("msisdn") + 1
+    for cell in sheet[1]:
+        headers.append(cell.value)
+    msisdn_index = headers.index("msisdn")
 
     org = contact_import.org
-
     client = TembaClient(org.url, org.token)
-    for x in range(1, max_row):
+
+    current_row = 0
+    for row in sheet.values:
+        # Skip header row
+        if current_row == 0:
+            current_row += 1
+            continue
+
         # TODO: Get indicator fields
-        msisdn = sheet.cell(row=x + 1, column=msisdn_index).value
+        msisdn = row[msisdn_index]
 
         whatsapp_id = get_whatsapp_contact_id(org, msisdn)
         if not whatsapp_id:
