@@ -16,8 +16,10 @@ def create_temp_xlsx_file(temp_file, msisdns):
     wb = Workbook()
     sheet = wb.create_sheet("GP Connect daily report", 0)
     sheet["A1"] = "msisdn"
+    sheet["B1"] = "something_else"
     for x in range(len(msisdns)):
         sheet.cell(row=(x + 2), column=1, value=msisdns[x])
+        sheet.cell(row=(x + 2), column=2, value="stuuuuff")
     wb.save(temp_file)
     return temp_file
 
