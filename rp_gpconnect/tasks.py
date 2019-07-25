@@ -8,6 +8,7 @@ from requests.exceptions import ConnectionError, HTTPError, Timeout
 from temba_client.v2 import TembaClient
 
 from config.celery import app
+from sidekick.models import Organization
 from sidekick.utils import get_whatsapp_contact_id
 
 from .models import ContactImport
@@ -16,7 +17,7 @@ log = get_task_logger(__name__)
 
 
 @app.task(
-    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    autoretry_for=Timeout,
     retry_backoff=True,
     retry_jitter=True,
     max_retries=10,
@@ -37,9 +38,6 @@ def process_contact_import(contact_import_id):
     for cell in sheet[1]:
         headers.append(cell.value)
 
-    org = contact_import.org
-    client = TembaClient(org.url, org.token)
-
     current_row = 0
     for row in sheet.values:
         # Skip header row
@@ -48,23 +46,37 @@ def process_contact_import(contact_import_id):
             continue
 
         row_dict = dict(zip(headers, row))
+        import_or_update_contact.delay(row_dict, contact_import.org.id)
 
-        # TODO: Get indicator fields
-        msisdn = row_dict["msisdn"]
 
-        whatsapp_id = get_whatsapp_contact_id(org, msisdn)
-        if not whatsapp_id:
-            log.info("Skipping contact {}. No WhatsApp Id.".format(msisdn))
-            continue
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def import_or_update_contact(patient_info, org_id):
+    org = Organization.objects.get(id=org_id)
+    client = TembaClient(org.url, org.token)
+    # TODO: Get indicator fields
+    msisdn = patient_info["msisdn"]
 
-        contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
-        if not contact:
-            contact = client.get_contacts(urn="whatsapp:{}".format(whatsapp_id)).first()
+    whatsapp_id = get_whatsapp_contact_id(org, msisdn)
+    if not whatsapp_id:
+        log.info("Skipping contact {}. No WhatsApp Id.".format(msisdn))
+        return
 
-        urns = ["tel:{}".format(msisdn), "whatsapp:{}".format(whatsapp_id)]
+    contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
+    if not contact:
+        contact = client.get_contacts(urn="whatsapp:{}".format(whatsapp_id)).first()
 
-        if contact:
-            if urns != contact.urns:
-                contact = client.update_contact(contact=contact.uuid, urns=urns)
-        else:
-            contact = client.create_contact(urns=urns)
+    urns = ["tel:{}".format(msisdn), "whatsapp:{}".format(whatsapp_id)]
+
+    if contact:
+        if urns != contact.urns:
+            contact = client.update_contact(contact=contact.uuid, urns=urns)
+    else:
+        contact = client.create_contact(urns=urns)
