@@ -1,5 +1,5 @@
 from django.urls import path
 
-from .views import ContactImportView
+from rp_gpconnect.views import ContactImportView
 
 urlpatterns = [path("", ContactImportView.as_view(), name="contact_import")]

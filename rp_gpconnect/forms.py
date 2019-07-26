@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import ContactImport
+from rp_gpconnect.models import ContactImport
 
 
 class ContactImportForm(forms.ModelForm):
