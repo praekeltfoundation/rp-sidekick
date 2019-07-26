@@ -2,8 +2,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 
-from .forms import ContactImportForm
-from .models import ContactImport
+from rp_gpconnect.forms import ContactImportForm
+from rp_gpconnect.models import ContactImport
 
 
 class ContactImportView(LoginRequiredMixin, CreateView):

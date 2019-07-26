@@ -19,7 +19,7 @@ class ContactImport(models.Model):
 
 
 def trigger_contact_import(sender, instance, created, *args, **kwargs):
-    from .tasks import process_contact_import
+    from rp_gpconnect.tasks import process_contact_import
 
     if created:
         process_contact_import.delay(instance.pk)
