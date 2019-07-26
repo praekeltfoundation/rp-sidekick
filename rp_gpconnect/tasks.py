@@ -9,7 +9,7 @@ from temba_client.v2 import TembaClient
 
 from config.celery import app
 from sidekick.models import Organization
-from sidekick.utils import get_whatsapp_contact_id
+from sidekick.utils import get_whatsapp_contact_id, start_flow
 
 from .models import ContactImport
 
@@ -80,3 +80,4 @@ def import_or_update_contact(patient_info, org_id):
             contact = client.update_contact(contact=contact.uuid, urns=urns)
     else:
         contact = client.create_contact(urns=urns)
+        start_flow(org, org.flows.filter(type="welcome").first(), contact.id)
