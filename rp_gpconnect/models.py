@@ -28,3 +28,28 @@ def trigger_contact_import(sender, instance, created, *args, **kwargs):
 post_save.connect(
     trigger_contact_import, sender=ContactImport, dispatch_uid="trigger_contact_import"
 )
+
+
+class Flow(models.Model):
+    TYPE_CHOICES = (
+        ("welcome", "Welcome Flow"),
+        ("initiation", "Initiation Flow"),
+        ("non-compliant", "Non-Compliant Flow"),
+        ("recomply", "Recomply Flow"),
+    )
+    type = models.CharField(
+        max_length=200, null=False, blank=False, choices=TYPE_CHOICES
+    )
+    rapidpro_flow = models.CharField(
+        max_length=200,
+        null=False,
+        blank=False,
+        help_text="RapidPro ID of the flow to trigger",
+    )
+    org = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=False,
+        related_name="flows",
+    )
