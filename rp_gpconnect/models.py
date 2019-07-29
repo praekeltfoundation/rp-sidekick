@@ -32,10 +32,8 @@ post_save.connect(
 
 class Flow(models.Model):
     TYPE_CHOICES = (
-        ("welcome", "Welcome Flow"),
-        ("initiation", "Initiation Flow"),
-        ("non-compliant", "Non-Compliant Flow"),
-        ("recomply", "Recomply Flow"),
+        ("new_contact", "New Contacts"),
+        ("contact_update", "Updating Contacts"),
     )
     type = models.CharField(
         max_length=200, null=False, blank=False, choices=TYPE_CHOICES
