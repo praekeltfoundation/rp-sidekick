@@ -6,7 +6,7 @@ from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
 from openpyxl import Workbook
 
-from rp_gpconnect.models import ContactImport, trigger_contact_import
+from rp_gpconnect.models import ContactImport, Flow, trigger_contact_import
 from rp_gpconnect.tasks import import_or_update_contact, process_contact_import
 from sidekick.models import Organization
 from sidekick.tests.utils import assertCallMadeWith
@@ -79,6 +79,12 @@ class ImportOrUpdateContactTaskTests(TestCase):
         self.org = Organization.objects.create(
             name="Test Organization", url="http://localhost:8002/", token="REPLACEME"
         )
+        self.create_flow = Flow.objects.create(
+            type="new_contact", rapidpro_flow="new_contact_flow", org=self.org
+        )
+        self.update_flow = Flow.objects.create(
+            type="contact_update", rapidpro_flow="contact_update_flow", org=self.org
+        )
         self.user = User.objects.create_user(
             "username", "testuser@example.com", "password"
         )
@@ -100,6 +106,7 @@ class ImportOrUpdateContactTaskTests(TestCase):
             "Skipping contact +27000000001. No WhatsApp Id."
         )
 
+    @patch("temba_client.v2.TembaClient.create_flow_start")
     @patch("temba_client.v2.TembaClient.create_contact")
     @patch("temba_client.v2.TembaClient.update_contact")
     @patch("temba_client.v2.TembaClient.get_contacts")
@@ -110,6 +117,7 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact,
         mock_update_rp_contact,
         mock_create_rp_contact,
+        mock_create_flow_start,
     ):
         mock_get_whatsapp_contact_id.return_value = "27000000001"
 
@@ -128,9 +136,17 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_update_rp_contact.assert_called_with(
             contact="123456", urns=["tel:+27000000001", "whatsapp:27000000001"]
         )
+        assertCallMadeWith(
+            mock_create_flow_start.call_args,
+            flow=self.update_flow.rapidpro_flow,
+            urns=["tel:+27000000001", "whatsapp:27000000001"],
+            restart_participants=True,
+            extra={"something_else": "stuuuuff"},
+        )
 
         mock_create_rp_contact.assert_not_called()
 
+    @patch("temba_client.v2.TembaClient.create_flow_start", autospec=True)
     @patch("temba_client.v2.TembaClient.create_contact", autospec=True)
     @patch("temba_client.v2.TembaClient.update_contact", autospec=True)
     @patch("temba_client.v2.TembaClient.get_contacts", autospec=True)
@@ -141,6 +157,7 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact,
         mock_update_rp_contact,
         mock_create_rp_contact,
+        mock_create_flow_start,
     ):
         mock_get_whatsapp_contact_id.return_value = "27000000001"
 
@@ -160,4 +177,12 @@ class ImportOrUpdateContactTaskTests(TestCase):
         assertCallMadeWith(
             mock_create_rp_contact.call_args,
             urns=["tel:+27000000001", "whatsapp:27000000001"],
+        )
+
+        assertCallMadeWith(
+            mock_create_flow_start.call_args,
+            flow=self.create_flow.rapidpro_flow,
+            urns=["tel:+27000000001", "whatsapp:27000000001"],
+            restart_participants=True,
+            extra={"something_else": "stuuuuff"},
         )
