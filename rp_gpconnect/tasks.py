@@ -46,7 +46,8 @@ def process_contact_import(contact_import_id):
             continue
 
         row_dict = dict(zip(headers, row))
-        import_or_update_contact.delay(row_dict, contact_import.org.id)
+        if row_dict["patients_tested_positive"] == 1:
+            import_or_update_contact.delay(row_dict, contact_import.org.id)
 
 
 @app.task(
