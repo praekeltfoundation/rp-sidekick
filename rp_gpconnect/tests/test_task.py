@@ -17,9 +17,11 @@ def create_temp_xlsx_file(temp_file, msisdns):
     sheet = wb.create_sheet("GP Connect daily report", 0)
     sheet["A1"] = "msisdn"
     sheet["B1"] = "something_else"
+    sheet["C1"] = "patients_tested_positive"
     for x in range(len(msisdns)):
         sheet.cell(row=(x + 2), column=1, value=msisdns[x])
         sheet.cell(row=(x + 2), column=2, value="stuuuuff")
+        sheet.cell(row=(x + 2), column=3, value=(x % 2))
     wb.save(temp_file)
     return temp_file
 
@@ -48,12 +50,12 @@ class ProcessContactImportTaskTests(TestCase):
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     @patch("rp_gpconnect.tasks.log")
     @patch("rp_gpconnect.tasks.import_or_update_contact.delay")
-    def test_contact_import_calls_contact_task_for_each_row(
+    def test_contact_import_calls_contact_task_for_each_positive_row(
         self, mock_contact_update_task, mock_logger
     ):
         temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx")
         contacts_file = create_temp_xlsx_file(
-            temp_file, ["+27000000001", "+27000000002"]
+            temp_file, ["+27000000001", "+27000000002", "+27000000003", "+27000000004"]
         ).name
         import_obj = ContactImport.objects.create(
             file=contacts_file, org=self.org, created_by=self.user
@@ -67,10 +69,20 @@ class ProcessContactImportTaskTests(TestCase):
 
         self.assertEqual(mock_contact_update_task.call_count, 2)
         mock_contact_update_task.assert_any_call(
-            {"msisdn": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
+            {
+                "msisdn": "+27000000002",
+                "something_else": "stuuuuff",
+                "patients_tested_positive": 1,
+            },
+            self.org.pk,
         )
         mock_contact_update_task.assert_any_call(
-            {"msisdn": "+27000000002", "something_else": "stuuuuff"}, self.org.pk
+            {
+                "msisdn": "+27000000004",
+                "something_else": "stuuuuff",
+                "patients_tested_positive": 1,
+            },
+            self.org.pk,
         )
 
 
