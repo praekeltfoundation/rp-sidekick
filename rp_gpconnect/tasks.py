@@ -64,16 +64,18 @@ def import_or_update_contact(patient_info, org_id):
     client = TembaClient(org.url, org.token)
 
     msisdn = patient_info.pop("msisdn")
+    urns = ["tel:{}".format(msisdn)]
+
     whatsapp_id = get_whatsapp_contact_id(org, msisdn)
-    if not whatsapp_id:
-        log.info("Skipping contact {}. No WhatsApp Id.".format(msisdn))
-        return
+    if whatsapp_id:
+        urns.append("whatsapp:{}".format(whatsapp_id))
+        patient_info["has_whatsapp"] = True
+    else:
+        patient_info["has_whatsapp"] = False
 
     contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
-    if not contact:
+    if whatsapp_id and not contact:
         contact = client.get_contacts(urn="whatsapp:{}".format(whatsapp_id)).first()
-
-    urns = ["tel:{}".format(msisdn), "whatsapp:{}".format(whatsapp_id)]
 
     if contact:
         if urns != contact.urns:
