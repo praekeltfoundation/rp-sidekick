@@ -80,7 +80,7 @@ def import_or_update_contact(patient_info, org_id):
             contact = client.update_contact(contact=contact.uuid, urns=urns)
         if contact.fields != patient_info:
             client.create_flow_start(
-                flow=org.flows.filter(type="contact_update").first().rapidpro_flow,
+                flow=org.flows.get(type="contact_update").rapidpro_flow,
                 urns=urns,
                 restart_participants=True,
                 extra=patient_info,
@@ -88,7 +88,7 @@ def import_or_update_contact(patient_info, org_id):
     else:
         contact = client.create_contact(urns=urns)
         client.create_flow_start(
-            flow=org.flows.filter(type="new_contact").first().rapidpro_flow,
+            flow=org.flows.get(type="new_contact").rapidpro_flow,
             urns=urns,
             restart_participants=True,
             extra=patient_info,
