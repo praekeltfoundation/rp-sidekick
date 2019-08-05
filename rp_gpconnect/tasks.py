@@ -106,8 +106,8 @@ def import_or_update_contact(patient_info, org_id):
     soft_time_limit=10,
     time_limit=15,
 )
-def pull_new_import_file(org_id):
-    org = Organization.objects.get(id=org_id)
+def pull_new_import_file():
+    org = Organization.objects.get(name="GP Connect")
     imported_files = ContactImport.objects.all().values_list("file", flat=True)
 
     directory = os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/")

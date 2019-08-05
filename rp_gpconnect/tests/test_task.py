@@ -34,7 +34,7 @@ def create_temp_xlsx_file(temp_file, msisdns):
 class PullNewImportFileTaskTests(TestCase):
     def setUp(self):
         self.org = Organization.objects.create(
-            name="Test Organization", url="http://localhost:8002/", token="REPLACEME"
+            name="GP Connect", url="http://localhost:8002/", token="REPLACEME"
         )
         post_save.disconnect(
             receiver=trigger_contact_import,
@@ -56,7 +56,7 @@ class PullNewImportFileTaskTests(TestCase):
             suffix=".xlsx", dir="/tmp/uploads/gpconnect"
         )
 
-        pull_new_import_file(self.org.pk)
+        pull_new_import_file()
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
         self.assertEqual(obj.file.name, os.path.basename(temp_file.name))
@@ -71,7 +71,7 @@ class PullNewImportFileTaskTests(TestCase):
             suffix=".xlsx", dir="/tmp/uploads/gpconnect"
         )
 
-        pull_new_import_file(self.org.pk)
+        pull_new_import_file()
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
         existing_files = [
@@ -88,7 +88,7 @@ class PullNewImportFileTaskTests(TestCase):
         ContactImport.objects.create(file=temp_file.name, org=self.org)
         self.assertEqual(ContactImport.objects.count(), 1)
 
-        pull_new_import_file(self.org.pk)
+        pull_new_import_file()
         self.assertEqual(ContactImport.objects.count(), 1)
 
 
