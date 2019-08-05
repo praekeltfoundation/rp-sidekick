@@ -13,6 +13,7 @@ from os.path import join
 
 import djcelery
 import environ
+from celery.schedules import crontab
 from kombu import Exchange, Queue
 
 root = environ.Path(__file__) - 3
@@ -165,6 +166,13 @@ CELERY_ROUTES = {"celery.backend_cleanup": {"queue": "mediumpriority"}}
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
+
+CELERYBEAT_SCHEDULE = {
+    "rp_gpconnect_find_new_import_file": {
+        "task": "rp_gpconnect.tasks.pull_new_import_file",
+        "schedule": crontab(minute="0", hour="*"),
+    }
+}
 
 djcelery.setup_loader()
 
