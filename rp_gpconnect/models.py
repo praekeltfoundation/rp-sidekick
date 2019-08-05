@@ -15,7 +15,7 @@ class ContactImport(models.Model):
         Organization, on_delete=models.CASCADE, null=True, blank=False
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
 
 
 def trigger_contact_import(sender, instance, created, *args, **kwargs):
