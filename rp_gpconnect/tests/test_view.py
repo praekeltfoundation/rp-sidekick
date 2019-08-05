@@ -1,5 +1,7 @@
+import os
 import tempfile
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
@@ -50,9 +52,15 @@ class ContactImportViewTests(TestCase):
         Workbook().save(temp_file)
         temp_file.seek(0)
 
-        self.client.post(
-            reverse_lazy("contact_import"), {"org": self.org.pk, "file": temp_file}
-        )
+        try:
+            self.client.post(
+                reverse_lazy("contact_import"), {"org": self.org.pk, "file": temp_file}
+            )
+        finally:
+            # Clean up filesystem
+            upload_dir = os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/")
+            filepath = os.path.join(upload_dir, os.path.basename(temp_file.name))
+            os.remove(filepath)
         imports = ContactImport.objects.all()
         self.assertEqual(len(imports), 1)
         self.assertEqual(imports[0].created_by, self.user)
