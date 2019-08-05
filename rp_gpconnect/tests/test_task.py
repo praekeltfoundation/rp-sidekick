@@ -1,3 +1,4 @@
+import os
 import tempfile
 from unittest.mock import Mock, patch
 
@@ -7,7 +8,11 @@ from django.test import TestCase, override_settings
 from openpyxl import Workbook
 
 from rp_gpconnect.models import ContactImport, Flow, trigger_contact_import
-from rp_gpconnect.tasks import import_or_update_contact, process_contact_import
+from rp_gpconnect.tasks import (
+    import_or_update_contact,
+    process_contact_import,
+    pull_new_import_file,
+)
 from sidekick.models import Organization
 from sidekick.tests.utils import assertCallMadeWith
 
@@ -24,6 +29,67 @@ def create_temp_xlsx_file(temp_file, msisdns):
         sheet.cell(row=(x + 2), column=3, value=(x % 2))
     wb.save(temp_file)
     return temp_file
+
+
+class PullNewImportFileTaskTests(TestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(
+            name="Test Organization", url="http://localhost:8002/", token="REPLACEME"
+        )
+        post_save.disconnect(
+            receiver=trigger_contact_import,
+            sender=ContactImport,
+            dispatch_uid="trigger_contact_import",
+        )
+
+    def tearDown(self):
+        post_save.connect(
+            trigger_contact_import,
+            sender=ContactImport,
+            dispatch_uid="trigger_contact_import",
+        )
+
+    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    def test_new_file_creates_contact_import_obj(self):
+        self.assertEqual(ContactImport.objects.count(), 0)
+        temp_file = tempfile.NamedTemporaryFile(
+            suffix=".xlsx", dir="/tmp/uploads/gpconnect"
+        )
+
+        pull_new_import_file(self.org.pk)
+        self.assertEqual(ContactImport.objects.count(), 1)
+        obj = ContactImport.objects.first()
+        self.assertEqual(obj.file.name, os.path.basename(temp_file.name))
+
+    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    def test_only_one_file_creates_contact_import_obj(self):
+        self.assertEqual(ContactImport.objects.count(), 0)
+        temp_file_1 = tempfile.NamedTemporaryFile(
+            suffix=".xlsx", dir="/tmp/uploads/gpconnect"
+        )
+        temp_file_2 = tempfile.NamedTemporaryFile(
+            suffix=".xlsx", dir="/tmp/uploads/gpconnect"
+        )
+
+        pull_new_import_file(self.org.pk)
+        self.assertEqual(ContactImport.objects.count(), 1)
+        obj = ContactImport.objects.first()
+        existing_files = [
+            os.path.basename(temp_file_1.name),
+            os.path.basename(temp_file_2.name),
+        ]
+        self.assertIn(obj.file.name, existing_files)
+
+    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    def test_already_processed_file_doesnt_create_cotact_import_obj(self):
+        temp_file = tempfile.NamedTemporaryFile(
+            suffix=".xlsx", dir="/tmp/uploads/gpconnect"
+        )
+        ContactImport.objects.create(file=temp_file.name, org=self.org)
+        self.assertEqual(ContactImport.objects.count(), 1)
+
+        pull_new_import_file(self.org.pk)
+        self.assertEqual(ContactImport.objects.count(), 1)
 
 
 class ProcessContactImportTaskTests(TestCase):

@@ -95,3 +95,25 @@ def import_or_update_contact(patient_info, org_id):
             restart_participants=True,
             extra=patient_info,
         )
+
+
+@app.task(
+    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=10,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def pull_new_import_file(org_id):
+    org = Organization.objects.get(id=org_id)
+    imported_files = ContactImport.objects.all().values_list("file", flat=True)
+
+    directory = os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/")
+
+    for file in os.listdir(directory):
+        filepath = os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/", file)
+        if filepath not in imported_files:
+            ContactImport.objects.create(file=file, org=org)
+            break
