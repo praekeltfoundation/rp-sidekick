@@ -97,15 +97,7 @@ def import_or_update_contact(patient_info, org_id):
         )
 
 
-@app.task(
-    autoretry_for=(HTTPError, ConnectionError, Timeout, SoftTimeLimitExceeded),
-    retry_backoff=True,
-    retry_jitter=True,
-    max_retries=10,
-    acks_late=True,
-    soft_time_limit=10,
-    time_limit=15,
-)
+@app.task(soft_time_limit=10, time_limit=15)
 def pull_new_import_file(upload_dir, org_name):
     org = Organization.objects.get(name=org_name)
     imported_files = ContactImport.objects.all().values_list("file", flat=True)
