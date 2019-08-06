@@ -41,11 +41,6 @@ class PullNewImportFileTaskTests(TestCase):
             sender=ContactImport,
             dispatch_uid="trigger_contact_import",
         )
-        self.file_dir = os.path.join(tempfile.gettempdir(), "uploads/gpconnect")
-        try:
-            os.mkdir(self.file_dir)
-        except OSError:
-            pass
 
     def tearDown(self):
         post_save.connect(
@@ -53,17 +48,14 @@ class PullNewImportFileTaskTests(TestCase):
             sender=ContactImport,
             dispatch_uid="trigger_contact_import",
         )
-        try:
-            os.rmdir(self.file_dir)
-        except OSError:
-            pass
 
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_new_file_creates_contact_import_obj(self):
         self.assertEqual(ContactImport.objects.count(), 0)
-        temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=self.file_dir)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=temp_dir)
 
-        pull_new_import_file()
+            pull_new_import_file(upload_dir=temp_dir, org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
         self.assertEqual(obj.file.name, os.path.basename(temp_file.name))
@@ -71,10 +63,11 @@ class PullNewImportFileTaskTests(TestCase):
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_only_one_file_creates_contact_import_obj(self):
         self.assertEqual(ContactImport.objects.count(), 0)
-        temp_file_1 = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=self.file_dir)
-        temp_file_2 = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=self.file_dir)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file_1 = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=temp_dir)
+            temp_file_2 = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=temp_dir)
 
-        pull_new_import_file()
+            pull_new_import_file(upload_dir=temp_dir, org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
         existing_files = [
@@ -85,11 +78,12 @@ class PullNewImportFileTaskTests(TestCase):
 
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_already_processed_file_doesnt_create_cotact_import_obj(self):
-        temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=self.file_dir)
-        ContactImport.objects.create(file=temp_file.name, org=self.org)
-        self.assertEqual(ContactImport.objects.count(), 1)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=temp_dir)
+            ContactImport.objects.create(file=temp_file.name, org=self.org)
+            self.assertEqual(ContactImport.objects.count(), 1)
 
-        pull_new_import_file()
+            pull_new_import_file(upload_dir=temp_dir, org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
 
 
