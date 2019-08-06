@@ -106,14 +106,12 @@ def import_or_update_contact(patient_info, org_id):
     soft_time_limit=10,
     time_limit=15,
 )
-def pull_new_import_file():
-    org = Organization.objects.get(name="GP Connect")
+def pull_new_import_file(upload_dir, org_name):
+    org = Organization.objects.get(name=org_name)
     imported_files = ContactImport.objects.all().values_list("file", flat=True)
 
-    directory = os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/")
-
-    for file in os.listdir(directory):
-        filepath = os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/", file)
+    for file in os.listdir(upload_dir):
+        filepath = os.path.join(upload_dir, file)
         if filepath not in imported_files:
             ContactImport.objects.create(file=file, org=org)
             break
