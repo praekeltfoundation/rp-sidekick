@@ -144,6 +144,8 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
 }
 
+GP_CONNECT_UPLOAD_DIR = env.str("GP_CONNECT_UPLOAD_DIR", "")
+
 # Celery configuration options
 CELERY_RESULT_BACKEND = "djcelery.backends.database:DatabaseBackend"
 CELERYBEAT_SCHEDULER = "djcelery.schedulers.DatabaseScheduler"
@@ -171,6 +173,7 @@ CELERYBEAT_SCHEDULE = {
     "rp_gpconnect_find_new_import_file": {
         "task": "rp_gpconnect.tasks.pull_new_import_file",
         "schedule": crontab(minute="0", hour="*"),
+        "kwargs": {"upload_dir": GP_CONNECT_UPLOAD_DIR, "org_name": "GP Connect"},
     }
 }
 
