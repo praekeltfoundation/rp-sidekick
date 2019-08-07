@@ -26,6 +26,9 @@ class UtilsTests(TestCase):
             "No new lines No tabs No huge spaces",
         )
 
+    def test_clean_message_empty_space(self):
+        self.assertEqual(utils.clean_message(" "), " ")
+
     def test_build_turn_headers(self):
         distribution = pkg_resources.get_distribution("rp-sidekick")
 
