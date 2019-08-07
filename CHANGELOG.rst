@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+
+1.7.1
+------------
 Sidekick: Allow space character to be submitted as variables to whatsapp template endpoint
 
 1.7.0
