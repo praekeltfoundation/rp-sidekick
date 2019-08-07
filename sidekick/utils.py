@@ -22,7 +22,7 @@ def get_current_week_number():
 
 
 def clean_message(message):
-    return " ".join(message.replace("\n", " ").replace("\t", " ").split())
+    return " ".join(message.replace("\n", " ").replace("\t", " ").split()) or " "
 
 
 def clean_msisdn(msisdn):
