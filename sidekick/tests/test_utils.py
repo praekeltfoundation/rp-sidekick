@@ -29,6 +29,11 @@ class UtilsTests(TestCase):
     def test_clean_message_empty_space(self):
         self.assertEqual(utils.clean_message(" "), " ")
 
+    def test_clean_message_punctuation(self):
+        self.assertEqual(
+            utils.clean_message("This is a 'REAL' test!!"), "This is a 'REAL' test!!"
+        )
+
     def test_build_turn_headers(self):
         distribution = pkg_resources.get_distribution("rp-sidekick")
 
