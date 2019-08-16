@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.7.2
+------------
+Sidekick: Fix clean_message to not remove punctuation
+
 1.7.1
 ------------
 Sidekick: Allow space character to be submitted as variables to whatsapp template endpoint
