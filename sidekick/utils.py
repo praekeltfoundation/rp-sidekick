@@ -1,5 +1,4 @@
 import json
-import re
 from urllib.parse import urljoin
 
 import pkg_resources
@@ -23,7 +22,7 @@ def get_current_week_number():
 
 
 def clean_message(message):
-    return re.sub(r"\W+", " ", message)
+    return " ".join(message.replace("\n", " ").replace("\t", " ").split()) or " "
 
 
 def clean_msisdn(msisdn):
