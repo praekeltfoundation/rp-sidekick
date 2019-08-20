@@ -46,6 +46,8 @@ class PullNewImportFileTaskTests(TestCase):
         )
         self.client = boto3.client("s3")
         self.client.create_bucket(Bucket="Test_Bucket")
+        # Create upload dir
+        os.makedirs(os.path.join(tempfile.gettempdir(), "uploads/gpconnect"))
 
     def tearDown(self):
         post_save.connect(
@@ -58,6 +60,12 @@ class PullNewImportFileTaskTests(TestCase):
         for key in bucket.objects.all():
             key.delete()
         bucket.delete()
+        # Cleanup filesystem
+        upload_dir = os.path.join(tempfile.gettempdir(), "uploads/gpconnect")
+        for file in os.listdir(upload_dir):
+            os.remove(os.path.join(upload_dir, file))
+        os.rmdir(os.path.join(tempfile.gettempdir(), "uploads/gpconnect"))
+        os.rmdir(os.path.join(tempfile.gettempdir(), "uploads"))
 
     @override_settings(
         MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
