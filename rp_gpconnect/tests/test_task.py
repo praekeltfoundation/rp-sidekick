@@ -2,9 +2,11 @@ import os
 import tempfile
 from unittest.mock import Mock, patch
 
+import boto3
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
+from moto import mock_s3
 from openpyxl import Workbook
 
 from rp_gpconnect.models import ContactImport, Flow, trigger_contact_import
@@ -31,6 +33,7 @@ def create_temp_xlsx_file(temp_file, msisdns):
     return temp_file
 
 
+@mock_s3
 class PullNewImportFileTaskTests(TestCase):
     def setUp(self):
         self.org = Organization.objects.create(
@@ -41,6 +44,8 @@ class PullNewImportFileTaskTests(TestCase):
             sender=ContactImport,
             dispatch_uid="trigger_contact_import",
         )
+        self.client = boto3.client("s3")
+        self.client.create_bucket(Bucket="Test_Bucket")
 
     def tearDown(self):
         post_save.connect(
@@ -48,43 +53,89 @@ class PullNewImportFileTaskTests(TestCase):
             sender=ContactImport,
             dispatch_uid="trigger_contact_import",
         )
+        s3 = boto3.resource("s3")
+        bucket = s3.Bucket("Test_Bucket")
+        for key in bucket.objects.all():
+            key.delete()
+        bucket.delete()
 
-    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    @override_settings(
+        MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
+    )
     def test_new_file_creates_contact_import_obj(self):
         self.assertEqual(ContactImport.objects.count(), 0)
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=temp_dir)
+        with tempfile.NamedTemporaryFile() as temp_file:
+            self.client.upload_file(
+                Filename=temp_file.name,
+                Bucket="Test_Bucket",
+                Key="uploads/tempfile.xlsx",
+            )
 
-            pull_new_import_file(upload_dir=temp_dir, org_name=self.org.name)
+        pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
-        self.assertEqual(obj.file.name, os.path.basename(temp_file.name))
+        self.assertEqual(obj.file.name, "uploads/gpconnect/tempfile.xlsx")
 
-    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    @override_settings(
+        MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
+    )
     def test_only_one_file_creates_contact_import_obj(self):
         self.assertEqual(ContactImport.objects.count(), 0)
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_file_1 = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=temp_dir)
-            temp_file_2 = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=temp_dir)
+        with tempfile.NamedTemporaryFile() as temp_file:
+            self.client.upload_file(
+                Filename=temp_file.name,
+                Bucket="Test_Bucket",
+                Key="uploads/tempfile_1.xlsx",
+            )
+            self.client.upload_file(
+                Filename=temp_file.name,
+                Bucket="Test_Bucket",
+                Key="uploads/tempfile_2.xlsx",
+            )
 
-            pull_new_import_file(upload_dir=temp_dir, org_name=self.org.name)
+        pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
         existing_files = [
-            os.path.basename(temp_file_1.name),
-            os.path.basename(temp_file_2.name),
+            "uploads/gpconnect/tempfile_1.xlsx",
+            "uploads/gpconnect/tempfile_2.xlsx",
         ]
         self.assertIn(obj.file.name, existing_files)
 
-    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
-    def test_already_processed_file_doesnt_create_cotact_import_obj(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx", dir=temp_dir)
+    @override_settings(
+        MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
+    )
+    def test_already_processed_file_doesnt_create_contact_import_obj(self):
+        with tempfile.NamedTemporaryFile() as temp_file:
+            filename = os.path.basename(temp_file.name)
             ContactImport.objects.create(file=temp_file.name, org=self.org)
             self.assertEqual(ContactImport.objects.count(), 1)
+            self.client.upload_file(
+                Filename=temp_file.name,
+                Bucket="Test_Bucket",
+                Key="uploads/{}".format(filename),
+            )
 
-            pull_new_import_file(upload_dir=temp_dir, org_name=self.org.name)
+        pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
+
+    @override_settings(
+        MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
+    )
+    def test_non_excel_files_and_prefix_are_ignored(self):
+        self.assertEqual(ContactImport.objects.count(), 0)
+        with tempfile.NamedTemporaryFile() as temp_file:
+            self.client.upload_file(
+                Filename=temp_file.name, Bucket="Test_Bucket", Key="uploads/"
+            )
+            self.client.upload_file(
+                Filename=temp_file.name,
+                Bucket="Test_Bucket",
+                Key="uploads/non_excel.txt",
+            )
+
+        pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
+        self.assertEqual(ContactImport.objects.count(), 0)
 
 
 class ProcessContactImportTaskTests(TestCase):
