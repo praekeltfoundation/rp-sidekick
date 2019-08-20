@@ -1,5 +1,6 @@
 import os
 
+import boto3
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -99,11 +100,27 @@ def import_or_update_contact(patient_info, org_id):
 
 @app.task(soft_time_limit=10, time_limit=15)
 def pull_new_import_file(upload_dir, org_name):
+    """
+    Task to check if there are any new .xlsx files in the S3 bucket and create
+    an import object for them.
+    """
     org = Organization.objects.get(name=org_name)
     imported_files = ContactImport.objects.all().values_list("file", flat=True)
+    bucket = settings.AWS_STORAGE_BUCKET_NAME
 
-    for file in os.listdir(upload_dir):
-        filepath = os.path.join(upload_dir, file)
-        if filepath not in imported_files:
-            ContactImport.objects.create(file=file, org=org)
+    s3 = boto3.client("s3")
+
+    for obj in s3.list_objects(Bucket=bucket, Prefix=upload_dir)["Contents"]:
+        if obj["Key"] == upload_dir or ".xlsx" not in obj["Key"]:
+            continue
+        matching_name = obj["Key"].replace(upload_dir, "uploads/gpconnect/")
+        if matching_name not in imported_files:
+            with open(
+                os.path.join(settings.MEDIA_ROOT, matching_name), "wb"
+            ) as new_file:
+                s3.download_fileobj(bucket, obj["Key"], new_file)
+
+            new_import = ContactImport(org=org)
+            new_import.file.name = matching_name
+            new_import.save()
             break
