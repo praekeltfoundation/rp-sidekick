@@ -19,5 +19,4 @@ urlpatterns = [
         ),
     ),
     path("recruit/", include("rp_recruit.urls"), name="rp_recruit"),
-    path("gpconnect/", include("rp_gpconnect.urls"), name="rp_gpconnect"),
 ]
