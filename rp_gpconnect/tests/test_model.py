@@ -18,10 +18,8 @@ class ContactImportViewTests(TestCase):
         )
 
     @patch("rp_gpconnect.tasks.process_contact_import.delay")
-    def test_object_creation_triggers_task(self, mock_task):
+    def test_object_creation_does_not_trigger_task(self, mock_task):
         mock_file = MagicMock(spec=File)
         mock_file.name = "test_file.xlsx"
-        import_obj = ContactImport.objects.create(
-            file=mock_file, org=self.org, created_by=self.user
-        )
-        mock_task.assert_called_with(import_obj.pk)
+        ContactImport.objects.create(file=mock_file, org=self.org, created_by=self.user)
+        mock_task.assert_not_called()

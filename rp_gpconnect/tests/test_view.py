@@ -1,14 +1,14 @@
 import os
 import tempfile
+from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
 from django.urls import reverse_lazy
 from openpyxl import Workbook
 
-from rp_gpconnect.models import ContactImport, trigger_contact_import
+from rp_gpconnect.models import ContactImport
 from sidekick.models import Organization
 
 
@@ -19,18 +19,6 @@ class ContactImportViewTests(TestCase):
         )
         self.user = User.objects.create_user(
             "username", "testuser@example.com", "password"
-        )
-        post_save.disconnect(
-            receiver=trigger_contact_import,
-            sender=ContactImport,
-            dispatch_uid="trigger_contact_import",
-        )
-
-    def tearDown(self):
-        post_save.connect(
-            trigger_contact_import,
-            sender=ContactImport,
-            dispatch_uid="trigger_contact_import",
         )
 
     def test_login_required(self):
@@ -64,3 +52,28 @@ class ContactImportViewTests(TestCase):
         imports = ContactImport.objects.all()
         self.assertEqual(len(imports), 1)
         self.assertEqual(imports[0].created_by, self.user)
+
+    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    @patch("rp_gpconnect.forms.process_contact_import.delay")
+    def test_form_submission_calls_process_task(self, mock_task):
+        self.client.login(username="username", password="password")
+        # Create file for upload
+        temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx")
+        Workbook().save(temp_file)
+        temp_file.seek(0)
+
+        try:
+            self.client.post(
+                reverse_lazy("contact_import"), {"org": self.org.pk, "file": temp_file}
+            )
+        finally:
+            # Clean up filesystem
+            upload_dir = os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/")
+            filepath = os.path.join(upload_dir, os.path.basename(temp_file.name))
+            os.remove(filepath)
+            os.rmdir(os.path.join(tempfile.gettempdir(), "uploads/gpconnect"))
+            os.rmdir(os.path.join(tempfile.gettempdir(), "uploads"))
+        imports = ContactImport.objects.all()
+        self.assertEqual(len(imports), 1)
+        self.assertEqual(imports[0].created_by, self.user)
+        mock_task.assert_called_with(imports[0].pk)
