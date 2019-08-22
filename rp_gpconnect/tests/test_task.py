@@ -4,12 +4,11 @@ from unittest.mock import Mock, patch
 
 import boto3
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
 from moto import mock_s3
 from openpyxl import Workbook
 
-from rp_gpconnect.models import ContactImport, Flow, trigger_contact_import
+from rp_gpconnect.models import ContactImport, Flow
 from rp_gpconnect.tasks import (
     import_or_update_contact,
     process_contact_import,
@@ -39,22 +38,12 @@ class PullNewImportFileTaskTests(TestCase):
         self.org = Organization.objects.create(
             name="GP Connect", url="http://localhost:8002/", token="REPLACEME"
         )
-        post_save.disconnect(
-            receiver=trigger_contact_import,
-            sender=ContactImport,
-            dispatch_uid="trigger_contact_import",
-        )
         self.client = boto3.client("s3")
         self.client.create_bucket(Bucket="Test_Bucket")
         # Create upload dir
         os.makedirs(os.path.join(tempfile.gettempdir(), "uploads/gpconnect"))
 
     def tearDown(self):
-        post_save.connect(
-            trigger_contact_import,
-            sender=ContactImport,
-            dispatch_uid="trigger_contact_import",
-        )
         s3 = boto3.resource("s3")
         bucket = s3.Bucket("Test_Bucket")
         for key in bucket.objects.all():
@@ -70,7 +59,8 @@ class PullNewImportFileTaskTests(TestCase):
     @override_settings(
         MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
     )
-    def test_new_file_creates_contact_import_obj(self):
+    @patch("rp_gpconnect.tasks.process_contact_import")
+    def test_new_file_creates_contact_import_obj(self, mock_task):
         self.assertEqual(ContactImport.objects.count(), 0)
         with tempfile.NamedTemporaryFile() as temp_file:
             self.client.upload_file(
@@ -83,11 +73,13 @@ class PullNewImportFileTaskTests(TestCase):
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
         self.assertEqual(obj.file.name, "uploads/gpconnect/tempfile.xlsx")
+        mock_task.assert_called_with(obj.pk)
 
     @override_settings(
         MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
     )
-    def test_only_one_file_creates_contact_import_obj(self):
+    @patch("rp_gpconnect.tasks.process_contact_import")
+    def test_only_one_file_creates_contact_import_obj(self, mock_task):
         self.assertEqual(ContactImport.objects.count(), 0)
         with tempfile.NamedTemporaryFile() as temp_file:
             self.client.upload_file(
@@ -109,11 +101,13 @@ class PullNewImportFileTaskTests(TestCase):
             "uploads/gpconnect/tempfile_2.xlsx",
         ]
         self.assertIn(obj.file.name, existing_files)
+        mock_task.assert_called()
 
     @override_settings(
         MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
     )
-    def test_already_processed_file_doesnt_create_contact_import_obj(self):
+    @patch("rp_gpconnect.tasks.process_contact_import")
+    def test_already_processed_file_doesnt_create_contact_import_obj(self, mock_task):
         with tempfile.NamedTemporaryFile() as temp_file:
             filename = os.path.basename(temp_file.name)
             ContactImport.objects.create(file=temp_file.name, org=self.org)
@@ -126,11 +120,13 @@ class PullNewImportFileTaskTests(TestCase):
 
         pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
+        mock_task.assert_not_called()
 
     @override_settings(
         MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
     )
-    def test_non_excel_files_and_prefix_are_ignored(self):
+    @patch("rp_gpconnect.tasks.process_contact_import")
+    def test_non_excel_files_and_prefix_are_ignored(self, mock_task):
         self.assertEqual(ContactImport.objects.count(), 0)
         with tempfile.NamedTemporaryFile() as temp_file:
             self.client.upload_file(
@@ -144,6 +140,7 @@ class PullNewImportFileTaskTests(TestCase):
 
         pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 0)
+        mock_task.assert_not_called()
 
 
 class ProcessContactImportTaskTests(TestCase):
@@ -153,18 +150,6 @@ class ProcessContactImportTaskTests(TestCase):
         )
         self.user = User.objects.create_user(
             "username", "testuser@example.com", "password"
-        )
-        post_save.disconnect(
-            receiver=trigger_contact_import,
-            sender=ContactImport,
-            dispatch_uid="trigger_contact_import",
-        )
-
-    def tearDown(self):
-        post_save.connect(
-            trigger_contact_import,
-            sender=ContactImport,
-            dispatch_uid="trigger_contact_import",
         )
 
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
