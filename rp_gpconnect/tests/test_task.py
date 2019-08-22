@@ -40,8 +40,9 @@ class PullNewImportFileTaskTests(TestCase):
         )
         self.client = boto3.client("s3")
         self.client.create_bucket(Bucket="Test_Bucket")
-        # Create upload dir
-        os.makedirs(os.path.join(tempfile.gettempdir(), "uploads/gpconnect"))
+        # Create imported dir
+        self.imported_dir = os.path.join(tempfile.gettempdir(), "uploads/gpconnect")
+        os.makedirs(self.imported_dir)
 
     def tearDown(self):
         s3 = boto3.resource("s3")
@@ -50,10 +51,9 @@ class PullNewImportFileTaskTests(TestCase):
             key.delete()
         bucket.delete()
         # Cleanup filesystem
-        upload_dir = os.path.join(tempfile.gettempdir(), "uploads/gpconnect")
-        for file in os.listdir(upload_dir):
-            os.remove(os.path.join(upload_dir, file))
-        os.rmdir(os.path.join(tempfile.gettempdir(), "uploads/gpconnect"))
+        for file in os.listdir(self.imported_dir):
+            os.remove(os.path.join(self.imported_dir, file))
+        os.rmdir(self.imported_dir)
         os.rmdir(os.path.join(tempfile.gettempdir(), "uploads"))
 
     @override_settings(
@@ -72,7 +72,7 @@ class PullNewImportFileTaskTests(TestCase):
         pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
-        self.assertEqual(obj.file.name, "uploads/gpconnect/tempfile.xlsx")
+        self.assertEqual(obj.file.name, "/tmp/uploads/gpconnect/tempfile.xlsx")
         mock_task.assert_called_with(obj.pk)
 
     @override_settings(
@@ -97,8 +97,8 @@ class PullNewImportFileTaskTests(TestCase):
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
         existing_files = [
-            "uploads/gpconnect/tempfile_1.xlsx",
-            "uploads/gpconnect/tempfile_2.xlsx",
+            "/tmp/uploads/gpconnect/tempfile_1.xlsx",
+            "/tmp/uploads/gpconnect/tempfile_2.xlsx",
         ]
         self.assertIn(obj.file.name, existing_files)
         mock_task.assert_called()
@@ -108,7 +108,9 @@ class PullNewImportFileTaskTests(TestCase):
     )
     @patch("rp_gpconnect.tasks.process_contact_import")
     def test_already_processed_file_doesnt_create_contact_import_obj(self, mock_task):
-        with tempfile.NamedTemporaryFile() as temp_file:
+        with tempfile.NamedTemporaryFile(
+            suffix=".xlsx", dir=self.imported_dir
+        ) as temp_file:
             filename = os.path.basename(temp_file.name)
             ContactImport.objects.create(file=temp_file.name, org=self.org)
             self.assertEqual(ContactImport.objects.count(), 1)

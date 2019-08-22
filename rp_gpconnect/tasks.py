@@ -113,7 +113,9 @@ def pull_new_import_file(upload_dir, org_name):
     for obj in s3.list_objects(Bucket=bucket, Prefix=upload_dir)["Contents"]:
         if obj["Key"] == upload_dir or ".xlsx" not in obj["Key"]:
             continue
-        matching_name = obj["Key"].replace(upload_dir, "uploads/gpconnect/")
+        matching_name = obj["Key"].replace(
+            upload_dir, os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/")
+        )
         if matching_name not in imported_files:
             with open(
                 os.path.join(settings.MEDIA_ROOT, matching_name), "wb"
