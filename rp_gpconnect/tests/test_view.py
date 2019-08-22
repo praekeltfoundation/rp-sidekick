@@ -49,6 +49,8 @@ class ContactImportViewTests(TestCase):
             upload_dir = os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/")
             filepath = os.path.join(upload_dir, os.path.basename(temp_file.name))
             os.remove(filepath)
+            os.rmdir(upload_dir)
+            os.rmdir(os.path.join(settings.MEDIA_ROOT, "uploads"))
         imports = ContactImport.objects.all()
         self.assertEqual(len(imports), 1)
         self.assertEqual(imports[0].created_by, self.user)
