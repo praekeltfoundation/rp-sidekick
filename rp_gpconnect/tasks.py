@@ -123,4 +123,6 @@ def pull_new_import_file(upload_dir, org_name):
             new_import = ContactImport(org=org)
             new_import.file.name = matching_name
             new_import.save()
+            # Call the task syncronously so that we're using the same file system
+            process_contact_import(new_import.pk)
             break
