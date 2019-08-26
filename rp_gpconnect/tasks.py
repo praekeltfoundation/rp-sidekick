@@ -64,7 +64,7 @@ def import_or_update_contact(patient_info, org_id):
     org = Organization.objects.get(id=org_id)
     client = TembaClient(org.url, org.token)
 
-    msisdn = patient_info.pop("msisdn")
+    msisdn = patient_info.pop("telephone_no")
     urns = ["tel:{}".format(msisdn)]
 
     whatsapp_id = get_whatsapp_contact_id(org, msisdn)

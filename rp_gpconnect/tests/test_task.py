@@ -21,7 +21,7 @@ from sidekick.tests.utils import assertCallMadeWith
 def create_temp_xlsx_file(temp_file, msisdns):
     wb = Workbook()
     sheet = wb.create_sheet("GP Connect daily report", 0)
-    sheet["A1"] = "msisdn"
+    sheet["A1"] = "telephone_no"
     sheet["B1"] = "something_else"
     sheet["C1"] = "patients_tested_positive"
     for x in range(len(msisdns)):
@@ -177,7 +177,7 @@ class ProcessContactImportTaskTests(TestCase):
         self.assertEqual(mock_contact_update_task.call_count, 2)
         mock_contact_update_task.assert_any_call(
             {
-                "msisdn": "+27000000002",
+                "telephone_no": "+27000000002",
                 "something_else": "stuuuuff",
                 "patients_tested_positive": 1,
             },
@@ -185,7 +185,7 @@ class ProcessContactImportTaskTests(TestCase):
         )
         mock_contact_update_task.assert_any_call(
             {
-                "msisdn": "+27000000004",
+                "telephone_no": "+27000000004",
                 "something_else": "stuuuuff",
                 "patients_tested_positive": 1,
             },
@@ -232,7 +232,7 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact.return_value.first.return_value = mock_contact_object
 
         import_or_update_contact(
-            {"msisdn": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
+            {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
         )
 
         mock_get_whatsapp_contact_id.assert_called_with(self.org, "+27000000001")
@@ -261,7 +261,7 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact.return_value.first.return_value = mock_contact_object
 
         import_or_update_contact(
-            {"msisdn": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
+            {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
         )
         mock_get_whatsapp_contact_id.assert_called_with(self.org, "+27000000001")
 
@@ -297,7 +297,7 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact.return_value.first.side_effect = [None, None]
 
         import_or_update_contact(
-            {"msisdn": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
+            {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
         )
 
         self.assertEqual(mock_get_rp_contact.call_count, 1)
@@ -331,7 +331,7 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact.return_value.first.side_effect = [None, None]
 
         import_or_update_contact(
-            {"msisdn": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
+            {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
         )
 
         self.assertEqual(mock_get_rp_contact.call_count, 2)
