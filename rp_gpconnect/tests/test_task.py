@@ -260,6 +260,12 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_contact_object.urns = ["tel:+27000000001"]
         mock_get_rp_contact.return_value.first.return_value = mock_contact_object
 
+        mock_updated_object = Mock()
+        mock_updated_object.uuid = "123456"
+        mock_updated_object.urns = ["tel:+27000000001", "whatsapp:27000000001"]
+        mock_updated_object.fields = {"has_whatsapp": True}
+        mock_update_rp_contact.return_value = mock_updated_object
+
         import_or_update_contact(
             {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
         )
