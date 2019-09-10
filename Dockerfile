@@ -1,6 +1,8 @@
 FROM praekeltfoundation/django-bootstrap:py3.6
 
 COPY . /app
+RUN mkdir -p /app/media/uploads/gpconnect/
+
 RUN pip install -e .
 
 # temporary untill there is a new PyCap Release
