@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 import boto3
@@ -24,10 +25,14 @@ def create_temp_xlsx_file(temp_file, msisdns):
     sheet["A1"] = "telephone_no"
     sheet["B1"] = "something_else"
     sheet["C1"] = "patients_tested_positive"
+    sheet["D1"] = "some_date"
     for x in range(len(msisdns)):
         sheet.cell(row=(x + 2), column=1, value=msisdns[x])
         sheet.cell(row=(x + 2), column=2, value="stuuuuff")
         sheet.cell(row=(x + 2), column=3, value=(x % 2))
+        sheet.cell(
+            row=(x + 2), column=4, value=datetime.strptime("5/17/2018", "%m/%d/%Y")
+        )
     wb.save(temp_file)
     return temp_file
 
@@ -180,6 +185,7 @@ class ProcessContactImportTaskTests(TestCase):
                 "telephone_no": "+27000000002",
                 "something_else": "stuuuuff",
                 "patients_tested_positive": 1,
+                "some_date": "2018-05-17T00:00:00",
             },
             self.org.pk,
         )
@@ -188,6 +194,7 @@ class ProcessContactImportTaskTests(TestCase):
                 "telephone_no": "+27000000004",
                 "something_else": "stuuuuff",
                 "patients_tested_positive": 1,
+                "some_date": "2018-05-17T00:00:00",
             },
             self.org.pk,
         )
