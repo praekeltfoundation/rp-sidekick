@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import boto3
 from celery.exceptions import SoftTimeLimitExceeded
@@ -47,6 +48,9 @@ def process_contact_import(contact_import_id):
             continue
 
         row_dict = dict(zip(headers, row))
+        for key in row_dict:
+            if type(row_dict[key]) == datetime:
+                row_dict[key] = row_dict[key].isoformat()
         if row_dict["patients_tested_positive"] == 1:
             import_or_update_contact.delay(row_dict, contact_import.org.id)
 
