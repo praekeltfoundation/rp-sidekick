@@ -28,7 +28,6 @@ setup(
         "raven>=6.10.0,<7",
         "hashids>=1.2.0,<2",
         "django-filter>=2.1.0,<3",
-        "openpyxl>=2.6.2,<3",
         "boto3",
     ],
     classifiers=[
