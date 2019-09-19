@@ -8,7 +8,7 @@ from sidekick.models import Organization
 class ContactImport(models.Model):
     file = models.FileField(
         upload_to="uploads/gpconnect/",
-        validators=[FileExtensionValidator(allowed_extensions=["xlsx"])],
+        validators=[FileExtensionValidator(allowed_extensions=["csv"])],
     )
     org = models.ForeignKey(
         Organization, on_delete=models.CASCADE, null=True, blank=False
