@@ -10,7 +10,6 @@ from temba_client.v2 import TembaClient
 
 from config.celery import app
 from sidekick.models import Organization
-from sidekick.utils import get_whatsapp_contact_id
 
 from .models import ContactImport
 
@@ -57,20 +56,9 @@ def import_or_update_contact(patient_info, org_id):
     msisdn = patient_info.pop("telephone_no")
     urns = ["tel:{}".format(msisdn)]
 
-    whatsapp_id = get_whatsapp_contact_id(org, msisdn)
-    if whatsapp_id:
-        urns.append("whatsapp:{}".format(whatsapp_id))
-        patient_info["has_whatsapp"] = True
-    else:
-        patient_info["has_whatsapp"] = False
-
     contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
-    if whatsapp_id and not contact:
-        contact = client.get_contacts(urn="whatsapp:{}".format(whatsapp_id)).first()
 
     if contact:
-        if urns != contact.urns:
-            contact = client.update_contact(contact=contact.uuid, urns=urns)
         if not patient_info.items() <= contact.fields.items():
             client.create_flow_start(
                 flow=org.flows.get(type="contact_update").rapidpro_flow,
