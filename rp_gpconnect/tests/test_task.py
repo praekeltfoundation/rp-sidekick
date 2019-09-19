@@ -243,7 +243,8 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact.return_value.first.return_value = mock_contact_object
 
         import_or_update_contact(
-            {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
+            {"telephone_no": "+27000000001", "something_else": "stuuuuff", "empty": ""},
+            self.org.pk,
         )
 
         self.assertEqual(mock_get_rp_contact.call_count, 1)
@@ -252,7 +253,7 @@ class ImportOrUpdateContactTaskTests(TestCase):
             flow=self.update_flow.rapidpro_flow,
             urns=["tel:+27000000001"],
             restart_participants=True,
-            extra={"something_else": "stuuuuff"},
+            extra={"something_else": "stuuuuff", "empty": None},
         )
 
         mock_create_rp_contact.assert_not_called()
@@ -272,7 +273,8 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact.return_value.first.side_effect = [None, None]
 
         import_or_update_contact(
-            {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
+            {"telephone_no": "+27000000001", "something_else": "stuuuuff", "empty": ""},
+            self.org.pk,
         )
 
         self.assertEqual(mock_get_rp_contact.call_count, 1)
@@ -285,5 +287,5 @@ class ImportOrUpdateContactTaskTests(TestCase):
             flow=self.create_flow.rapidpro_flow,
             urns=["tel:+27000000001"],
             restart_participants=True,
-            extra={"something_else": "stuuuuff"},
+            extra={"something_else": "stuuuuff", "empty": None},
         )

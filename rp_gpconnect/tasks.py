@@ -58,6 +58,10 @@ def import_or_update_contact(patient_info, org_id):
 
     contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
 
+    for key in patient_info:
+        if patient_info[key] == "":
+            patient_info[key] = None
+
     if contact:
         if not patient_info.items() <= contact.fields.items():
             client.create_flow_start(
