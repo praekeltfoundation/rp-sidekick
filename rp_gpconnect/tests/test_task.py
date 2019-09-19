@@ -1,13 +1,12 @@
+import csv
 import os
 import tempfile
-from datetime import datetime
 from unittest.mock import Mock, patch
 
 import boto3
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from moto import mock_s3
-from openpyxl import Workbook
 
 from rp_gpconnect.models import ContactImport, Flow
 from rp_gpconnect.tasks import (
@@ -19,21 +18,14 @@ from sidekick.models import Organization
 from sidekick.tests.utils import assertCallMadeWith
 
 
-def create_temp_xlsx_file(temp_file, msisdns):
-    wb = Workbook()
-    sheet = wb.create_sheet("GP Connect daily report", 0)
-    sheet["A1"] = "telephone_no"
-    sheet["B1"] = "something_else"
-    sheet["C1"] = "patients_tested_positive"
-    sheet["D1"] = "some_date"
-    for x in range(len(msisdns)):
-        sheet.cell(row=(x + 2), column=1, value=msisdns[x])
-        sheet.cell(row=(x + 2), column=2, value="stuuuuff")
-        sheet.cell(row=(x + 2), column=3, value=(x % 2))
-        sheet.cell(
-            row=(x + 2), column=4, value=datetime.strptime("5/17/2018", "%m/%d/%Y")
+def create_temp_csv_file(temp_file, msisdns):
+    with open(temp_file.name, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(
+            ["telephone_no", "something_else", "patients_tested_positive", "some_date"]
         )
-    wb.save(temp_file)
+        for x in range(len(msisdns)):
+            writer.writerow([msisdns[x], "stuuuuff", (x % 2), "2018/05/17"])
     return temp_file
 
 
@@ -71,13 +63,13 @@ class PullNewImportFileTaskTests(TestCase):
             self.client.upload_file(
                 Filename=temp_file.name,
                 Bucket="Test_Bucket",
-                Key="uploads/tempfile.xlsx",
+                Key="uploads/tempfile.csv",
             )
 
         pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
-        self.assertEqual(obj.file.name, "/tmp/uploads/gpconnect/tempfile.xlsx")
+        self.assertEqual(obj.file.name, "/tmp/uploads/gpconnect/tempfile.csv")
         mock_task.assert_called_with(obj.pk)
 
     @override_settings(
@@ -90,20 +82,20 @@ class PullNewImportFileTaskTests(TestCase):
             self.client.upload_file(
                 Filename=temp_file.name,
                 Bucket="Test_Bucket",
-                Key="uploads/tempfile_1.xlsx",
+                Key="uploads/tempfile_1.csv",
             )
             self.client.upload_file(
                 Filename=temp_file.name,
                 Bucket="Test_Bucket",
-                Key="uploads/tempfile_2.xlsx",
+                Key="uploads/tempfile_2.csv",
             )
 
         pull_new_import_file(upload_dir="uploads/", org_name=self.org.name)
         self.assertEqual(ContactImport.objects.count(), 1)
         obj = ContactImport.objects.first()
         existing_files = [
-            "/tmp/uploads/gpconnect/tempfile_1.xlsx",
-            "/tmp/uploads/gpconnect/tempfile_2.xlsx",
+            "/tmp/uploads/gpconnect/tempfile_1.csv",
+            "/tmp/uploads/gpconnect/tempfile_2.csv",
         ]
         self.assertIn(obj.file.name, existing_files)
         mock_task.assert_called()
@@ -114,7 +106,7 @@ class PullNewImportFileTaskTests(TestCase):
     @patch("rp_gpconnect.tasks.process_contact_import")
     def test_already_processed_file_doesnt_create_contact_import_obj(self, mock_task):
         with tempfile.NamedTemporaryFile(
-            suffix=".xlsx", dir=self.imported_dir
+            suffix=".csv", dir=self.imported_dir
         ) as temp_file:
             filename = os.path.basename(temp_file.name)
             ContactImport.objects.create(file=temp_file.name, org=self.org)
@@ -133,7 +125,7 @@ class PullNewImportFileTaskTests(TestCase):
         MEDIA_ROOT=tempfile.gettempdir(), AWS_STORAGE_BUCKET_NAME="Test_Bucket"
     )
     @patch("rp_gpconnect.tasks.process_contact_import")
-    def test_non_excel_files_and_prefix_are_ignored(self, mock_task):
+    def test_non_csv_files_and_prefix_are_ignored(self, mock_task):
         self.assertEqual(ContactImport.objects.count(), 0)
         with tempfile.NamedTemporaryFile() as temp_file:
             self.client.upload_file(
@@ -165,8 +157,8 @@ class ProcessContactImportTaskTests(TestCase):
     def test_contact_import_calls_contact_task_for_each_positive_row(
         self, mock_contact_update_task, mock_logger
     ):
-        temp_file = tempfile.NamedTemporaryFile(suffix=".xlsx")
-        contacts_file = create_temp_xlsx_file(
+        temp_file = tempfile.NamedTemporaryFile(suffix=".csv")
+        contacts_file = create_temp_csv_file(
             temp_file, ["+27000000001", "+27000000002", "+27000000003", "+27000000004"]
         ).name
         import_obj = ContactImport.objects.create(
@@ -184,8 +176,8 @@ class ProcessContactImportTaskTests(TestCase):
             {
                 "telephone_no": "+27000000002",
                 "something_else": "stuuuuff",
-                "patients_tested_positive": 1,
-                "some_date": "2018-05-17T00:00:00",
+                "patients_tested_positive": "1",
+                "some_date": "2018-05-17 00:00:00",
             },
             self.org.pk,
         )
@@ -193,8 +185,8 @@ class ProcessContactImportTaskTests(TestCase):
             {
                 "telephone_no": "+27000000004",
                 "something_else": "stuuuuff",
-                "patients_tested_positive": 1,
-                "some_date": "2018-05-17T00:00:00",
+                "patients_tested_positive": "1",
+                "some_date": "2018-05-17 00:00:00",
             },
             self.org.pk,
         )
