@@ -1,11 +1,10 @@
+import csv
 import os
-from datetime import datetime
 
 import boto3
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.utils.log import get_task_logger
 from django.conf import settings
-from openpyxl import load_workbook
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 from temba_client.v2 import TembaClient
 
@@ -29,30 +28,17 @@ def process_contact_import(contact_import_id):
     contact_import = ContactImport.objects.get(id=contact_import_id)
     log.info("Importing contacts for file: %s" % contact_import.file.name)
 
-    wb = load_workbook(
-        filename=os.path.join(settings.MEDIA_ROOT, contact_import.file.name),
-        data_only=True,
-    )
-    sheet = wb["GP Connect daily report"]
+    filename = os.path.join(settings.MEDIA_ROOT, contact_import.file.name)
 
-    # Get the headers
-    headers = []
-    for cell in sheet[1]:
-        headers.append(cell.value)
+    with open(filename, newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
 
-    current_row = 0
-    for row in sheet.values:
-        # Skip header row
-        if current_row == 0:
-            current_row += 1
-            continue
-
-        row_dict = dict(zip(headers, row))
-        for key in row_dict:
-            if type(row_dict[key]) == datetime:
-                row_dict[key] = row_dict[key].isoformat()
-        if row_dict["patients_tested_positive"] == 1:
-            import_or_update_contact.delay(row_dict, contact_import.org.id)
+        for row_dict in reader:
+            for key in row_dict:
+                if key.find("date") > -1:
+                    row_dict[key] = row_dict[key].replace("/", "-") + " 00:00:00"
+            if row_dict["patients_tested_positive"] == "1":
+                import_or_update_contact.delay(dict(row_dict), contact_import.org.id)
 
 
 @app.task(
@@ -115,7 +101,7 @@ def pull_new_import_file(upload_dir, org_name):
     s3 = boto3.client("s3")
 
     for obj in s3.list_objects(Bucket=bucket, Prefix=upload_dir)["Contents"]:
-        if obj["Key"] == upload_dir or ".xlsx" not in obj["Key"]:
+        if obj["Key"] == upload_dir or ".csv" not in obj["Key"]:
             continue
         matching_name = obj["Key"].replace(
             upload_dir, os.path.join(settings.MEDIA_ROOT, "uploads/gpconnect/")
