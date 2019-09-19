@@ -210,76 +210,49 @@ class ImportOrUpdateContactTaskTests(TestCase):
     @patch("temba_client.v2.TembaClient.create_flow_start")
     @patch("temba_client.v2.TembaClient.update_contact")
     @patch("temba_client.v2.TembaClient.get_contacts")
-    @patch("rp_gpconnect.tasks.get_whatsapp_contact_id")
-    def test_contact_task_if_contact_exists_without_wa_id(
-        self,
-        mock_get_whatsapp_contact_id,
-        mock_get_rp_contact,
-        mock_update_rp_contact,
-        mock_create_flow_start,
+    def test_contact_task_if_contact_exists_unchanged(
+        self, mock_get_rp_contact, mock_update_rp_contact, mock_create_flow_start
     ):
-        mock_get_whatsapp_contact_id.return_value = None
 
         # Create a mock contact that is already up to date
         mock_contact_object = Mock()
         mock_contact_object.uuid = "123456"
         mock_contact_object.urns = ["tel:+27000000001"]
-        mock_contact_object.fields = {
-            "something_else": "stuuuuff",
-            "has_whatsapp": False,
-        }
+        mock_contact_object.fields = {"something_else": "stuuuuff"}
         mock_get_rp_contact.return_value.first.return_value = mock_contact_object
 
         import_or_update_contact(
             {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
         )
 
-        mock_get_whatsapp_contact_id.assert_called_with(self.org, "+27000000001")
         self.assertEqual(mock_get_rp_contact.call_count, 1)
         mock_update_rp_contact.assert_not_called()
         mock_create_flow_start.assert_not_called()
 
     @patch("temba_client.v2.TembaClient.create_flow_start")
     @patch("temba_client.v2.TembaClient.create_contact")
-    @patch("temba_client.v2.TembaClient.update_contact")
     @patch("temba_client.v2.TembaClient.get_contacts")
-    @patch("rp_gpconnect.tasks.get_whatsapp_contact_id")
-    def test_contact_task_if_contact_exists_with_wa_id(
-        self,
-        mock_get_whatsapp_contact_id,
-        mock_get_rp_contact,
-        mock_update_rp_contact,
-        mock_create_rp_contact,
-        mock_create_flow_start,
+    def test_contact_task_if_contact_exists_changed(
+        self, mock_get_rp_contact, mock_create_rp_contact, mock_create_flow_start
     ):
-        mock_get_whatsapp_contact_id.return_value = "27000000001"
 
         mock_contact_object = Mock()
         mock_contact_object.uuid = "123456"
         mock_contact_object.urns = ["tel:+27000000001"]
+        mock_contact_object.fields = {"has_whatsapp": True}
         mock_get_rp_contact.return_value.first.return_value = mock_contact_object
-
-        mock_updated_object = Mock()
-        mock_updated_object.uuid = "123456"
-        mock_updated_object.urns = ["tel:+27000000001", "whatsapp:27000000001"]
-        mock_updated_object.fields = {"has_whatsapp": True}
-        mock_update_rp_contact.return_value = mock_updated_object
 
         import_or_update_contact(
             {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
         )
-        mock_get_whatsapp_contact_id.assert_called_with(self.org, "+27000000001")
 
         self.assertEqual(mock_get_rp_contact.call_count, 1)
-        mock_update_rp_contact.assert_called_with(
-            contact="123456", urns=["tel:+27000000001", "whatsapp:27000000001"]
-        )
         assertCallMadeWith(
             mock_create_flow_start.call_args,
             flow=self.update_flow.rapidpro_flow,
-            urns=["tel:+27000000001", "whatsapp:27000000001"],
+            urns=["tel:+27000000001"],
             restart_participants=True,
-            extra={"something_else": "stuuuuff", "has_whatsapp": True},
+            extra={"something_else": "stuuuuff"},
         )
 
         mock_create_rp_contact.assert_not_called()
@@ -288,16 +261,13 @@ class ImportOrUpdateContactTaskTests(TestCase):
     @patch("temba_client.v2.TembaClient.create_contact", autospec=True)
     @patch("temba_client.v2.TembaClient.update_contact", autospec=True)
     @patch("temba_client.v2.TembaClient.get_contacts", autospec=True)
-    @patch("rp_gpconnect.tasks.get_whatsapp_contact_id", autospec=True)
-    def test_contact_task_if_new_contact_without_wa_id(
+    def test_contact_task_if_new_contact(
         self,
-        mock_get_whatsapp_contact_id,
         mock_get_rp_contact,
         mock_update_rp_contact,
         mock_create_rp_contact,
         mock_create_flow_start,
     ):
-        mock_get_whatsapp_contact_id.return_value = None
 
         mock_get_rp_contact.return_value.first.side_effect = [None, None]
 
@@ -315,46 +285,5 @@ class ImportOrUpdateContactTaskTests(TestCase):
             flow=self.create_flow.rapidpro_flow,
             urns=["tel:+27000000001"],
             restart_participants=True,
-            extra={"something_else": "stuuuuff", "has_whatsapp": False},
-        )
-
-    @patch("temba_client.v2.TembaClient.create_flow_start", autospec=True)
-    @patch("temba_client.v2.TembaClient.create_contact", autospec=True)
-    @patch("temba_client.v2.TembaClient.update_contact", autospec=True)
-    @patch("temba_client.v2.TembaClient.get_contacts", autospec=True)
-    @patch("rp_gpconnect.tasks.get_whatsapp_contact_id", autospec=True)
-    def test_contact_task_if_new_contact(
-        self,
-        mock_get_whatsapp_contact_id,
-        mock_get_rp_contact,
-        mock_update_rp_contact,
-        mock_create_rp_contact,
-        mock_create_flow_start,
-    ):
-        mock_get_whatsapp_contact_id.return_value = "27000000001"
-
-        mock_get_rp_contact.return_value.first.side_effect = [None, None]
-
-        import_or_update_contact(
-            {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
-        )
-
-        self.assertEqual(mock_get_rp_contact.call_count, 2)
-        call_1_args, call_2_args = mock_get_rp_contact.call_args_list
-        assertCallMadeWith(call_1_args, urn="tel:+27000000001")
-        assertCallMadeWith(call_2_args, urn="whatsapp:27000000001")
-
-        mock_update_rp_contact.assert_not_called()
-
-        assertCallMadeWith(
-            mock_create_rp_contact.call_args,
-            urns=["tel:+27000000001", "whatsapp:27000000001"],
-        )
-
-        assertCallMadeWith(
-            mock_create_flow_start.call_args,
-            flow=self.create_flow.rapidpro_flow,
-            urns=["tel:+27000000001", "whatsapp:27000000001"],
-            restart_participants=True,
-            extra={"something_else": "stuuuuff", "has_whatsapp": True},
+            extra={"something_else": "stuuuuff"},
         )
