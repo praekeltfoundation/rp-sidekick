@@ -177,7 +177,7 @@ class ProcessContactImportTaskTests(TestCase):
                 "telephone_no": "+27000000002",
                 "something_else": "stuuuuff",
                 "patients_tested_positive": "1",
-                "some_date": "2018-05-17 00:00:00",
+                "some_date": "2018/05/17",
             },
             self.org.pk,
         )
@@ -186,7 +186,7 @@ class ProcessContactImportTaskTests(TestCase):
                 "telephone_no": "+27000000004",
                 "something_else": "stuuuuff",
                 "patients_tested_positive": "1",
-                "some_date": "2018-05-17 00:00:00",
+                "some_date": "2018/05/17",
             },
             self.org.pk,
         )
@@ -218,11 +218,21 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_contact_object = Mock()
         mock_contact_object.uuid = "123456"
         mock_contact_object.urns = ["tel:+27000000001"]
-        mock_contact_object.fields = {"something_else": "stuuuuff"}
+        mock_contact_object.fields = {
+            "something_else": "stuuuuff",
+            "empty": None,
+            "some_date": "2018-05-17T00:00:00.000000+02:00",
+        }
         mock_get_rp_contact.return_value.first.return_value = mock_contact_object
 
         import_or_update_contact(
-            {"telephone_no": "+27000000001", "something_else": "stuuuuff"}, self.org.pk
+            {
+                "telephone_no": "+27000000001",
+                "something_else": "stuuuuff",
+                "empty": "",
+                "some_date": "2018/05/17",
+            },
+            self.org.pk,
         )
 
         self.assertEqual(mock_get_rp_contact.call_count, 1)
@@ -243,7 +253,12 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact.return_value.first.return_value = mock_contact_object
 
         import_or_update_contact(
-            {"telephone_no": "+27000000001", "something_else": "stuuuuff", "empty": ""},
+            {
+                "telephone_no": "+27000000001",
+                "something_else": "stuuuuff",
+                "empty": "",
+                "some_date": "2018/05/17",
+            },
             self.org.pk,
         )
 
@@ -253,7 +268,11 @@ class ImportOrUpdateContactTaskTests(TestCase):
             flow=self.update_flow.rapidpro_flow,
             urns=["tel:+27000000001"],
             restart_participants=True,
-            extra={"something_else": "stuuuuff", "empty": None},
+            extra={
+                "something_else": "stuuuuff",
+                "empty": None,
+                "some_date": "2018-05-17T00:00:00.000000+02:00",
+            },
         )
 
         mock_create_rp_contact.assert_not_called()
@@ -273,7 +292,12 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_get_rp_contact.return_value.first.side_effect = [None, None]
 
         import_or_update_contact(
-            {"telephone_no": "+27000000001", "something_else": "stuuuuff", "empty": ""},
+            {
+                "telephone_no": "+27000000001",
+                "something_else": "stuuuuff",
+                "empty": "",
+                "some_date": "2018/05/17",
+            },
             self.org.pk,
         )
 
@@ -287,5 +311,9 @@ class ImportOrUpdateContactTaskTests(TestCase):
             flow=self.create_flow.rapidpro_flow,
             urns=["tel:+27000000001"],
             restart_participants=True,
-            extra={"something_else": "stuuuuff", "empty": None},
+            extra={
+                "something_else": "stuuuuff",
+                "empty": None,
+                "some_date": "2018-05-17T00:00:00.000000+02:00",
+            },
         )

@@ -33,9 +33,6 @@ def process_contact_import(contact_import_id):
         reader = csv.DictReader(csvfile)
 
         for row_dict in reader:
-            for key in row_dict:
-                if key.find("date") > -1:
-                    row_dict[key] = row_dict[key].replace("/", "-") + " 00:00:00"
             if row_dict["patients_tested_positive"] == "1":
                 import_or_update_contact.delay(dict(row_dict), contact_import.org.id)
 
@@ -59,8 +56,13 @@ def import_or_update_contact(patient_info, org_id):
     contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
 
     for key in patient_info:
+        # Format values to match RapidPro fields
         if patient_info[key] == "":
             patient_info[key] = None
+        elif key.find("date") > -1:
+            patient_info[key] = (
+                patient_info[key].replace("/", "-") + "T00:00:00.000000+02:00"
+            )
 
     if contact:
         if not patient_info.items() <= contact.fields.items():
