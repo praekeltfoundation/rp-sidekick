@@ -191,6 +191,35 @@ class ProcessContactImportTaskTests(TestCase):
             self.org.pk,
         )
 
+    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    @patch("rp_gpconnect.tasks.log")
+    @patch("rp_gpconnect.tasks.import_or_update_contact.delay")
+    def test_contact_import_skips_rows_with_empty_phonenumbers(
+        self, mock_contact_update_task, mock_logger
+    ):
+        temp_file = tempfile.NamedTemporaryFile(suffix=".csv")
+        contacts_file = create_temp_csv_file(temp_file, ["", "+27000000002", ""]).name
+        import_obj = ContactImport.objects.create(
+            file=contacts_file, org=self.org, created_by=self.user
+        )
+
+        process_contact_import(import_obj.pk)
+
+        mock_logger.info.assert_called_with(
+            "Importing contacts for file: %s" % contacts_file
+        )
+
+        self.assertEqual(mock_contact_update_task.call_count, 1)
+        mock_contact_update_task.assert_any_call(
+            {
+                "telephone_no": "+27000000002",
+                "something_else": "stuuuuff",
+                "patients_tested_positive": "1",
+                "some_date": "2018/05/17",
+            },
+            self.org.pk,
+        )
+
 
 class ImportOrUpdateContactTaskTests(TestCase):
     def setUp(self):
