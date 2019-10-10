@@ -33,7 +33,7 @@ def process_contact_import(contact_import_id):
         reader = csv.DictReader(csvfile)
 
         for row_dict in reader:
-            if row_dict["patients_tested_positive"] == "1":
+            if row_dict["telephone_no"] and row_dict["patients_tested_positive"] == "1":
                 import_or_update_contact.delay(dict(row_dict), contact_import.org.id)
 
 
