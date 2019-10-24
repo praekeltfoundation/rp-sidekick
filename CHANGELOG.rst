@@ -4,6 +4,13 @@ VERSIONS
 Next Release
 ------------
 
+1.7.3
+------------
+GP Connect: Automate file import by scanning the filesystem for new files
+GP Connect: Move file storage to S3 and scan there for new files
+GP Connect: Change to import csv rather than xlsx files
+GP Connect: Small bugfixes
+
 1.7.2
 ------------
 Sidekick: Fix clean_message to not remove punctuation
@@ -11,6 +18,7 @@ Sidekick: Fix clean_message to not remove punctuation
 1.7.1
 ------------
 Sidekick: Allow space character to be submitted as variables to whatsapp template endpoint
+GP Connect: Added a new Django app called rp_gpconnect to manage importing contacts from a xlsx file to RapidPro
 
 1.7.0
 ------------
