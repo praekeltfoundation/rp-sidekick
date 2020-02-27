@@ -41,4 +41,9 @@ urlpatterns = [
         views.ArchiveTurnConversationView.as_view(),
         name="archive-turn-conversation",
     ),
+    path(
+        "api/list_contacts/<int:pk>/",
+        views.ListContactsView.as_view(),
+        name="list_contacts",
+    ),
 ]
