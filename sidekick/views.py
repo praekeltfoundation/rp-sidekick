@@ -13,6 +13,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from temba_client.v2 import TembaClient
 
 from .models import Consent, Organization
 from .serializers import (
@@ -276,3 +277,55 @@ class ArchiveTurnConversationView(GenericAPIView):
 
         task = archive_turn_conversation.delay(pk, address, reason)
         return Response({"task_id": task.id}, status=status.HTTP_201_CREATED)
+
+
+class ListContactsView(GenericAPIView):
+    """
+    Accepts Org id and query
+    Forwards the query to RapidPro to filter contacts
+    Returns a JsonResponse listing just the uuids of matching contacts
+    """
+
+    queryset = Organization.objects.all()
+
+    def get(self, request, pk, *args, **kwargs):
+        org = self.get_object()
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(
+                data={
+                    "error": "Authenticated user does not belong to specified Organization"
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        filter_kwargs = {}
+        field = request.GET.get("field", None)
+        if field:
+            try:
+                value = request.GET["value"]
+            except KeyError:
+                return JsonResponse(
+                    {"error": "'field' param must have corresponding 'value' param"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            filter_kwargs = {field: value}
+
+        client = TembaClient(org.url, org.token)
+        try:
+            contact_batches = client.get_contacts(**filter_kwargs).iterfetches()
+        except TypeError:
+            return JsonResponse(
+                {
+                    "error": "Invalid 'field' value. Please see RapidPro "
+                    "documentation for valid filters."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        uuids = []
+        for contact_batch in contact_batches:
+            for contact in contact_batch:
+                uuids.append(contact.uuid)
+
+        return JsonResponse({"contacts": uuids}, status=status.HTTP_200_OK)
