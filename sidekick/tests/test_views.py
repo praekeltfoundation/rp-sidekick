@@ -1,6 +1,6 @@
 import json
 from os import environ
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -706,3 +706,97 @@ class ArchiveTurnConversationViewTests(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.json(), {"task_id": "test-task-id"})
         task.delay.assert_called_once_with(self.org.id, "27820001001", "Test reason")
+
+
+class ListContactsViewTests(SidekickAPITestCase):
+    def test_non_existent_org_raises_error(self):
+        """
+        If an Org with the specified ID doesn't exist in the database, return 404
+        """
+        self.client.force_authenticate(self.user)
+
+        url = reverse("list_contacts", args=[0])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_not_in_org_raises_error(self):
+        """
+        If the authenticated user isn't associated with the Org, return 401
+        """
+        self.org.users.remove(self.user)
+        self.client.force_authenticate(self.user)
+
+        url = reverse("list_contacts", args=[self.org.pk])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_field_without_value_raises_error(self):
+        """
+        If 'field' is specified without a 'value' parameter, return 400
+        """
+        self.client.force_authenticate(self.user)
+
+        url = reverse("list_contacts", args=[self.org.pk])
+        response = self.client.get("{}?field=something".format(url))
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_invalid_field_raises_error(self):
+        """
+        If 'field' is a not a valid option for filtering contacts, return 400
+        """
+        self.client.force_authenticate(self.user)
+
+        url = reverse("list_contacts", args=[self.org.pk])
+        response = self.client.get("{}?field=something&value=special".format(url))
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("temba_client.v2.TembaClient.get_contacts")
+    def test_field_and_value_are_passed_to_get_contact(self, mock_get_contacts):
+        """
+        If 'field' and value are specified they should be passed to get_contacts
+        """
+        self.client.force_authenticate(self.user)
+
+        # Iterfetches returns batches of returned objects
+        mock_get_contacts.return_value.iterfetches.return_value = [[]]
+
+        url = reverse("list_contacts", args=[self.org.pk])
+        response = self.client.get("{}?field=something&value=special".format(url))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        mock_get_contacts.assert_called_once_with(**{"something": "special"})
+
+    @patch("temba_client.v2.TembaClient.get_contacts")
+    def test_endpoint_returns_contact_uuids(self, mock_get_contacts):
+        """
+        A list containing the uuids of the found contacts should be returned
+        """
+        self.client.force_authenticate(self.user)
+
+        # Create mock contacts
+        mock_contact_object1 = Mock()
+        mock_contact_object1.uuid = "123456"
+        mock_contact_object1.urns = ["tel:+27000000001"]
+        mock_contact_object1.fields = {
+            "something_else": "stuuuuff",
+            "empty": None,
+            "some_date": "2018-05-17T00:00:00.000000+02:00",
+        }
+        mock_contact_object2 = Mock()
+        mock_contact_object2.uuid = "7890123"
+        mock_contact_object2.urns = ["tel:+27000000002"]
+        mock_contact_object2.fields = {"something_else": "different", "empty": None}
+        # Iterfetches returns batches of returned objects
+        mock_get_contacts.return_value.iterfetches.return_value = [
+            [mock_contact_object1, mock_contact_object2]
+        ]
+
+        url = reverse("list_contacts", args=[self.org.pk])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"contacts": ["123456", "7890123"]})
