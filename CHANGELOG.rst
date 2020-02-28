@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.7.4
+------------
+Sidekick: Added an endpoint to get only contact uuids from the rapidpro API
+
 1.7.3
 ------------
 GP Connect: Automate file import by scanning the filesystem for new files
