@@ -15,6 +15,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
+from temba_client.exceptions import TembaConnectionError
 
 from sidekick.models import Consent, Organization
 
@@ -800,3 +801,25 @@ class ListContactsViewTests(SidekickAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), {"contacts": ["123456", "7890123"]})
+
+    @patch("temba_client.clients.CursorIterator.__next__")
+    def test_endpoint_forwards_some_http_errors(self, mock_next):
+        """
+        HTTP Connection errors should be caught and an error returned to the client
+        """
+        self.client.force_authenticate(self.user)
+
+        # Iterfetches returns batches of returned objects
+        mock_next.side_effect = TembaConnectionError()
+
+        url = reverse("list_contacts", args=[self.org.pk])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(
+            response.json(),
+            {
+                "error": "An error occured fulfilling your request. You "
+                "may have exceeded the rate limit. Please try again later."
+            },
+        )

@@ -13,7 +13,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from temba_client.v2 import TembaClient
+from temba_client.exceptions import TembaConnectionError, TembaRateExceededError
 
 from .models import Consent, Organization
 from .serializers import (
@@ -311,7 +311,7 @@ class ListContactsView(GenericAPIView):
                 )
             filter_kwargs = {field: value}
 
-        client = TembaClient(org.url, org.token)
+        client = org.get_rapidpro_client()
         try:
             contact_batches = client.get_contacts(**filter_kwargs).iterfetches()
         except TypeError:
@@ -324,8 +324,17 @@ class ListContactsView(GenericAPIView):
             )
 
         uuids = []
-        for contact_batch in contact_batches:
-            for contact in contact_batch:
-                uuids.append(contact.uuid)
+        try:
+            for contact_batch in contact_batches:
+                for contact in contact_batch:
+                    uuids.append(contact.uuid)
+        except (TembaRateExceededError, TembaConnectionError):
+            return JsonResponse(
+                {
+                    "error": "An error occured fulfilling your request. "
+                    "You may have exceeded the rate limit. Please try again later."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return JsonResponse({"contacts": uuids}, status=status.HTTP_200_OK)
