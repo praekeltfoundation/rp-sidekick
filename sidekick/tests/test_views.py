@@ -744,21 +744,13 @@ class ListContactsViewTests(SidekickAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_invalid_field_raises_error(self):
-        """
-        If 'field' is a not a valid option for filtering contacts, return 400
-        """
-        self.client.force_authenticate(self.user)
-
-        url = reverse("list_contacts", args=[self.org.pk])
-        response = self.client.get("{}?field=something&value=special".format(url))
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
     @patch("temba_client.v2.TembaClient.get_contacts")
-    def test_field_and_value_are_passed_to_get_contact(self, mock_get_contacts):
+    def test_field_and_value_are_passed_to_get_contact_for_valid_rp_fields(
+        self, mock_get_contacts
+    ):
         """
-        If 'field' and value are specified they should be passed to get_contacts
+        If 'field' and value are specified and a valid RP field they should be
+        passed to get_contacts
         """
         self.client.force_authenticate(self.user)
 
@@ -766,10 +758,10 @@ class ListContactsViewTests(SidekickAPITestCase):
         mock_get_contacts.return_value.iterfetches.return_value = [[]]
 
         url = reverse("list_contacts", args=[self.org.pk])
-        response = self.client.get("{}?field=something&value=special".format(url))
+        response = self.client.get("{}?field=group&value=special".format(url))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        mock_get_contacts.assert_called_once_with(**{"something": "special"})
+        mock_get_contacts.assert_called_once_with(**{"group": "special"})
 
     @patch("temba_client.v2.TembaClient.get_contacts")
     def test_endpoint_returns_contact_uuids(self, mock_get_contacts):
@@ -801,6 +793,43 @@ class ListContactsViewTests(SidekickAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), {"contacts": ["123456", "7890123"]})
+
+    @patch("temba_client.v2.TembaClient.get_contacts")
+    def test_non_rp_field_filters_on_contact_fields(self, mock_get_contacts):
+        """
+        If 'field' is a not an option allowed by the RP API, we should get all contacts
+        and filter manually
+        """
+        self.client.force_authenticate(self.user)
+
+        # Create mock contacts
+        mock_contact_object1 = Mock()
+        mock_contact_object1.uuid = "123456"
+        mock_contact_object1.urns = ["tel:+27000000001"]
+        mock_contact_object1.fields = {
+            "something": "special",
+            "empty": None,
+            "some_date": "2018-05-17T00:00:00.000000+02:00",
+        }
+        mock_contact_object2 = Mock()
+        mock_contact_object2.uuid = "7890123"
+        mock_contact_object2.urns = ["tel:+27000000002"]
+        mock_contact_object2.fields = {"something": "different", "empty": None}
+        mock_contact_object3 = Mock()
+        mock_contact_object3.uuid = "3210987"
+        mock_contact_object3.urns = ["tel:+27000000003"]
+        mock_contact_object3.fields = {"something_else": "entirely", "empty": None}
+        # Iterfetches returns batches of returned objects
+        mock_get_contacts.return_value.iterfetches.return_value = [
+            [mock_contact_object1, mock_contact_object2, mock_contact_object3]
+        ]
+
+        url = reverse("list_contacts", args=[self.org.pk])
+        response = self.client.get("{}?field=something&value=special".format(url))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        mock_get_contacts.assert_called_once_with()
+        self.assertEqual(response.json(), {"contacts": ["123456"]})
 
     @patch("temba_client.clients.CursorIterator.__next__")
     def test_endpoint_forwards_some_http_errors(self, mock_next):

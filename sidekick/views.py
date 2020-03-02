@@ -281,15 +281,17 @@ class ArchiveTurnConversationView(GenericAPIView):
 
 class ListContactsView(GenericAPIView):
     """
-    Accepts Org id and query
-    Forwards the query to RapidPro to filter contacts
+    Accepts Org id, field and value
+    Uses the field and value to filter RapidPro contacts
     Returns a JsonResponse listing just the uuids of matching contacts
+    Accepts fields handled by the RapidPro API as well as custom contact fields
     """
 
     queryset = Organization.objects.all()
 
     def get(self, request, pk, *args, **kwargs):
         org = self.get_object()
+        rapidpro_api_fields = ["uuid", "urn", "group", "deleted", "before", "after"]
 
         if not org.users.filter(id=request.user.id).exists():
             return JsonResponse(
@@ -309,25 +311,21 @@ class ListContactsView(GenericAPIView):
                     {"error": "'field' param must have corresponding 'value' param"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            filter_kwargs = {field: value}
+            if field in rapidpro_api_fields:
+                filter_kwargs = {field: value}
 
         client = org.get_rapidpro_client()
-        try:
-            contact_batches = client.get_contacts(**filter_kwargs).iterfetches()
-        except TypeError:
-            return JsonResponse(
-                {
-                    "error": "Invalid 'field' value. Please see RapidPro "
-                    "documentation for valid filters."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        contact_batches = client.get_contacts(**filter_kwargs).iterfetches()
 
         uuids = []
         try:
             for contact_batch in contact_batches:
                 for contact in contact_batch:
-                    uuids.append(contact.uuid)
+                    if not field or field in rapidpro_api_fields:
+                        uuids.append(contact.uuid)
+                    elif field in contact.fields.keys():
+                        if contact.fields[field] == value:
+                            uuids.append(contact.uuid)
         except (TembaRateExceededError, TembaConnectionError):
             return JsonResponse(
                 {
