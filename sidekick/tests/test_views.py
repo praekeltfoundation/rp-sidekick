@@ -733,24 +733,12 @@ class ListContactsViewTests(SidekickAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_field_without_value_raises_error(self):
-        """
-        If 'field' is specified without a 'value' parameter, return 400
-        """
-        self.client.force_authenticate(self.user)
-
-        url = reverse("list_contacts", args=[self.org.pk])
-        response = self.client.get("{}?field=something".format(url))
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
     @patch("temba_client.v2.TembaClient.get_contacts")
-    def test_field_and_value_are_passed_to_get_contact_for_valid_rp_fields(
+    def test_params_are_passed_to_get_contact_for_valid_rp_fields(
         self, mock_get_contacts
     ):
         """
-        If 'field' and value are specified and a valid RP field they should be
-        passed to get_contacts
+        All query parameters for valid RP fields should be passed to get_contacts
         """
         self.client.force_authenticate(self.user)
 
@@ -758,10 +746,12 @@ class ListContactsViewTests(SidekickAPITestCase):
         mock_get_contacts.return_value.iterfetches.return_value = [[]]
 
         url = reverse("list_contacts", args=[self.org.pk])
-        response = self.client.get("{}?field=group&value=special".format(url))
+        response = self.client.get("{}?group=special&deleted=true".format(url))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        mock_get_contacts.assert_called_once_with(**{"group": "special"})
+        mock_get_contacts.assert_called_once_with(
+            **{"group": "special", "deleted": "true"}
+        )
 
     @patch("temba_client.v2.TembaClient.get_contacts")
     def test_endpoint_returns_contact_uuids(self, mock_get_contacts):
@@ -773,7 +763,6 @@ class ListContactsViewTests(SidekickAPITestCase):
         # Create mock contacts
         mock_contact_object1 = Mock()
         mock_contact_object1.uuid = "123456"
-        mock_contact_object1.urns = ["tel:+27000000001"]
         mock_contact_object1.fields = {
             "something_else": "stuuuuff",
             "empty": None,
@@ -781,7 +770,6 @@ class ListContactsViewTests(SidekickAPITestCase):
         }
         mock_contact_object2 = Mock()
         mock_contact_object2.uuid = "7890123"
-        mock_contact_object2.urns = ["tel:+27000000002"]
         mock_contact_object2.fields = {"something_else": "different", "empty": None}
         # Iterfetches returns batches of returned objects
         mock_get_contacts.return_value.iterfetches.return_value = [
@@ -795,40 +783,76 @@ class ListContactsViewTests(SidekickAPITestCase):
         self.assertEqual(response.json(), {"contacts": ["123456", "7890123"]})
 
     @patch("temba_client.v2.TembaClient.get_contacts")
-    def test_non_rp_field_filters_on_contact_fields(self, mock_get_contacts):
+    def test_non_rp_fields_filter_on_contact_fields(self, mock_get_contacts):
         """
-        If 'field' is a not an option allowed by the RP API, we should get all contacts
-        and filter manually
+        Any query parameters that are not options allowed by the RP API should be used
+        to filter the returned contacts
         """
         self.client.force_authenticate(self.user)
 
         # Create mock contacts
         mock_contact_object1 = Mock()
         mock_contact_object1.uuid = "123456"
-        mock_contact_object1.urns = ["tel:+27000000001"]
         mock_contact_object1.fields = {
             "something": "special",
-            "empty": None,
+            "empty": "0",
             "some_date": "2018-05-17T00:00:00.000000+02:00",
         }
         mock_contact_object2 = Mock()
         mock_contact_object2.uuid = "7890123"
-        mock_contact_object2.urns = ["tel:+27000000002"]
-        mock_contact_object2.fields = {"something": "different", "empty": None}
+        mock_contact_object2.fields = {"something": "special", "empty": "1"}
         mock_contact_object3 = Mock()
         mock_contact_object3.uuid = "3210987"
-        mock_contact_object3.urns = ["tel:+27000000003"]
-        mock_contact_object3.fields = {"something_else": "entirely", "empty": None}
+        mock_contact_object3.fields = {"something": "different", "empty": "0"}
+        mock_contact_object4 = Mock()
+        mock_contact_object4.uuid = "621951621"
+        mock_contact_object4.fields = {"something": "special"}
         # Iterfetches returns batches of returned objects
         mock_get_contacts.return_value.iterfetches.return_value = [
-            [mock_contact_object1, mock_contact_object2, mock_contact_object3]
+            [
+                mock_contact_object1,
+                mock_contact_object2,
+                mock_contact_object3,
+                mock_contact_object4,
+            ]
         ]
 
         url = reverse("list_contacts", args=[self.org.pk])
-        response = self.client.get("{}?field=something&value=special".format(url))
+        response = self.client.get("{}?something=special&empty=0".format(url))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         mock_get_contacts.assert_called_once_with()
+        self.assertEqual(response.json(), {"contacts": ["123456"]})
+
+    @patch("temba_client.v2.TembaClient.get_contacts")
+    def test_rp_and_non_rp_fields_filter(self, mock_get_contacts):
+        """
+        If both RP and non RP allowed query parameters are supplied, the RP ones should be
+        passed to get contacts while the non RP ones are used to filter on fields
+        """
+        self.client.force_authenticate(self.user)
+
+        # Create mock contacts
+        mock_contact_object1 = Mock()
+        mock_contact_object1.uuid = "123456"
+        mock_contact_object1.fields = {
+            "something": "special",
+            "empty": "0",
+            "some_date": "2018-05-17T00:00:00.000000+02:00",
+        }
+        mock_contact_object2 = Mock()
+        mock_contact_object2.uuid = "7890123"
+        mock_contact_object2.fields = {"something": "different", "empty": "1"}
+        # Iterfetches returns batches of returned objects
+        mock_get_contacts.return_value.iterfetches.return_value = [
+            [mock_contact_object1, mock_contact_object2]
+        ]
+
+        url = reverse("list_contacts", args=[self.org.pk])
+        response = self.client.get("{}?something=special&deleted=true".format(url))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        mock_get_contacts.assert_called_once_with(**{"deleted": "true"})
         self.assertEqual(response.json(), {"contacts": ["123456"]})
 
     @patch("temba_client.clients.CursorIterator.__next__")

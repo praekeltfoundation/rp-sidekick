@@ -281,8 +281,8 @@ class ArchiveTurnConversationView(GenericAPIView):
 
 class ListContactsView(GenericAPIView):
     """
-    Accepts Org id, field and value
-    Uses the field and value to filter RapidPro contacts
+    Accepts Org id and multiple key, value query parameters to filter by
+    Uses the query parameters to filter RapidPro contacts
     Returns a JsonResponse listing just the uuids of matching contacts
     Accepts fields handled by the RapidPro API as well as custom contact fields
     """
@@ -302,17 +302,10 @@ class ListContactsView(GenericAPIView):
             )
 
         filter_kwargs = {}
-        field = request.GET.get("field", None)
-        if field:
-            try:
-                value = request.GET["value"]
-            except KeyError:
-                return JsonResponse(
-                    {"error": "'field' param must have corresponding 'value' param"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        fields = list(request.GET.keys())
+        for field in fields:
             if field in rapidpro_api_fields:
-                filter_kwargs = {field: value}
+                filter_kwargs.update({field: request.GET[field]})
 
         client = org.get_rapidpro_client()
         contact_batches = client.get_contacts(**filter_kwargs).iterfetches()
@@ -321,11 +314,20 @@ class ListContactsView(GenericAPIView):
         try:
             for contact_batch in contact_batches:
                 for contact in contact_batch:
-                    if not field or field in rapidpro_api_fields:
+                    match = True
+                    for field in fields:
+                        value = request.GET[field]
+                        if field in rapidpro_api_fields:
+                            # get_contacts already filtered on this field
+                            continue
+                        elif (
+                            field not in contact.fields.keys()
+                            or str(contact.fields[field]) != value
+                        ):
+                            match = False
+                            break
+                    if match:
                         uuids.append(contact.uuid)
-                    elif field in contact.fields.keys():
-                        if contact.fields[field] == value:
-                            uuids.append(contact.uuid)
         except (TembaRateExceededError, TembaConnectionError):
             return JsonResponse(
                 {
