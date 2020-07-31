@@ -173,13 +173,14 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 
-CELERYBEAT_SCHEDULE = {
-    "rp_gpconnect_find_new_import_file": {
+CELERYBEAT_SCHEDULE = {}
+
+if GP_CONNECT_FILE_DIR:
+    CELERYBEAT_SCHEDULE["rp_gpconnect_find_new_import_file"] = {
         "task": "rp_gpconnect.tasks.pull_new_import_file",
         "schedule": crontab(minute="0", hour="*"),
         "kwargs": {"upload_dir": GP_CONNECT_FILE_DIR, "org_name": GP_CONNECT_ORG_NAME},
     }
-}
 
 djcelery.setup_loader()
 
