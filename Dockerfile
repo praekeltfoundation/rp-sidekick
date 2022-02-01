@@ -1,4 +1,4 @@
-FROM praekeltfoundation/django-bootstrap:py3.6
+FROM praekeltfoundation/django-bootstrap:py3.9
 
 COPY . /app
 RUN mkdir -p /app/media/uploads/gpconnect/
