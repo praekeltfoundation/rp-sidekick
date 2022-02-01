@@ -8,7 +8,7 @@ env:
 
 matrix:
   include:
-    - python: '3.6'
+    - python: '3.9'
       addons:
         postgresql: '9.4'
       services:
@@ -30,7 +30,7 @@ matrix:
       after_success:
         - codecov
 
-    - python: '3.6'
+    - python: '3.9'
       sudo: required
       dist: trusty
       services:
@@ -51,7 +51,7 @@ matrix:
           branch: develop
       install: []
       addons: {}
-    - python: '3.6'
+    - python: '3.9'
       sudo: required
       dist: trusty
       services:
