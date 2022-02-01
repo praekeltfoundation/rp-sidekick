@@ -274,7 +274,7 @@ class TestTransferToViews(APITestCase):
         self.assertEqual(json.loads(response.content), {"info_txt": "top_up_data"})
         self.assertTrue(fake_delay.called)
 
-    @patch("rp_transferto.tasks.BuyProductTakeAction.delay")
+    @patch("rp_transferto.tasks.buy_product_take_action.delay")
     def test_buy_product_take_action_view_simple(self, fake_buy_product_take_action):
         msisdn = "+27820006000"
         product_id = 444
@@ -303,7 +303,7 @@ class TestTransferToViews(APITestCase):
             values_to_update={},
         )
 
-    @patch("rp_transferto.tasks.BuyProductTakeAction.delay")
+    @patch("rp_transferto.tasks.buy_product_take_action.delay")
     def test_buy_product_take_action_view_update_fields(
         self, fake_buy_product_take_action
     ):
@@ -349,7 +349,7 @@ class TestTransferToViews(APITestCase):
             values_to_update=values_to_update,
         )
 
-    @patch("rp_transferto.tasks.BuyProductTakeAction.delay")
+    @patch("rp_transferto.tasks.buy_product_take_action.delay")
     def test_buy_product_take_action_view_start_flow(
         self, fake_buy_product_take_action
     ):
@@ -386,7 +386,7 @@ class TestTransferToViews(APITestCase):
             values_to_update={},
         )
 
-    @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
+    @patch("rp_transferto.tasks.buy_airtime_take_action.delay")
     def test_buy_airtime_take_action_view_simple(self, fake_buy_airtime_take_action):
         msisdn = "+27820006000"
         airtime_amount = 444
@@ -415,7 +415,7 @@ class TestTransferToViews(APITestCase):
             fail_flow_start=False,
         )
 
-    @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
+    @patch("rp_transferto.tasks.buy_airtime_take_action.delay")
     def test_buy_airtime_take_action_view_update_fields(
         self, fake_buy_airtime_take_action
     ):
@@ -461,7 +461,7 @@ class TestTransferToViews(APITestCase):
             fail_flow_start=False,
         )
 
-    @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
+    @patch("rp_transferto.tasks.buy_airtime_take_action.delay")
     def test_buy_airtime_take_action_view_start_flow(
         self, fake_buy_airtime_take_action
     ):
@@ -498,7 +498,7 @@ class TestTransferToViews(APITestCase):
             fail_flow_start=False,
         )
 
-    @patch("rp_transferto.tasks.BuyAirtimeTakeAction.delay")
+    @patch("rp_transferto.tasks.buy_airtime_take_action.delay")
     def test_buy_airtime_take_action_view_start_fail_flow(
         self, fake_buy_airtime_take_action
     ):

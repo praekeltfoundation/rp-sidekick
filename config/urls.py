@@ -1,22 +1,15 @@
 from django.contrib import admin
 from django.urls import include, path
-from rest_framework.authentication import SessionAuthentication
-from rest_framework.documentation import include_docs_urls
-from rest_framework.permissions import IsAdminUser
+
+
+def trigger_error(request):
+    division_by_zero = 1 / 0  # noqa: F841
+
 
 urlpatterns = [
     path("", include("sidekick.urls"), name="sidekick"),
     path("admin/", admin.site.urls),
-    path("redcap/", include("rp_redcap.urls"), name="rp_redcap"),
-    path("asos/", include("rp_asos.urls"), name="rp_asos"),
     path("transferto/", include("rp_transferto.urls"), name="rp_transferto"),
-    path(
-        "docs/api/",
-        include_docs_urls(
-            title="REST API Documentation",
-            authentication_classes=[SessionAuthentication],
-            permission_classes=[IsAdminUser],
-        ),
-    ),
     path("recruit/", include("rp_recruit.urls"), name="rp_recruit"),
+    path("sentry-debug/", trigger_error),
 ]

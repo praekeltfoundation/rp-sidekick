@@ -11,7 +11,6 @@ TEMPLATE_DEBUG = True
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = False  # To test error handling
 CELERY_ALWAYS_EAGER = True
 BROKER_BACKEND = "memory"
-CELERY_RESULT_BACKEND = "djcelery.backends.database:DatabaseBackend"
 
 PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
 

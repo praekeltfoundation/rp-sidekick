@@ -11,10 +11,11 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 from os.path import join
 
-import djcelery
 import environ
+import sentry_sdk
 from celery.schedules import crontab
 from kombu import Exchange, Queue
+from sentry_sdk.integrations.django import DjangoIntegration
 
 root = environ.Path(__file__) - 3
 env = environ.Env(DEBUG=(bool, False))
@@ -35,12 +36,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
-    "djcelery",
     "django_extensions",
     "django_prometheus",
     "sidekick",
-    "rp_asos",
-    "rp_redcap",
     "rp_transferto",
     "rp_recruit",
     "rp_gpconnect",
@@ -142,6 +140,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
 }
 
 GP_CONNECT_FILE_DIR = env.str("GP_CONNECT_FILE_DIR", "")
@@ -149,10 +148,6 @@ GP_CONNECT_ORG_NAME = env.str("GP_CONNECT_ORG_NAME", "")
 AWS_ACCESS_KEY_ID = env.str("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = env.str("AWS_SECRET_ACCESS_KEY", "")
 AWS_STORAGE_BUCKET_NAME = env.str("AWS_STORAGE_BUCKET_NAME", "")
-
-# Celery configuration options
-CELERY_RESULT_BACKEND = "djcelery.backends.database:DatabaseBackend"
-CELERYBEAT_SCHEDULER = "djcelery.schedulers.DatabaseScheduler"
 
 BROKER_URL = env.str("BROKER_URL", "redis://localhost:6379/0")
 
@@ -182,8 +177,6 @@ if GP_CONNECT_FILE_DIR:
         "kwargs": {"upload_dir": GP_CONNECT_FILE_DIR, "org_name": GP_CONNECT_ORG_NAME},
     }
 
-djcelery.setup_loader()
-
 TRANSFERTO_LOGIN = env.str("TRANSFERTO_LOGIN", "")
 TRANSFERTO_TOKEN = env.str("TRANSFERTO_TOKEN", "")
 TRANSFERTO_APIKEY = env.str("TRANSFERTO_APIKEY", "")
@@ -203,3 +196,20 @@ EMAIL_SUBJECT_PREFIX = env.str("EMAIL_SUBJECT_PREFIX", "[Django]")
 RABBITMQ_MANAGEMENT_INTERFACE = env.str("RABBITMQ_MANAGEMENT_INTERFACE", "")
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", False)
+
+sentry_sdk.init(
+    dsn="https://examplePublicKey@o0.ingest.sentry.io/0",
+    integrations=[DjangoIntegration()],
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production,
+    traces_sample_rate=1.0,
+    # If you wish to associate users to errors (assuming you are using
+    # django.contrib.auth) you may enable sending PII data.
+    send_default_pii=True,
+    # By default the SDK will try to use the SENTRY_RELEASE
+    # environment variable, or infer a git commit
+    # SHA as release, however you may want to set
+    # something more human-readable.
+    # release="myapp@1.0.0",
+)
