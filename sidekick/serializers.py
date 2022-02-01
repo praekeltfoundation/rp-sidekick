@@ -18,7 +18,7 @@ class RapidProFlowWebhookSerializer(serializers.Serializer):
 
 
 class LabelTurnConversationSerializer(serializers.Serializer):
-    """"
+    """ "
     Serializer for the query parameters of the LabelTurnConversationView
     """
 
@@ -26,7 +26,7 @@ class LabelTurnConversationSerializer(serializers.Serializer):
 
 
 class ArchiveTurnConversationSerializer(serializers.Serializer):
-    """"
+    """ "
     Serializer for the query parameters of the ArchiveTurnConversationView
     """
 

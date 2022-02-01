@@ -1,11 +1,11 @@
 ---
-exclude: ^(ve/|venv/)
+exclude: ^(ve/|venv/|sidekickvenv/)
 repos:
   - repo: https://github.com/ambv/black
     rev: 1fbf7251ccdb58ba93301622388615633ecc348a
     hooks:
       - id: black
-        language_version: python3.6
+        language_version: python3.9
         types: [python]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
