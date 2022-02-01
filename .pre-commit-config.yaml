@@ -1,5 +1,5 @@
 ---
-exclude: ^(ve/|venv/|sidekickvenv/)
+exclude: ^(ve/|venv/)
 repos:
   - repo: https://github.com/ambv/black
     rev: 1fbf7251ccdb58ba93301622388615633ecc348a
