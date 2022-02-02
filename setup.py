@@ -27,6 +27,7 @@ setup(
         "raven==6.10.0",
         "hashids==1.3.1",
         "django-filter==2.4.0",
+        "sentry-sdk==1.5.4",
         "boto3",
     ],
     classifiers=[
