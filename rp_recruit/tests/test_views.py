@@ -101,6 +101,7 @@ class TestRecruitViews(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         assertCallMadeWith(mock_get_contacts.call_args, urn=f"whatsapp:{wa_id}")
 
+    @patch("rp_recruit.views.sentry_client.captureException", autospec=True)
     @patch("temba_client.v2.TembaClient.create_flow_start", autospec=True)
     @patch("temba_client.v2.TembaClient.create_contact", autospec=True)
     @patch("random.randint", autospec=True)
@@ -113,6 +114,7 @@ class TestRecruitViews(TestCase):
         mock_randint,
         mock_create_contact,
         mock_create_flow_start,
+        mock_capture_exception,
     ):
         recruitment_campaign = create_recruitment()
         msisdn = "+27821111111"
@@ -130,6 +132,8 @@ class TestRecruitViews(TestCase):
         url = reverse("recruit", kwargs={"recruitment_uuid": recruitment_campaign.uuid})
 
         response = self.client.post(url, {"msisdn": msisdn, "name": test_name})
+
+        mock_capture_exception.assert_called_once()
 
         self.assertFormError(response, "form", None, [RAPIDPRO_CREATE_OR_START_FAILURE])
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
