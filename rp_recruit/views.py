@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.views.generic import View
+from raven.contrib.django.raven_compat.models import client as sentry_client
 from requests.exceptions import RequestException
 from rest_framework import status
 
@@ -89,7 +90,7 @@ class SignupView(View):
                     f"{reverse('recruit_success')}?{urlencode(query_params)}"
                 )
             except Exception:
-                pass
+                sentry_client.captureException()
 
                 form.add_error(None, RAPIDPRO_CREATE_OR_START_FAILURE)
                 return render(
