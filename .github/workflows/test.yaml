@@ -39,8 +39,8 @@ jobs:
         run: |
           flake8
           python manage.py makemigrations rp_transferto rp_gpconnect rp_recruit\
-           sidekick --dry-run | grep 'No changes detected' ||\
-           (echo 'There are changes which require migrations.' && exit 1)
+          sidekick --dry-run | grep 'No changes detected' || (echo 'There are\
+          changes which require migrations.' && exit 1)
           black --check .
           isort -c -rc .
       - name: Test

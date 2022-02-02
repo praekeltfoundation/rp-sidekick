@@ -28,6 +28,7 @@ setup(
         "hashids==1.3.1",
         "django-filter==2.4.0",
         "sentry-sdk==1.5.4",
+        "dj-database-url==0.5.0",
         "boto3",
     ],
     classifiers=[
