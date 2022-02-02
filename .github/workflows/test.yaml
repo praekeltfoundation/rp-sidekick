@@ -19,7 +19,7 @@ jobs:
         ports:
           - 6379:6379
     env:
-      HUB_DATABASE: postgres://postgres:postgres@localhost:5432/rp_sidekick
+      RP_SIDEKICK_DATABASE: postgres://postgres:postgres@localhost/rp_sidekick
     steps:
       - uses: actions/checkout@v2
       - name: Install gettext
