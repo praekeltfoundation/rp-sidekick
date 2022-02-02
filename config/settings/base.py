@@ -9,8 +9,10 @@ https://docs.djangoproject.com/en/2.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.1/ref/settings/
 """
+import os
 from os.path import join
 
+import dj_database_url
 import environ
 import sentry_sdk
 from celery.schedules import crontab
@@ -65,8 +67,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 DATABASES = {
-    "default": env.db(
-        "RP_SIDEKICK_DATABASE", default="postgres://postgres@localhost:5432/rp_sidekick"
+    "default": dj_database_url.config(
+        default=os.environ.get(
+            "RP_SIDEKICK_DATABASE", "postgres://postgres@localhost/rp_sidekick"
+        ),
+        engine="django_prometheus.db.backends.postgresql",
     )
 }
 
