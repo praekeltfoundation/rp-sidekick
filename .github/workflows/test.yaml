@@ -5,6 +5,17 @@ on: [pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:9.6
+        env:
+          POSTGRES_DB: rp_sidekick
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+    env:
+      RP_SIDEKICK_DATABASE: postgres://postgres:postgres@localhost/rp_sidekick
     steps:
       - uses: actions/checkout@v2
       - name: Install gettext
