@@ -5,8 +5,6 @@ on: [pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      RP_SIDEKICK_DATABASE: postgres://postgres:postgres@localhost/rp_sidekick
     steps:
       - uses: actions/checkout@v2
       - name: Install gettext
