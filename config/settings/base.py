@@ -201,11 +201,10 @@ EMAIL_SUBJECT_PREFIX = env.str("EMAIL_SUBJECT_PREFIX", "[Django]")
 RABBITMQ_MANAGEMENT_INTERFACE = env.str("RABBITMQ_MANAGEMENT_INTERFACE", "")
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", False)
-SENTRY_DSN = env.str("SENTRY_DSN", "")
-RAVEN_DSN = env.str("RAVEN_DSN", "")
+SENTRY_DSN = env.str("SENTRY_DSN", env.str("RAVEN_DSN", ""))
 
 sentry_sdk.init(
-    dsn=SENTRY_DSN if SENTRY_DSN else RAVEN_DSN,
+    dsn=SENTRY_DSN if SENTRY_DSN else {},
     integrations=[DjangoIntegration()],
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
