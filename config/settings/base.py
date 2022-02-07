@@ -163,6 +163,9 @@ CELERY_QUEUES = (
 
 CELERY_ALWAYS_EAGER = False
 
+# Tell Celery where to find the tasks
+CELERY_IMPORTS = ("rp_transferto.tasks",)
+
 CELERY_CREATE_MISSING_QUEUES = True
 CELERY_ROUTES = {"celery.backend_cleanup": {"queue": "mediumpriority"}}
 
