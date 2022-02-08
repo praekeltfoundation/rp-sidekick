@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.8.0
+------------
+Sidekick: Upgraded celery and libraries to latest versions
+
 1.7.4
 ------------
 Sidekick: Added an endpoint to get only contact uuids from the rapidpro API
