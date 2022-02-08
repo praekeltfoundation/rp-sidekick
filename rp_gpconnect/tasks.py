@@ -17,7 +17,7 @@ log = get_task_logger(__name__)
 
 
 @app.task(
-    autoretry_for=Timeout,
+    autoretry_for=(Timeout,),
     retry_backoff=True,
     retry_jitter=True,
     max_retries=10,
