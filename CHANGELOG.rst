@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.8.2
+------------
+Sidekick: Django 3.2.14 and removed redcap dependancy
+
 1.8.1
 ------------
 Sidekick: Upgraded celery and libraries to latest versions
