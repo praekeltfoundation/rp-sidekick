@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.8.3
+------------
+Sidekick: Django 3.2.18 and changed docker base image
+
 1.8.2
 ------------
 Sidekick: Django 3.2.14 and removed redcap dependancy
