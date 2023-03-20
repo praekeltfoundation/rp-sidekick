@@ -151,7 +151,6 @@ class TransferToClient:
         return self._make_transferto_api_request("get_operator_products", product_url)
 
     def get_country_services(self, country_id):
-
         service_url = "https://api.transferto.com/v1.1/countries/{}/services".format(
             country_id
         )

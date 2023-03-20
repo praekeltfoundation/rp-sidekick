@@ -35,7 +35,7 @@ def take_action(
 
     if values_to_update and call_result:
         fields = {}
-        for (rapidpro_field, transferto_field) in values_to_update.items():
+        for rapidpro_field, transferto_field in values_to_update.items():
             fields[rapidpro_field] = call_result[transferto_field]
 
         rapidpro_client.update_contact(user_uuid, fields=fields)
@@ -58,7 +58,7 @@ def update_values(org, user_uuid, values_to_update, transferto_response):
     rapidpro_client = org.get_rapidpro_client()
 
     fields = {}
-    for (rapidpro_field, transferto_field) in values_to_update.items():
+    for rapidpro_field, transferto_field in values_to_update.items():
         fields[rapidpro_field] = transferto_response.get(transferto_field, "NONE")
 
     rapidpro_client.update_contact(user_uuid, fields=fields)
