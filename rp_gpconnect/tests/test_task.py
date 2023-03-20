@@ -242,7 +242,6 @@ class ImportOrUpdateContactTaskTests(TestCase):
     def test_contact_task_if_contact_exists_unchanged(
         self, mock_get_rp_contact, mock_update_rp_contact, mock_create_flow_start
     ):
-
         # Create a mock contact that is already up to date
         mock_contact_object = Mock()
         mock_contact_object.uuid = "123456"
@@ -274,7 +273,6 @@ class ImportOrUpdateContactTaskTests(TestCase):
     def test_contact_task_if_contact_exists_changed(
         self, mock_get_rp_contact, mock_create_rp_contact, mock_create_flow_start
     ):
-
         mock_contact_object = Mock()
         mock_contact_object.uuid = "123456"
         mock_contact_object.urns = ["tel:+27000000001"]
@@ -317,7 +315,6 @@ class ImportOrUpdateContactTaskTests(TestCase):
         mock_create_rp_contact,
         mock_create_flow_start,
     ):
-
         mock_get_rp_contact.return_value.first.side_effect = [None, None]
 
         import_or_update_contact(

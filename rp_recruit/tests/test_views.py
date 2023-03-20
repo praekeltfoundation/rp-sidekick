@@ -59,7 +59,6 @@ class TestRecruitViews(TestCase):
 
     @patch("rp_recruit.views.get_whatsapp_contact_id", autospec=True, return_value=None)
     def test_recruit_view_post_400(self, mock_get_whatsapp_contact_id):
-
         recruitment_campaign = create_recruitment()
         msisdn = "+27821111111"
         mock_get_whatsapp_contact_id.return_value = None
