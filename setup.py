@@ -22,7 +22,7 @@ setup(
         "phonenumbers==8.10.23",
         "psycopg2-binary==2.8.6",
         "rapidpro-python==2.6.1",
-        "redis==3.2.1",
+        "redis==4.5.3",
         "whitenoise==4.1.4",
         "raven==6.10.0",
         "hashids==1.3.1",
