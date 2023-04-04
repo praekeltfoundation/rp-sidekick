@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "rp_transferto",
     "rp_recruit",
     "rp_gpconnect",
+    "rp_interceptors",
 ]
 
 MIDDLEWARE = [
