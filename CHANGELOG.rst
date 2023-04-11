@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.8.4
+------------
+Interceptors: Added a new app called rp_interceptors, which will accept inbound messages from WhatsApp and ensure that any status objects contain the recipient_id field before forwarding them.
+
 1.8.3
 ------------
 Sidekick: Django 3.2.18 and changed docker base image
