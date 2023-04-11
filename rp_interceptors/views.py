@@ -8,6 +8,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
+from urllib.parse import urljoin
 
 from rp_interceptors.models import Interceptor
 from rp_interceptors.tasks import http_request
@@ -69,9 +70,10 @@ class InterceptorViewSet(GenericViewSet):
                 status["recipient_id"] = status.get("message").get("recipient_id", "")
 
         body = json.dumps(request.data, separators=(",", ":"))
+        path = f"/c/wa/{interceptor.channel_uuid}/receive"
         http_request.delay(
             method="POST",
-            url=interceptor.org.url,
+            url=urljoin(interceptor.org.url, path),
             headers={
                 "X-Turn-Hook-Signature": generate_hmac_signature(
                     body, interceptor.hmac_secret

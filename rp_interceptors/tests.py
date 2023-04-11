@@ -76,7 +76,7 @@ class InterceptorViewTests(APITestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://localhost:8002/",
+            url="http://localhost:8002/c/wa/1234343212/receive",
             match=[responses.matchers.json_params_matcher(expected_data)],
         )
 
@@ -118,7 +118,7 @@ class InterceptorViewTests(APITestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://localhost:8002/",
+            url="http://localhost:8002/c/wa/1234343212/receive",
             match=[responses.matchers.json_params_matcher(data)],
         )
 
@@ -156,7 +156,7 @@ class InterceptorViewTests(APITestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://localhost:8002/",
+            url="http://localhost:8002/c/wa/1234343212/receive",
             match=[responses.matchers.json_params_matcher(data)],
         )
 
@@ -204,7 +204,7 @@ class InterceptorViewTests(APITestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://localhost:8002/",
+            url="http://localhost:8002/c/wa/1234343212/receive",
             match=[responses.matchers.json_params_matcher(expected_data)],
         )
 
