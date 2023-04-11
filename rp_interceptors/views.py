@@ -1,5 +1,6 @@
 import hmac
 import json
+from urllib.parse import urljoin
 
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.authentication import BaseAuthentication
@@ -8,7 +9,6 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
-from urllib.parse import urljoin
 
 from rp_interceptors.models import Interceptor
 from rp_interceptors.tasks import http_request

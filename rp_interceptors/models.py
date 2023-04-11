@@ -8,10 +8,10 @@ class Interceptor(models.Model):
     channel_uuid = models.CharField(
         max_length=255,
         null=False,
-        help_text="The uuid of the WhatsApp channel in RapidPro that should receive messages"
+        help_text="The uuid of the WhatsApp channel in RapidPro that should receive messages",
     )
     hmac_secret = models.CharField(
         max_length=255,
         blank=True,
-        help_text="The secret for the webhook in Turn that calls this"
+        help_text="The secret for the webhook in Turn that calls this",
     )
