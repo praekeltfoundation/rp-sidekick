@@ -27,7 +27,7 @@ class InterceptorViewTests(APITestCase):
         then we should return a 403
         """
         interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret"
+            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
         )
         url = reverse("interceptor-status", args=[interceptor.pk])
         data = {"test": "body"}
@@ -47,7 +47,7 @@ class InterceptorViewTests(APITestCase):
         should be pulled from the message object and the request forwarded to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret"
+            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -76,7 +76,7 @@ class InterceptorViewTests(APITestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://localhost:8002/",
+            url="http://localhost:8002/c/wa/1234343212/receive",
             match=[responses.matchers.json_params_matcher(expected_data)],
         )
 
@@ -99,7 +99,7 @@ class InterceptorViewTests(APITestCase):
         If the request does not contain a status object then it should be forwarded as is to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret"
+            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -118,7 +118,7 @@ class InterceptorViewTests(APITestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://localhost:8002/",
+            url="http://localhost:8002/c/wa/1234343212/receive",
             match=[responses.matchers.json_params_matcher(data)],
         )
 
@@ -137,7 +137,7 @@ class InterceptorViewTests(APITestCase):
         as is to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret"
+            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -156,7 +156,7 @@ class InterceptorViewTests(APITestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://localhost:8002/",
+            url="http://localhost:8002/c/wa/1234343212/receive",
             match=[responses.matchers.json_params_matcher(data)],
         )
 
@@ -175,7 +175,7 @@ class InterceptorViewTests(APITestCase):
         the recipient_id key to the status object and forwarded it on to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret"
+            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -204,7 +204,7 @@ class InterceptorViewTests(APITestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://localhost:8002/",
+            url="http://localhost:8002/c/wa/1234343212/receive",
             match=[responses.matchers.json_params_matcher(expected_data)],
         )
 

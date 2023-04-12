@@ -1,5 +1,6 @@
 import hmac
 import json
+from urllib.parse import urljoin
 
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.authentication import BaseAuthentication
@@ -69,9 +70,10 @@ class InterceptorViewSet(GenericViewSet):
                 status["recipient_id"] = status.get("message").get("recipient_id", "")
 
         body = json.dumps(request.data, separators=(",", ":"))
+        path = f"/c/wa/{interceptor.channel_uuid}/receive"
         http_request.delay(
             method="POST",
-            url=interceptor.org.url,
+            url=urljoin(interceptor.org.url, path),
             headers={
                 "X-Turn-Hook-Signature": generate_hmac_signature(
                     body, interceptor.hmac_secret
