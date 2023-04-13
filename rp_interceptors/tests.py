@@ -131,6 +131,41 @@ class InterceptorViewTests(APITestCase):
         self.assertEqual(call.request.headers["X-Turn-Hook-Signature"], signature)
 
     @responses.activate
+    def test_status_request_no_message_key(self):
+        """
+        If the status has no message key it should forward it as is
+        """
+        interceptor: Interceptor = Interceptor.objects.create(
+            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+        )
+        url: str = reverse("interceptor-status", args=[interceptor.pk])
+        data = {
+            "statuses": [
+                {
+                    "id": "gBEGRHQnRBM2AglN0MpYOUgzMWo",
+                    "status": "delivered",
+                    "timestamp": "1680519050",
+                }
+            ]
+        }
+        body = json.dumps(data, separators=(",", ":"))
+        signature = generate_hmac_signature(body, interceptor.hmac_secret)
+
+        responses.add(
+            method=responses.POST,
+            url="http://localhost:8002/c/wa/1234343212/receive",
+            match=[responses.matchers.json_params_matcher(data)],
+        )
+
+        response = self.client.post(
+            url, data, format="json", HTTP_X_TURN_HOOK_SIGNATURE=signature
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        [call] = responses.calls
+        self.assertEqual(call.request.headers["X-Turn-Hook-Signature"], signature)
+
+    @responses.activate
     def test_status_request_contains_recipient_id(self):
         """
         If the status in the request already contains the recipient_id then it should be forwarded
