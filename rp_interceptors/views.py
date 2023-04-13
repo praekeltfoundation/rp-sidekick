@@ -66,7 +66,7 @@ class InterceptorViewSet(GenericViewSet):
     def status(self, request, pk=None):
         interceptor = self.get_object()
         for status in request.data.get("statuses", []):
-            if "recipient_id" not in status:
+            if "recipient_id" not in status and "message" in status:
                 status["recipient_id"] = status.get("message").get("recipient_id", "")
 
         body = json.dumps(request.data, separators=(",", ":"))
