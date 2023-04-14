@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.8.6
+------------
+Sidekick: Added threading to Dockerfile
+
 1.8.5
 ------------
 Interceptors: Handle no message or recipient_id in event
