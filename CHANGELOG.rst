@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.8.7
+------------
+Interceptors: Handle empty events from WhatsApp
+
 1.8.6
 ------------
 Sidekick: Added threading to Dockerfile
