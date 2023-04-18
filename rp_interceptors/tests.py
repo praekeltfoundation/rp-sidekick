@@ -93,6 +93,23 @@ class InterceptorViewTests(APITestCase):
             ),
         )
 
+    def test_empty_status_request(self):
+        """
+        If the request only contains a empty status object, don't forward it to Rapidpro
+        """
+        interceptor: Interceptor = Interceptor.objects.create(
+            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+        )
+        url: str = reverse("interceptor-status", args=[interceptor.pk])
+        data = {"statuses": [{}]}
+        body = json.dumps(data, separators=(",", ":"))
+        signature = generate_hmac_signature(body, interceptor.hmac_secret)
+
+        response = self.client.post(
+            url, data, format="json", HTTP_X_TURN_HOOK_SIGNATURE=signature
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     @responses.activate
     def test_non_status_request(self):
         """
