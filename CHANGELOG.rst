@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.8.8
+------------
+Upgrade redis library
+
 1.8.7
 ------------
 Interceptors: Handle empty events from WhatsApp
