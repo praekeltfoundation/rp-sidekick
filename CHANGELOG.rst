@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.8.9 
+------------
+Sentry config for sample rate
+
 1.8.8
 ------------
 Upgrade redis library
