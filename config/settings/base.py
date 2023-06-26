@@ -211,7 +211,7 @@ sentry_sdk.init(
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production,
-    traces_sample_rate=os.environ.get("TRACES_SAMPLE_RATE"),
+    traces_sample_rate=TRACES_SAMPLE_RATE,
     # If you wish to associate users to errors (assuming you are using
     # django.contrib.auth) you may enable sending PII data.
     send_default_pii=True,
