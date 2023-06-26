@@ -203,6 +203,7 @@ RABBITMQ_MANAGEMENT_INTERFACE = env.str("RABBITMQ_MANAGEMENT_INTERFACE", "")
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", False)
 SENTRY_DSN = env.str("SENTRY_DSN", env.str("RAVEN_DSN", ""))
+TRACES_SAMPLE_RATE = env.float("TRACES_SAMPLE_RATE", 1.0)
 
 sentry_sdk.init(
     dsn=SENTRY_DSN if SENTRY_DSN else {},
@@ -210,7 +211,7 @@ sentry_sdk.init(
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production,
-    traces_sample_rate=1.0,
+    traces_sample_rate=TRACES_SAMPLE_RATE,
     # If you wish to associate users to errors (assuming you are using
     # django.contrib.auth) you may enable sending PII data.
     send_default_pii=True,
