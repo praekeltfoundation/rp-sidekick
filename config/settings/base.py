@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "django_prometheus",
     "sidekick",
+    "rp_dtone",
     "rp_transferto",
     "rp_recruit",
     "rp_interceptors",
