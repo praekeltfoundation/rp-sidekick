@@ -80,7 +80,7 @@ class TransferToClient:
 
         @param:integer country_id
         """
-        if type(country_id) != int:
+        if type(country_id) is not int:
             raise TypeError("arg must be an int")
         else:
             return self._make_transferto_request(
@@ -92,7 +92,7 @@ class TransferToClient:
         Returns the list of denomination including wholesale and retail prices offered to your account,
         for a specific operator
         """
-        if type(operator_id) != int:
+        if type(operator_id) is not int:
             raise TypeError("arg must be an int")
         else:
             return self._make_transferto_request(
@@ -109,7 +109,7 @@ class TransferToClient:
         :param str reserve_id: [optional] see transferto documentation for more details about reserve id
         :return: dict of transaction response from transferto
         """
-        if type(product) != int:
+        if type(product) is not int:
             raise TypeError("product arg must be an int")
 
         keyword_args = {
