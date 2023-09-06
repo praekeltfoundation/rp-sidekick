@@ -1,7 +1,6 @@
 FROM ghcr.io/praekeltfoundation/docker-django-bootstrap-nw:py3.9-bullseye
 
 COPY . /app
-RUN mkdir -p /app/media/uploads/gpconnect/
 
 RUN pip install -e .
 

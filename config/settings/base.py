@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     "sidekick",
     "rp_transferto",
     "rp_recruit",
-    "rp_gpconnect",
     "rp_interceptors",
 ]
 
@@ -149,8 +148,6 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
 }
 
-GP_CONNECT_FILE_DIR = env.str("GP_CONNECT_FILE_DIR", "")
-GP_CONNECT_ORG_NAME = env.str("GP_CONNECT_ORG_NAME", "")
 AWS_ACCESS_KEY_ID = env.str("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = env.str("AWS_SECRET_ACCESS_KEY", "")
 AWS_STORAGE_BUCKET_NAME = env.str("AWS_STORAGE_BUCKET_NAME", "")
@@ -175,13 +172,6 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 
 CELERYBEAT_SCHEDULE = {}
-
-if GP_CONNECT_FILE_DIR:
-    CELERYBEAT_SCHEDULE["rp_gpconnect_find_new_import_file"] = {
-        "task": "rp_gpconnect.tasks.pull_new_import_file",
-        "schedule": crontab(minute="0", hour="*"),
-        "kwargs": {"upload_dir": GP_CONNECT_FILE_DIR, "org_name": GP_CONNECT_ORG_NAME},
-    }
 
 TRANSFERTO_LOGIN = env.str("TRANSFERTO_LOGIN", "")
 TRANSFERTO_TOKEN = env.str("TRANSFERTO_TOKEN", "")
