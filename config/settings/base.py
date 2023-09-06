@@ -15,7 +15,6 @@ from os.path import join
 import dj_database_url
 import environ
 import sentry_sdk
-from celery.schedules import crontab
 from kombu import Exchange, Queue
 from sentry_sdk.integrations.django import DjangoIntegration
 
