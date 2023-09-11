@@ -1,79 +1,95 @@
-import json
-from unittest import TestCase
+from unittest.mock import patch
 
-import responses
+from django.test import TestCase
 
-from rp_dtone.utils import DtoneClient
+from rp_dtone.dtone_client import DtoneClient
+from rp_dtone.models import Transaction
+from rp_dtone.utils import send_airtime
+from sidekick.tests.utils import create_org
 
 
-class TestDtoneClient(TestCase):
+class MockResponse:
+    def __init__(self, json_data, status_code):
+        self.json_data = json_data
+        self.status_code = status_code
+
+    def json(self):
+        return self.json_data
+
+
+class TestSendAirtime(TestCase):
     def setUp(self):
         self.client = DtoneClient("fake_apikey", "fake_apisecret", False)
+        self.org = create_org()
 
-    @responses.activate
-    def test_get_operator_id(self):
-        responses.add(
-            method=responses.GET,
-            url="https://preprod-dvs-api.dtone.com/v1/lookup/mobile-number/+27123",
-            json=[{"id": 123}],
-            status=200,
+    @patch("rp_dtone.dtone_client.DtoneClient.get_operator_id")
+    def test_send_airtime_operator_not_found(self, mock_get_operator_id):
+        mock_get_operator_id.return_value = None
+
+        success, transaction_uuid = send_airtime(
+            self.org.id, self.client, "+27123", 1000
         )
 
-        operator_id = self.client._get_operator_id("+27123")
+        self.assertFalse(success)
+        t = Transaction.objects.get(uuid=transaction_uuid)
+        self.assertEqual(t.status, Transaction.Status.OPERATOR_NOT_FOUND)
 
-        self.assertEqual(operator_id, 123)
+    @patch("rp_dtone.dtone_client.DtoneClient.get_operator_id")
+    @patch("rp_dtone.dtone_client.DtoneClient.get_fixed_value_product")
+    def test_send_airtime_fix_product_not_found(
+        self, mock_get_fixed_value_product, mock_get_operator_id
+    ):
+        mock_get_operator_id.return_value = 1
+        mock_get_fixed_value_product.return_value = None
 
-        request = responses.calls[0].request
-        self.assertEqual(
-            request.headers["Authorization"],
-            "Basic ZmFrZV9hcGlrZXk6ZmFrZV9hcGlzZWNyZXQ=",
+        success, transaction_uuid = send_airtime(
+            self.org.id, self.client, "+27123", 1000
         )
 
-    @responses.activate
-    def test_get_fixed_value_product(self):
-        responses.add(
-            method=responses.GET,
-            url="https://preprod-dvs-api.dtone.com/v1/products?type=FIXED_VALUE_RECHARGE&operator_id=123&per_page=100",
-            json=[
-                {"id": 111, "destination": {"amount": 10}},
-                {"id": 222, "destination": {"amount": 5}},
-            ],
-            status=200,
+        self.assertFalse(success)
+        t = Transaction.objects.get(uuid=transaction_uuid)
+        self.assertEqual(t.status, Transaction.Status.PRODUCT_NOT_FOUND)
+
+    @patch("rp_dtone.dtone_client.DtoneClient.get_operator_id")
+    @patch("rp_dtone.dtone_client.DtoneClient.get_fixed_value_product")
+    @patch("rp_dtone.dtone_client.DtoneClient.submit_transaction")
+    def test_send_airtime_error(
+        self,
+        mock_submit_transaction,
+        mock_get_fixed_value_product,
+        mock_get_operator_id,
+    ):
+        mock_get_operator_id.return_value = 1
+        mock_get_fixed_value_product.return_value = 2
+        mock_submit_transaction.return_value = MockResponse({"test": "Error"}, 400)
+
+        success, transaction_uuid = send_airtime(
+            self.org.id, self.client, "+27123", 1000
         )
 
-        product_id = self.client._get_fixed_value_product(123, 5)
+        self.assertFalse(success)
+        t = Transaction.objects.get(uuid=transaction_uuid)
+        self.assertEqual(t.status, Transaction.Status.ERROR)
+        self.assertEqual(t.response, {"test": "Error"})
 
-        self.assertEqual(product_id, 222)
+    @patch("rp_dtone.dtone_client.DtoneClient.get_operator_id")
+    @patch("rp_dtone.dtone_client.DtoneClient.get_fixed_value_product")
+    @patch("rp_dtone.dtone_client.DtoneClient.submit_transaction")
+    def test_send_airtime_success(
+        self,
+        mock_submit_transaction,
+        mock_get_fixed_value_product,
+        mock_get_operator_id,
+    ):
+        mock_get_operator_id.return_value = 1
+        mock_get_fixed_value_product.return_value = 2
+        mock_submit_transaction.return_value = MockResponse({}, 201)
 
-        request = responses.calls[0].request
-        self.assertEqual(
-            request.headers["Authorization"],
-            "Basic ZmFrZV9hcGlrZXk6ZmFrZV9hcGlzZWNyZXQ=",
+        success, transaction_uuid = send_airtime(
+            self.org.id, self.client, "+27123", 1000
         )
 
-    @responses.activate
-    def test_submit_transaction(self):
-        responses.add(
-            method=responses.POST,
-            url="https://preprod-dvs-api.dtone.com/v1/async/transactions",
-            json={"test": "response"},
-            status=200,
-        )
-
-        self.client._submit_transaction("+27123", 123)
-
-        request = responses.calls[0].request
-        self.assertEqual(
-            request.headers["Authorization"],
-            "Basic ZmFrZV9hcGlrZXk6ZmFrZV9hcGlzZWNyZXQ=",
-        )
-
-        self.assertEqual(
-            json.loads(request.body),
-            {
-                "external_id": "fe755a2f-d305-4232-a920-796b4140b329",
-                "product_id": 123,
-                "auto_confirm": True,
-                "credit_party_identifier": {"mobile_number": "+27123"},
-            },
-        )
+        self.assertTrue(success)
+        t = Transaction.objects.get(uuid=transaction_uuid)
+        self.assertEqual(t.status, Transaction.Status.SUCCESS)
+        self.assertIsNone(t.response)
