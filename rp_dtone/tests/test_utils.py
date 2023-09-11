@@ -34,6 +34,8 @@ class TestSendAirtime(TestCase):
         t = Transaction.objects.get(uuid=transaction_uuid)
         self.assertEqual(t.status, Transaction.Status.OPERATOR_NOT_FOUND)
 
+        mock_get_operator_id.assert_called_with("+27123")
+
     @patch("rp_dtone.dtone_client.DtoneClient.get_operator_id")
     @patch("rp_dtone.dtone_client.DtoneClient.get_fixed_value_product")
     def test_send_airtime_fix_product_not_found(
@@ -49,6 +51,9 @@ class TestSendAirtime(TestCase):
         self.assertFalse(success)
         t = Transaction.objects.get(uuid=transaction_uuid)
         self.assertEqual(t.status, Transaction.Status.PRODUCT_NOT_FOUND)
+
+        mock_get_operator_id.assert_called_with("+27123")
+        mock_get_fixed_value_product.assert_called_with(1, 1000)
 
     @patch("rp_dtone.dtone_client.DtoneClient.get_operator_id")
     @patch("rp_dtone.dtone_client.DtoneClient.get_fixed_value_product")
@@ -72,6 +77,10 @@ class TestSendAirtime(TestCase):
         self.assertEqual(t.status, Transaction.Status.ERROR)
         self.assertEqual(t.response, {"test": "Error"})
 
+        mock_get_operator_id.assert_called_with("+27123")
+        mock_get_fixed_value_product.assert_called_with(1, 1000)
+        mock_submit_transaction.assert_called_with("+27123", 2)
+
     @patch("rp_dtone.dtone_client.DtoneClient.get_operator_id")
     @patch("rp_dtone.dtone_client.DtoneClient.get_fixed_value_product")
     @patch("rp_dtone.dtone_client.DtoneClient.submit_transaction")
@@ -93,3 +102,7 @@ class TestSendAirtime(TestCase):
         t = Transaction.objects.get(uuid=transaction_uuid)
         self.assertEqual(t.status, Transaction.Status.SUCCESS)
         self.assertIsNone(t.response)
+
+        mock_get_operator_id.assert_called_with("+27123")
+        mock_get_fixed_value_product.assert_called_with(1, 1000)
+        mock_submit_transaction.assert_called_with("+27123", 2)
