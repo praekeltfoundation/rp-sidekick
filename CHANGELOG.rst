@@ -4,7 +4,11 @@ VERSIONS
 Next Release
 ------------
 
-1.8.9 
+1.9.0
+------------
+Added DTOne integration
+
+1.8.9
 ------------
 Sentry config for sample rate
 
