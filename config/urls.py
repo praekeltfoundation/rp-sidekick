@@ -7,4 +7,5 @@ urlpatterns = [
     path("transferto/", include("rp_transferto.urls"), name="rp_transferto"),
     path("recruit/", include("rp_recruit.urls"), name="rp_recruit"),
     path("interceptor/", include("rp_interceptors.urls")),
+    path("dtone/", include("rp_dtone.urls")),
 ]
