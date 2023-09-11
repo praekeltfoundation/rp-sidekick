@@ -1,53 +1,28 @@
-from urllib.parse import urljoin
-
-import requests
+from .models import Transaction
 
 
-class DtoneClient:
-    def __init__(self, apikey, apisecret, production):
-        self.auth = requests.auth.HTTPBasicAuth(apikey, apisecret)
+def send_airtime(org_id, client, msisdn, value):
+    transaction = Transaction.objects.create(org_id=org_id, msisdn=msisdn, value=value)
+    transaction.operator_id = client.get_operator_id(msisdn)
+    if not transaction.operator_id:
+        transaction.status = Transaction.Status.OPERATOR_NOT_FOUND
+        transaction.save()
+        return False, transaction.uuid
 
-        if production:
-            self.base_url = "https://dvs-api.dtone.com"
-        else:
-            self.base_url = "https://preprod-dvs-api.dtone.com"
+    transaction.product_id = client.get_fixed_value_product(
+        transaction.operator_id, value
+    )
+    if not transaction.product_id:
+        transaction.status = Transaction.Status.PRODUCT_NOT_FOUND
+        transaction.save()
+        return False, transaction.uuid
 
-    def _get_operator_id(self, msisdn):
-        response = requests.get(
-            urljoin(self.base_url, f"/v1/lookup/mobile-number/{msisdn}"),
-            auth=self.auth,
-        )
-        response.raise_for_status()
-        return response.json()[0]["id"]
+    response = client.submit_transaction(msisdn, transaction.product_id)
+    if response.status_code == 201:
+        transaction.status = Transaction.Status.SUCCESS
+    else:
+        transaction.status = Transaction.Status.ERROR
+        transaction.response = response.json()
 
-    def _get_fixed_value_product(self, operator_id, value):
-        response = requests.get(
-            urljoin(
-                self.base_url,
-                f"/v1/products?type=FIXED_VALUE_RECHARGE&operator_id={operator_id}&per_page=100",
-            ),
-            auth=self.auth,
-        )
-        response.raise_for_status()
-
-        for product in response.json():
-            if product["destination"]["amount"] == value:
-                return product["id"]
-
-    def _submit_transaction(self, msisdn, product_id):
-        body = {
-            "external_id": "fe755a2f-d305-4232-a920-796b4140b329",
-            "product_id": product_id,
-            "auto_confirm": True,
-            "credit_party_identifier": {"mobile_number": msisdn},
-        }
-
-        response = requests.post(
-            urljoin(
-                self.base_url,
-                "/v1/async/transactions",
-            ),
-            auth=self.auth,
-            json=body,
-        )
-        response.raise_for_status()
+    transaction.save()
+    return transaction.status == Transaction.Status.SUCCESS, transaction.uuid
