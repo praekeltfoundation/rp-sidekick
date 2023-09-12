@@ -6,6 +6,10 @@ Next Release
 
 1.9.0
 ------------
+DTone: Fix transaction serializer
+
+1.9.0
+------------
 Added DTOne integration
 
 1.8.9
