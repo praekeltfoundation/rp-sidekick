@@ -79,7 +79,7 @@ class TestSendAirtime(TestCase):
 
         mock_get_operator_id.assert_called_with("+27123")
         mock_get_fixed_value_product.assert_called_with(1, 1000)
-        mock_submit_transaction.assert_called_with("+27123", 2)
+        mock_submit_transaction.assert_called_with(transaction_uuid, "+27123", 2)
 
     @patch("rp_dtone.dtone_client.DtoneClient.get_operator_id")
     @patch("rp_dtone.dtone_client.DtoneClient.get_fixed_value_product")
@@ -105,4 +105,4 @@ class TestSendAirtime(TestCase):
 
         mock_get_operator_id.assert_called_with("+27123")
         mock_get_fixed_value_product.assert_called_with(1, 1000)
-        mock_submit_transaction.assert_called_with("+27123", 2)
+        mock_submit_transaction.assert_called_with(transaction_uuid, "+27123", 2)

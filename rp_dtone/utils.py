@@ -17,7 +17,9 @@ def send_airtime(org_id, client, msisdn, value):
         transaction.save()
         return False, transaction.uuid
 
-    response = client.submit_transaction(msisdn, transaction.product_id)
+    response = client.submit_transaction(
+        transaction.uuid, msisdn, transaction.product_id
+    )
     if response.status_code == 201:
         transaction.status = Transaction.Status.SUCCESS
     else:
