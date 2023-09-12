@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.9.3
+------------
+DTone: Fix submit transaction body
+
 1.9.2
 ------------
 DTone: Fix submit transaction uuid
