@@ -57,7 +57,7 @@ class Transaction(models.Model):
         return json.dumps(
             {
                 "id": self.id,
-                "uuid": self.uuid,
+                "uuid": str(self.uuid),
                 "msisdn": self.msisdn,
                 "value": self.value,
                 "operator_id": self.operator_id,
