@@ -37,7 +37,7 @@ class DtoneClient:
 
     def submit_transaction(self, transaction_uuid, msisdn, product_id):
         body = {
-            "external_id": transaction_uuid,
+            "external_id": str(transaction_uuid),
             "product_id": product_id,
             "auto_confirm": True,
             "credit_party_identifier": {"mobile_number": msisdn},
