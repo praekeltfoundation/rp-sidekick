@@ -35,9 +35,9 @@ class DtoneClient:
             if product["destination"]["amount"] == value:
                 return product["id"]
 
-    def submit_transaction(self, msisdn, product_id):
+    def submit_transaction(self, transaction_uuid, msisdn, product_id):
         body = {
-            "external_id": "fe755a2f-d305-4232-a920-796b4140b329",
+            "external_id": transaction_uuid,
             "product_id": product_id,
             "auto_confirm": True,
             "credit_party_identifier": {"mobile_number": msisdn},

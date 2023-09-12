@@ -60,7 +60,7 @@ class TestDtoneClient(TestCase):
             status=200,
         )
 
-        self.client.submit_transaction("+27123", 123)
+        self.client.submit_transaction("transaction-uuid", "+27123", 123)
 
         request = responses.calls[0].request
         self.assertEqual(
@@ -71,7 +71,7 @@ class TestDtoneClient(TestCase):
         self.assertEqual(
             json.loads(request.body),
             {
-                "external_id": "fe755a2f-d305-4232-a920-796b4140b329",
+                "external_id": "transaction-uuid",
                 "product_id": 123,
                 "auto_confirm": True,
                 "credit_party_identifier": {"mobile_number": "+27123"},
