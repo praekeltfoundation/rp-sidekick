@@ -4,7 +4,11 @@ VERSIONS
 Next Release
 ------------
 
-1.9.0
+1.9.2
+------------
+DTone: Fix submit transaction uuid
+
+1.9.1
 ------------
 DTone: Fix transaction serializer
 
