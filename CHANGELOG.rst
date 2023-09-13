@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.9.4
+------------
+DTone: Fix airtime transfers for all networks
+
 1.9.3
 ------------
 DTone: Fix submit transaction body
