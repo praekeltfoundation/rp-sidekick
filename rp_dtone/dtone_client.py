@@ -32,7 +32,9 @@ class DtoneClient:
         response.raise_for_status()
 
         for product in response.json():
-            if product["destination"]["amount"] == value:
+            product_value = product["destination"]["amount"]
+            product_type = product.get("service", {}).get("subservice", {}).get("name")
+            if product_value == value and product_type == "Airtime":
                 return product["id"]
 
     def submit_transaction(self, transaction_uuid, msisdn, product_id):

@@ -36,15 +36,49 @@ class TestDtoneClient(TestCase):
             method=responses.GET,
             url="https://preprod-dvs-api.dtone.com/v1/products?type=FIXED_VALUE_RECHARGE&operator_id=123&per_page=100",
             json=[
-                {"id": 111, "destination": {"amount": 10}},
-                {"id": 222, "destination": {"amount": 5}},
+                {
+                    "id": 111,
+                    "destination": {"amount": 10},
+                    "service": {
+                        "id": 1,
+                        "name": "Mobile",
+                        "subservice": {"id": 11, "name": "Data"},
+                    },
+                },
+                {
+                    "id": 222,
+                    "destination": {"amount": 5},
+                    "service": {
+                        "id": 1,
+                        "name": "Mobile",
+                        "subservice": {"id": 11, "name": "Data"},
+                    },
+                },
+                {
+                    "id": 333,
+                    "destination": {"amount": 10},
+                    "service": {
+                        "id": 1,
+                        "name": "Mobile",
+                        "subservice": {"id": 11, "name": "Airtime"},
+                    },
+                },
+                {
+                    "id": 444,
+                    "destination": {"amount": 5},
+                    "service": {
+                        "id": 1,
+                        "name": "Mobile",
+                        "subservice": {"id": 11, "name": "Airtime"},
+                    },
+                },
             ],
             status=200,
         )
 
         product_id = self.client.get_fixed_value_product(123, 5)
 
-        self.assertEqual(product_id, 222)
+        self.assertEqual(product_id, 444)
 
         request = responses.calls[0].request
         self.assertEqual(
