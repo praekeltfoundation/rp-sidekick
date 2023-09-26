@@ -86,4 +86,11 @@ def check_rapidpro_group_membership_count():
             client = org.get_rapidpro_client()
             group = client.get_groups(name=group_name).first()
             if group and group.count <= 0:
-                raise Exception(f"Org: {org.name} - {group_name} group is empty")
+                raise_group_membership_error.delay(
+                    f"Org: {org.name} - {group_name} group is empty"
+                )
+
+
+@app.task()
+def raise_group_membership_error(error):
+    raise Exception(error)
