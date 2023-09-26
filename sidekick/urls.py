@@ -46,4 +46,14 @@ urlpatterns = [
         views.ListContactsView.as_view(),
         name="list_contacts",
     ),
+    path(
+        "<int:org_id>/api/v2/flows.json",
+        views.RapidproFlowsView.as_view(),
+        name="rapidpro-flows",
+    ),
+    path(
+        "<int:org_id>/api/v2/contacts.json",
+        views.RapidproContactView.as_view(),
+        name="rapidpro-contact",
+    ),
 ]

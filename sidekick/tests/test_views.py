@@ -876,3 +876,119 @@ class ListContactsViewTests(SidekickAPITestCase):
                 "may have exceeded the rate limit. Please try again later."
             },
         )
+
+
+class RapidproFlowsViewTests(SidekickAPITestCase):
+    @responses.activate
+    def test_get_rapidpro_flows(self):
+        """
+        Get flows from rapidpro
+        """
+        response_body = {
+            "results": [
+                {
+                    "uuid": "flow-1-uuid",
+                    "name": "Flow 1",
+                },
+                {
+                    "uuid": "flow-2-uuid",
+                    "name": "Flow 2",
+                },
+            ]
+        }
+        responses.add(
+            responses.GET,
+            "http://localhost:8002/api/v2/flows.json",
+            json=response_body,
+            status=200,
+            match_querystring=True,
+        )
+
+        self.client.force_authenticate(self.user)
+
+        url = reverse("rapidpro-flows", args=[self.org.pk])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), response_body)
+
+
+class RapidproContactViewTests(SidekickAPITestCase):
+    @responses.activate
+    def test_get_rapidpro_contact(self):
+        """
+        Get contact from rapidpro
+        """
+
+        response_body = {
+            "results": [
+                {
+                    "uuid": "49e49903-5a4e-464c-9e6b-f93b6e845e2e",
+                    "name": "Test Contact",
+                    "fields": {
+                        "whatsapp_consent": "TRUE",
+                        "identification_type": "sa_id",
+                        "public_messaging": "TRUE",
+                        "loss_start_date": None,
+                    },
+                }
+            ]
+        }
+        responses.add(
+            responses.GET,
+            "http://localhost:8002/api/v2/contacts.json",
+            json=response_body,
+            status=200,
+            match_querystring=True,
+        )
+
+        self.client.force_authenticate(self.user)
+
+        url = reverse("rapidpro-contact", args=[self.org.pk])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(response.json(), response_body)
+
+    @responses.activate
+    def test_get_rapidpro_contact_with_field_filter(self):
+        """
+        Get contact from rapidpro and filter fields
+        """
+        self.org.filter_rapidpro_fields = "whatsapp_consent,public_messaging"
+        self.org.save()
+
+        response_body = {
+            "results": [
+                {
+                    "uuid": "49e49903-5a4e-464c-9e6b-f93b6e845e2e",
+                    "name": "Test Contact",
+                    "fields": {
+                        "whatsapp_consent": "TRUE",
+                        "identification_type": "sa_id",
+                        "public_messaging": "TRUE",
+                        "loss_start_date": None,
+                    },
+                }
+            ]
+        }
+        responses.add(
+            responses.GET,
+            "http://localhost:8002/api/v2/contacts.json",
+            json=response_body,
+            status=200,
+            match_querystring=True,
+        )
+
+        self.client.force_authenticate(self.user)
+
+        url = reverse("rapidpro-contact", args=[self.org.pk])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_body["results"][0]["fields"].pop("identification_type")
+        response_body["results"][0]["fields"].pop("loss_start_date")
+
+        self.assertEqual(response.json(), response_body)
