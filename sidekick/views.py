@@ -1,5 +1,6 @@
 import json
 from os import environ
+from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
@@ -338,3 +339,64 @@ class ListContactsView(GenericAPIView):
             )
 
         return JsonResponse({"contacts": uuids}, status=status.HTTP_200_OK)
+
+
+class RapidproFlowsView(GenericAPIView):
+    def get(self, request, org_id, *args, **kwargs):
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(
+                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(
+                data={"error": "user not in org"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Token {}".format(org.token),
+        }
+        response = requests.get(urljoin(org.url, "api/v2/flows.json"), headers=headers)
+
+        return JsonResponse(response.json(), status=response.status_code)
+
+
+class RapidproContactView(GenericAPIView):
+    def get(self, request, org_id, *args, **kwargs):
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(
+                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(
+                data={"error": "user not in org"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Token {}".format(org.token),
+        }
+        response = requests.get(
+            urljoin(org.url, "api/v2/contacts.json"),
+            params=request.GET,
+            headers=headers,
+        )
+
+        contact_data = response.json()
+
+        if org.filter_rapidpro_fields:
+            filter_fields = org.filter_rapidpro_fields.split(",")
+            for contact in contact_data.get("results", []):
+                new_fields = {}
+                for field, value in contact["fields"].items():
+                    if field in filter_fields:
+                        new_fields[field] = value
+                contact["fields"] = new_fields
+
+        return JsonResponse(contact_data, status=response.status_code)
