@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.10.1
+------------
+Sidekick: Multiple org fix for rapidpro group count monitor
+
 1.10.0
 ------------
 Sidekick: Added Rapdipro views for Turn
