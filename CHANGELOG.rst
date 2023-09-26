@@ -4,6 +4,11 @@ VERSIONS
 Next Release
 ------------
 
+1.10.0
+------------
+Sidekick: Added Rapdipro views for Turn
+Sidekick: Add rapidpro group count monitor
+
 1.9.4
 ------------
 DTone: Fix airtime transfers for all networks
