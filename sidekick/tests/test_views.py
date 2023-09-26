@@ -906,11 +906,28 @@ class RapidproFlowsViewTests(SidekickAPITestCase):
 
         self.client.force_authenticate(self.user)
 
-        url = reverse("rapidpro-flows", args=[self.org.pk])
+        url = reverse("rapidpro-flows")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), response_body)
+
+    def test_start_rapidpro_flow_not_in_org(self):
+        """
+        Should not attempt to get flows from rapidpro if user is not in org
+        """
+
+        user = get_user_model().objects.create_superuser(
+            username="tseet", email="test@email.com", password="pass"
+        )
+
+        self.client.force_authenticate(user)
+
+        url = reverse("rapidpro-flows")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"error": "Organization not found"})
 
 
 class RapidproFlowStartViewTests(SidekickAPITestCase):
@@ -937,7 +954,7 @@ class RapidproFlowStartViewTests(SidekickAPITestCase):
         )
         self.client.force_authenticate(self.user)
 
-        url = reverse("rapidpro-flowstart", args=[self.org.pk])
+        url = reverse("rapidpro-flowstart")
         response = self.client.post(
             url,
             json={
@@ -948,6 +965,23 @@ class RapidproFlowStartViewTests(SidekickAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), response_body)
+
+    def test_start_rapidpro_flow_not_in_org(self):
+        """
+        Should not attempt to start flow on rapidpro if user is not in org
+        """
+
+        user = get_user_model().objects.create_superuser(
+            username="tseet", email="test@email.com", password="pass"
+        )
+
+        self.client.force_authenticate(user)
+
+        url = reverse("rapidpro-flowstart")
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"error": "Organization not found"})
 
 
 class RapidproContactViewTests(SidekickAPITestCase):
@@ -981,7 +1015,7 @@ class RapidproContactViewTests(SidekickAPITestCase):
 
         self.client.force_authenticate(self.user)
 
-        url = reverse("rapidpro-contact", args=[self.org.pk])
+        url = reverse("rapidpro-contact")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1020,7 +1054,7 @@ class RapidproContactViewTests(SidekickAPITestCase):
 
         self.client.force_authenticate(self.user)
 
-        url = reverse("rapidpro-contact", args=[self.org.pk])
+        url = reverse("rapidpro-contact")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1029,3 +1063,20 @@ class RapidproContactViewTests(SidekickAPITestCase):
         response_body["results"][0]["fields"].pop("loss_start_date")
 
         self.assertEqual(response.json(), response_body)
+
+    def test_get_rapidpro_contact_not_in_org(self):
+        """
+        Should not attempt to get contact from rapidpro if user is not in org
+        """
+
+        user = get_user_model().objects.create_superuser(
+            username="tseet", email="test@email.com", password="pass"
+        )
+
+        self.client.force_authenticate(user)
+
+        url = reverse("rapidpro-contact")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"error": "Organization not found"})
