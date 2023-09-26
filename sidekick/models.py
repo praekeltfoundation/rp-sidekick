@@ -21,7 +21,7 @@ class Organization(models.Model):
     engage_url = models.URLField(max_length=200, null=True)
     engage_token = models.CharField(max_length=1000, null=True)
     point_of_contact = models.EmailField(null=True)
-    filter_rapidpro_fields = models.CharField(max_length=4000, null=True)
+    filter_rapidpro_fields = models.CharField(max_length=4000, null=True, blank=True)
 
     def __str__(self):
         return self.name

@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import connections
 from django.db.utils import OperationalError
 from django.http import HttpResponse, JsonResponse
@@ -342,17 +343,13 @@ class ListContactsView(GenericAPIView):
 
 
 class RapidproFlowsView(GenericAPIView):
-    def get(self, request, org_id, *args, **kwargs):
-        try:
-            org = Organization.objects.get(id=org_id)
-        except Organization.DoesNotExist:
+    def get(self, request, *args, **kwargs):
+        user = get_user_model().objects.get(id=request.user.id)
+        org = user.org_users.first()
+
+        if not org:
             return JsonResponse(
                 {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if not org.users.filter(id=request.user.id).exists():
-            return JsonResponse(
-                data={"error": "user not in org"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
         headers = {
@@ -365,20 +362,16 @@ class RapidproFlowsView(GenericAPIView):
 
 
 class RapidproFlowStartView(GenericAPIView):
-    def post(self, request, org_id):
+    def post(self, request):
         """
         Starts the specified flow
         """
-        try:
-            org = Organization.objects.get(id=org_id)
-        except Organization.DoesNotExist:
+        user = get_user_model().objects.get(id=request.user.id)
+        org = user.org_users.first()
+
+        if not org:
             return JsonResponse(
                 {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if not org.users.filter(id=request.user.id).exists():
-            return JsonResponse(
-                data={"error": "user not in org"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
         headers = {
@@ -395,17 +388,13 @@ class RapidproFlowStartView(GenericAPIView):
 
 
 class RapidproContactView(GenericAPIView):
-    def get(self, request, org_id, *args, **kwargs):
-        try:
-            org = Organization.objects.get(id=org_id)
-        except Organization.DoesNotExist:
+    def get(self, request, *args, **kwargs):
+        user = get_user_model().objects.get(id=request.user.id)
+        org = user.org_users.first()
+
+        if not org:
             return JsonResponse(
                 {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if not org.users.filter(id=request.user.id).exists():
-            return JsonResponse(
-                data={"error": "user not in org"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
         headers = {
