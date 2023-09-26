@@ -15,6 +15,7 @@ from os.path import join
 import dj_database_url
 import environ
 import sentry_sdk
+from celery.schedules import crontab
 from kombu import Exchange, Queue
 from sentry_sdk.integrations.django import DjangoIntegration
 
@@ -171,7 +172,12 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 
-CELERYBEAT_SCHEDULE = {}
+CELERYBEAT_SCHEDULE = {
+    "check-rapidpro-group-membership-count": {
+        "task": "sidekick.tasks.check_rapidpro_group_membership_count",
+        "schedule": crontab(minute="*/5"),
+    }
+}
 
 TRANSFERTO_LOGIN = env.str("TRANSFERTO_LOGIN", "")
 TRANSFERTO_TOKEN = env.str("TRANSFERTO_TOKEN", "")
@@ -211,3 +217,5 @@ sentry_sdk.init(
     # something more human-readable.
     # release="myapp@1.0.0",
 )
+
+RAPIDPRO_MONITOR_GROUP = env.str("RAPIDPRO_MONITOR_GROUP", "")
