@@ -913,6 +913,43 @@ class RapidproFlowsViewTests(SidekickAPITestCase):
         self.assertEqual(response.json(), response_body)
 
 
+class RapidproFlowStartViewTests(SidekickAPITestCase):
+    @responses.activate
+    def test_start_rapidpro_flow(self):
+        """
+        Start Rapidpro flow
+        """
+        response_body = {
+            "id": 111,
+            "uuid": "34a03ea7-6fae-45a3-8e36-a26de6c74140",
+            "flow": {
+                "uuid": "2ea1416c-ce3d-4c02-8534-b8d8b667bcee",
+                "name": "Test flow",
+            },
+            "status": "pending",
+        }
+        responses.add(
+            responses.POST,
+            "http://localhost:8002/api/v2/flow_starts.json",
+            json=response_body,
+            status=200,
+            match_querystring=True,
+        )
+        self.client.force_authenticate(self.user)
+
+        url = reverse("rapidpro-flowstart", args=[self.org.pk])
+        response = self.client.post(
+            url,
+            json={
+                "flow": "2ea1416c-ce3d-4c02-8534-b8d8b667bcee",
+                "urns": ["whatsapp:27123"],
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), response_body)
+
+
 class RapidproContactViewTests(SidekickAPITestCase):
     @responses.activate
     def test_get_rapidpro_contact(self):
