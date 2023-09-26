@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.10.3
+------------
+Sidekick: Remove org_id from Rapidpro urls
+
 1.10.2
 ------------
 Sidekick: Add rapidpro flow start endpoint
