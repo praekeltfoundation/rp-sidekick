@@ -52,6 +52,11 @@ urlpatterns = [
         name="rapidpro-flows",
     ),
     path(
+        "<int:org_id>/api/v2/flow_starts.json",
+        views.RapidproFlowStartView.as_view(),
+        name="rapidpro-flowstart",
+    ),
+    path(
         "<int:org_id>/api/v2/contacts.json",
         views.RapidproContactView.as_view(),
         name="rapidpro-contact",

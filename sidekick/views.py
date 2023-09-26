@@ -364,6 +364,36 @@ class RapidproFlowsView(GenericAPIView):
         return JsonResponse(response.json(), status=response.status_code)
 
 
+class RapidproFlowStartView(GenericAPIView):
+    def post(self, request, org_id):
+        """
+        Starts the specified flow
+        """
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return JsonResponse(
+                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not org.users.filter(id=request.user.id).exists():
+            return JsonResponse(
+                data={"error": "user not in org"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Token {}".format(org.token),
+        }
+        response = requests.post(
+            urljoin(org.url, "api/v2/flow_starts.json"),
+            json=request.data,
+            headers=headers,
+        )
+
+        return JsonResponse(response.json(), status=response.status_code)
+
+
 class RapidproContactView(GenericAPIView):
     def get(self, request, org_id, *args, **kwargs):
         try:
