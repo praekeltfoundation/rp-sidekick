@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.10.2
+------------
+Sidekick: Add rapidpro flow start endpoint
+
 1.10.1
 ------------
 Sidekick: Multiple org fix for rapidpro group count monitor
