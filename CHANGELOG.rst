@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.10.5
+------------
+Sidekick: Fix GroupMonitor __str__ function
+
 1.10.4
 ------------
 Sidekick: Add model to save group monitors
