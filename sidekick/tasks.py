@@ -1,5 +1,4 @@
 from celery.exceptions import SoftTimeLimitExceeded
-from django.conf import settings
 from requests import RequestException
 from temba_client.exceptions import TembaHttpError
 
@@ -80,14 +79,14 @@ def archive_turn_conversation(org_id, wa_id, reason):
     time_limit=15,
 )
 def check_rapidpro_group_membership_count():
-    if settings.RAPIDPRO_MONITOR_GROUP:
-        group_name = settings.RAPIDPRO_MONITOR_GROUP
-        for org in Organization.objects.all():
-            client = org.get_rapidpro_client()
-            group = client.get_groups(name=group_name).first()
-            if group and group.count <= 0:
+    for org in Organization.objects.all():
+        client = org.get_rapidpro_client()
+
+        for group_monitor in org.group_monitors.all():
+            group = client.get_groups(name=group_monitor.group_name).first()
+            if group and group_monitor.check_group_count(group.count):
                 raise_group_membership_error.delay(
-                    f"Org: {org.name} - {group_name} group is empty"
+                    f"Org: {org.name} - {group_monitor.group_name} group is empty"
                 )
 
 
