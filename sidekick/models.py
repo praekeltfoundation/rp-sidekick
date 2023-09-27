@@ -54,7 +54,7 @@ class GroupMonitor(models.Model):
     triggered = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.name} - {self.minimum_count}"
+        return f"{self.group_name} - {self.minimum_count}"
 
     def check_group_count(self, group_count):
         if self.triggered and group_count > self.minimum_count:
