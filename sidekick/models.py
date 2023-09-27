@@ -42,6 +42,31 @@ def user_token_creation(sender, instance, created, **kwargs):
         Token.objects.create(user=instance)
 
 
+class GroupMonitor(models.Model):
+    org = models.ForeignKey(
+        Organization,
+        related_name="group_monitors",
+        null=False,
+        on_delete=models.CASCADE,
+    )
+    group_name = models.CharField(max_length=200, null=False, blank=False)
+    minimum_count = models.IntegerField(default=0)
+    triggered = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.name} - {self.minimum_count}"
+
+    def check_group_count(self, group_count):
+        if self.triggered and group_count > self.minimum_count:
+            self.triggered = False
+            self.save()
+        elif not self.triggered and group_count <= self.minimum_count:
+            self.triggered = True
+            self.save()
+            return True
+        return False
+
+
 class Consent(models.Model):
     org = models.ForeignKey(Organization, on_delete=models.CASCADE)
     label = models.CharField(

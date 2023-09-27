@@ -1,8 +1,13 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from sidekick.tasks import add_label_to_turn_conversation, archive_turn_conversation
+from sidekick.models import GroupMonitor
+from sidekick.tasks import (
+    add_label_to_turn_conversation,
+    archive_turn_conversation,
+    check_rapidpro_group_membership_count,
+)
 from sidekick.tests.utils import create_org
 
 
@@ -87,3 +92,97 @@ class ArchiveTurnConversationTests(TestCase):
         archive.assert_called_once_with(
             self.org, "27820001001", "second-inbound", "Test reason"
         )
+
+
+class CheckRapidproGroupMembershipCountTests(TestCase):
+    def setUp(self):
+        self.org = create_org()
+
+    def create_group_monitor(self, minimum=0, triggered=False):
+        return GroupMonitor.objects.create(
+            org_id=self.org.id,
+            group_name="Test participants",
+            minimum_count=minimum,
+            triggered=triggered,
+        )
+
+    def create_rapidpro_group_mock(self, group_membership_count):
+        fake_group_object = MagicMock()
+        fake_group_object.count = group_membership_count
+
+        fake_query_obj = MagicMock()
+        fake_query_obj.first.return_value = fake_group_object
+        return fake_query_obj
+
+    @patch("sidekick.tasks.raise_group_membership_error")
+    @patch("temba_client.v2.TembaClient.get_groups", autospec=True)
+    def test_group_monitor_dont_trigger(self, mock_get_groups, mock_raise_group_error):
+        """
+        If the group has more members than the minimum count don't trigger
+        """
+        mock_get_groups.return_value = self.create_rapidpro_group_mock(10)
+
+        monitor = self.create_group_monitor()
+
+        check_rapidpro_group_membership_count()
+
+        self.assertFalse(monitor.triggered)
+        mock_raise_group_error.delay.assert_not_called()
+
+    @patch("sidekick.tasks.raise_group_membership_error")
+    @patch("temba_client.v2.TembaClient.get_groups", autospec=True)
+    def test_group_monitor_trigger(self, mock_get_groups, mock_raise_group_error):
+        """
+        If the group has less members than the minimum count then trigger
+        """
+        mock_get_groups.return_value = self.create_rapidpro_group_mock(0)
+
+        monitor = self.create_group_monitor()
+
+        check_rapidpro_group_membership_count()
+
+        monitor.refresh_from_db()
+        self.assertTrue(monitor.triggered)
+
+        mock_raise_group_error.delay.assert_called_with(
+            "Org: Test Organization - Test participants group is empty"
+        )
+
+    @patch("sidekick.tasks.raise_group_membership_error")
+    @patch("temba_client.v2.TembaClient.get_groups", autospec=True)
+    def test_group_monitor_already_triggered(
+        self, mock_get_groups, mock_raise_group_error
+    ):
+        """
+        If the monitor is already triggered on't triggered again
+        """
+        mock_get_groups.return_value = self.create_rapidpro_group_mock(0)
+
+        monitor = self.create_group_monitor(triggered=True)
+
+        check_rapidpro_group_membership_count()
+
+        monitor.refresh_from_db()
+        self.assertTrue(monitor.triggered)
+
+        mock_raise_group_error.delay.assert_not_called()
+
+    @patch("sidekick.tasks.raise_group_membership_error")
+    @patch("temba_client.v2.TembaClient.get_groups", autospec=True)
+    def test_group_monitor_reset_triggered(
+        self, mock_get_groups, mock_raise_group_error
+    ):
+        """
+        If the monitor is triggered and the membership count is more than the minimum,
+        reset the triggered flag
+        """
+        mock_get_groups.return_value = self.create_rapidpro_group_mock(10)
+
+        monitor = self.create_group_monitor(triggered=True)
+
+        check_rapidpro_group_membership_count()
+
+        monitor.refresh_from_db()
+        self.assertFalse(monitor.triggered)
+
+        mock_raise_group_error.delay.assert_not_called()
