@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.10.4
+------------
+Sidekick: Add model to save group monitors
+
 1.10.3
 ------------
 Sidekick: Remove org_id from Rapidpro urls
