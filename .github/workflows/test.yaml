@@ -5,9 +5,12 @@ on: [pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+         postgres_version: ['12', '13', '14']
     services:
       postgres:
-        image: postgres:9.6
+        image: postgres:${{ matrix.postgres_version }}
         env:
           POSTGRES_DB: rp_sidekick
           POSTGRES_USER: postgres
