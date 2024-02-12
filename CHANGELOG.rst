@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.10.6
+------------
+Sidekick: Bump django from 3.2.23 to 3.2.24
+
 1.10.5
 ------------
 Sidekick: Fix GroupMonitor __str__ function
