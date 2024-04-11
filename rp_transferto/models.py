@@ -1,6 +1,7 @@
 import json
 
 import pkg_resources
+
 # from django.contrib.postgres.fields import JSONField
 from django.db.models import JSONField
 
