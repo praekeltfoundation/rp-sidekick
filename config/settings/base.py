@@ -24,7 +24,6 @@ root = environ.Path(__file__) - 3
 env = environ.Env(DEBUG=(bool, False))
 
 ROOT_DIR = root()
-environ.Env.read_env(join(ROOT_DIR, ".env"))
 
 ALLOWED_HOSTS = []
 
@@ -100,8 +99,6 @@ TIME_ZONE = "UTC"
 
 USE_I18N = True
 
-USE_L10N = True
-
 USE_TZ = True
 
 
@@ -115,7 +112,14 @@ STATICFILES_FINDERS = (
 
 STATIC_ROOT = join(ROOT_DIR, "staticfiles")
 STATIC_URL = "/static/"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 COMPRESS_ENABLED = True
 
 MEDIA_ROOT = join(ROOT_DIR, "media")
@@ -147,7 +151,6 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
-    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
 }
 
 AWS_ACCESS_KEY_ID = env.str("AWS_ACCESS_KEY_ID", "")

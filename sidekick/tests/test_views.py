@@ -68,7 +68,6 @@ class DetailedHealthViewTest(APITestCase):
                 "name": name,
             },
             status=200,
-            match_querystring=True,
         )
 
     @responses.activate
@@ -136,7 +135,6 @@ class TestSendTemplateView(SidekickAPITestCase):
                 "meta": {"api_status": "stable", "version": "2.19.4"},
             },
             status=201,
-            match_querystring=True,
         )
 
     @responses.activate
@@ -278,7 +276,6 @@ class TestCheckContactView(SidekickAPITestCase):
                 ]
             },
             status=201,
-            match_querystring=True,
         )
 
         # get result
@@ -313,7 +310,6 @@ class TestCheckContactView(SidekickAPITestCase):
             "{}/v1/contacts".format(FAKE_ENGAGE_URL),
             json={"contacts": [{"input": telephone_number, "status": "invalid"}]},
             status=201,
-            match_querystring=True,
         )
 
         # get result
@@ -348,7 +344,6 @@ class TestCheckContactView(SidekickAPITestCase):
             "{}/v1/contacts".format(FAKE_ENGAGE_URL),
             "Invalid WhatsApp Token",
             status=status.HTTP_403_FORBIDDEN,
-            match_querystring=True,
         )
 
         # get result
@@ -901,7 +896,6 @@ class RapidproFlowsViewTests(SidekickAPITestCase):
             "http://localhost:8002/api/v2/flows.json",
             json=response_body,
             status=200,
-            match_querystring=True,
         )
 
         self.client.force_authenticate(self.user)
@@ -950,7 +944,6 @@ class RapidproFlowStartViewTests(SidekickAPITestCase):
             "http://localhost:8002/api/v2/flow_starts.json",
             json=response_body,
             status=200,
-            match_querystring=True,
         )
         self.client.force_authenticate(self.user)
 
@@ -1010,7 +1003,6 @@ class RapidproContactViewTests(SidekickAPITestCase):
             "http://localhost:8002/api/v2/contacts.json",
             json=response_body,
             status=200,
-            match_querystring=True,
         )
 
         self.client.force_authenticate(self.user)
@@ -1049,7 +1041,6 @@ class RapidproContactViewTests(SidekickAPITestCase):
             "http://localhost:8002/api/v2/contacts.json",
             json=response_body,
             status=200,
-            match_querystring=True,
         )
 
         self.client.force_authenticate(self.user)

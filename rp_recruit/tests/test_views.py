@@ -55,7 +55,7 @@ class TestRecruitViews(TestCase):
             url, {"msisdn": "+27821111111", "name": "test user"}
         )
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertFormError(response, "form", None, [WA_CHECK_FORM_ERROR])
+        self.assertFormError(response.context["form"], None, [WA_CHECK_FORM_ERROR])
 
     @patch("rp_recruit.views.get_whatsapp_contact_id", autospec=True, return_value=None)
     def test_recruit_view_post_400(self, mock_get_whatsapp_contact_id):
@@ -69,8 +69,7 @@ class TestRecruitViews(TestCase):
             url, {"msisdn": "+27821111111", "name": "test user"}
         )
         self.assertFormError(
-            response,
-            "form",
+            response.context["form"],
             "msisdn",
             [f"{msisdn} is not a valid WhatsApp contact number"],
         )
@@ -95,7 +94,9 @@ class TestRecruitViews(TestCase):
         )
 
         self.assertFormError(
-            response, "form", "msisdn", [f"{msisdn} is not a valid contact number"]
+            response.context["form"],
+            "msisdn",
+            [f"{msisdn} is not a valid contact number"],
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         assertCallMadeWith(mock_get_contacts.call_args, urn=f"whatsapp:{wa_id}")
@@ -134,7 +135,9 @@ class TestRecruitViews(TestCase):
 
         mock_capture_exception.assert_called_once()
 
-        self.assertFormError(response, "form", None, [RAPIDPRO_CREATE_OR_START_FAILURE])
+        self.assertFormError(
+            response.context["form"], None, [RAPIDPRO_CREATE_OR_START_FAILURE]
+        )
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         assertCallMadeWith(mock_get_contacts.call_args, urn=f"whatsapp:{wa_id}")
