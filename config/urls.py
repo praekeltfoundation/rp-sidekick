@@ -8,4 +8,5 @@ urlpatterns = [
     path("recruit/", include("rp_recruit.urls"), name="rp_recruit"),
     path("interceptor/", include("rp_interceptors.urls")),
     path("dtone/", include("rp_dtone.urls")),
+    path("randomisation/", include("randomisation.urls")),
 ]
