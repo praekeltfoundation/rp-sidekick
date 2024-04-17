@@ -28,4 +28,5 @@ class GetRandomArmView(APIView):
 
         return JsonResponse(data={"arm": arm}, status=status.HTTP_200_OK)
 
+
 # TODO: add tests for views

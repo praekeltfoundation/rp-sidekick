@@ -11,6 +11,7 @@ from randomisation.utils import (
 from .utils import create_test_strategy
 
 
+# TODO: add docstrings to tests
 class TestValidateStratificationData(TestCase):
     def setUp(self):
         self.strategy = create_test_strategy()
