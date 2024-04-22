@@ -29,6 +29,7 @@ setup(
         "sentry-sdk==1.14.0",
         "dj-database-url==0.5.0",
         "boto3",
+        "jsonschema==4.21.1",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
