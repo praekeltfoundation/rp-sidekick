@@ -61,8 +61,6 @@ class TestGetRandomStratification(TestCase):
             stratas[f"{random_age}_{random_province}"][random_arm] += 1
             totals[random_arm] += 1
 
-        totals["Arm 1"] += 4
-
         def check_arms_balanced(arms, diff, description):
             values = [value for value in arms.values()]
             msg = f"Arms not balanced: {description} - {values}"
