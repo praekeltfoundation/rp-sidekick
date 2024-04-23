@@ -7,6 +7,10 @@ from randomisation.models import StrataMatrix
 
 
 def validate_stratification_data(strategy, data):
+    """
+    Validates that the data dict received is valid compared to the strategy
+    configuration.
+    """
     try:
         schema = {
             "type": "object",
@@ -25,6 +29,10 @@ def validate_stratification_data(strategy, data):
 
 
 def get_random_stratification_arm(strategy, data):
+    """
+    Get or create a strata matrix object for the given data and returns the next arm,
+    it will delete the matrix record if the last arm in the matrix was returned.
+    """
     matrix, created = StrataMatrix.objects.get_or_create(
         strategy=strategy, strata_data=data
     )
