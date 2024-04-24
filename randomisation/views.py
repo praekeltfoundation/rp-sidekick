@@ -8,7 +8,20 @@ from randomisation.utils import (
     validate_stratification_data,
 )
 
-# TODO: add a endpoint to call the validate_stratification_data
+
+class ValidateStrataData(APIView):
+    def post(self, request, *args, **kwargs):
+        strategy_id = kwargs["strategy_id"]
+        strategy = Strategy.objects.get(id=strategy_id)
+
+        error = validate_stratification_data(strategy, request.data or {})
+        if error:
+            return JsonResponse(
+                data={"valid": False, "error": error},
+                status=status.HTTP_200_OK,
+            )
+
+        return JsonResponse(data={"valid": True}, status=status.HTTP_200_OK)
 
 
 class GetRandomArmView(APIView):
@@ -16,9 +29,7 @@ class GetRandomArmView(APIView):
         strategy_id = kwargs["strategy_id"]
         strategy = Strategy.objects.get(id=strategy_id)
 
-        # TODO: serializer for request.data?
-
-        error = validate_stratification_data(strategy, request.data)
+        error = validate_stratification_data(strategy, request.data or {})
         if error:
             return JsonResponse(
                 data={"error": error}, status=status.HTTP_400_BAD_REQUEST
@@ -27,6 +38,3 @@ class GetRandomArmView(APIView):
         arm = get_random_stratification_arm(strategy, request.data)
 
         return JsonResponse(data={"arm": arm}, status=status.HTTP_200_OK)
-
-
-# TODO: add tests for views
