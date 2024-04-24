@@ -16,6 +16,7 @@
    apps/redcap.md
    apps/transferto.md
    apps/recruit.md
+   apps/randomisation.md
 
    ways-of-working.md
 
