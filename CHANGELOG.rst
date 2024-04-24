@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+
+1.11.0
+------------
 Sidekick: Upgrade django to 4.2.11 and djangorestframework to 3.15.1
 Added new randomisation app
 
