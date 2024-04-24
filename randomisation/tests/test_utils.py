@@ -9,7 +9,7 @@ from randomisation.utils import (
     validate_stratification_data,
 )
 
-from .utils import create_test_strategy
+from .utils import DEFAULT_STRATEGY, create_test_strategy
 
 
 class TestValidateStratificationData(TestCase):
@@ -112,6 +112,28 @@ class TestGetRandomStratification(TestCase):
 
         self.assertEqual(StrataMatrix.objects.count(), 0)
         self.assertEqual(random_arm, "Arm 3")
+
+    def test_random_arm_with_weight(self):
+        """
+        Test the arm weight. The weight determines how many times an arm appears
+        in the arm_order field. In the test we want 1 in every 4 to be Control and the
+        other 3 should be Treatment
+        """
+        strategy_config = DEFAULT_STRATEGY.copy()
+        strategy_config["arms"] = [
+            {"name": "Control", "weight": 1},
+            {"name": "Treatment", "weight": 3},
+        ]
+        strategy = create_test_strategy(strategy_config)
+
+        data = {"age-group": "18-29", "province": "WC"}
+        get_random_stratification_arm(strategy, data)
+
+        strata_arm = StrataMatrix.objects.first()
+
+        self.assertEqual(len(strata_arm.arm_order.split(",")), 4)
+        self.assertEqual(strata_arm.arm_order.split(",").count("Control"), 1)
+        self.assertEqual(strata_arm.arm_order.split(",").count("Treatment"), 3)
 
     def test_stratification_balancing(self):
         """

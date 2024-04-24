@@ -38,7 +38,10 @@ def get_random_stratification_arm(strategy, data):
     )
 
     if created:
-        study_arms = [arm.name for arm in strategy.arms.all()]
+        study_arms = []
+        for arm in strategy.arms.all():
+            study_arms += [arm.name] * arm.weight
+
         random.shuffle(study_arms)
         random_arms = study_arms
         matrix.arm_order = ",".join(study_arms)
