@@ -9,4 +9,5 @@ urlpatterns = [
     path("interceptor/", include("rp_interceptors.urls")),
     path("dtone/", include("rp_dtone.urls")),
     path("randomisation/", include("randomisation.urls")),
+    path("yal/", include("rp_yal.urls"), name="rp_yal"),
 ]
