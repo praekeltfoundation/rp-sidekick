@@ -214,7 +214,7 @@ class TestGetOrderedContentSet(TestCase):
         fields = {
             "gender": "male",
             "relationship_status": "yes",
-            "push_message_intro_completed": "true",
+            "push_msg_intro_completed": "true",
         }
         contentset_id = utils.get_ordered_content_set(self.org, fields)
 
