@@ -223,6 +223,19 @@ class TestGetOrderedContentSet(TestCase):
         mock_first_mcs.assert_called_with(TEST_CONTENT_SETS, fields)
 
 
+class TestCleanContactFields(TestCase):
+
+    def test_clean_contact_fields(self):
+        fields = {
+            "test 1": None,
+            "test 2": "Test",
+            "test 3": 1,
+        }
+        clean_fields = utils.clean_contact_fields(fields)
+
+        self.assertEqual(clean_fields, {"test 2": "test", "test 3": 1})
+
+
 class GetRelationshipStatusTestCase(TestCase):
     def test_get_relationship_status_empty(self):
         status = utils.get_relationship_status("")
