@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.11.3
+------------
+YAL: Add contentset endpoint and fix field name bug
+
 1.11.2
 ------------
 YAL: Add clean fields function
