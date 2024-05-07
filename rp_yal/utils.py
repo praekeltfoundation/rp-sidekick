@@ -6,27 +6,28 @@ import requests
 
 def get_ordered_content_set(org, fields):
     search_term = None
+    fields = clean_contact_fields(fields)
 
     weekday = datetime.today().weekday()
 
     if weekday == 0:
         # Monday
-        if "low" in fields.get("sexual_health_lit_risk", "").lower():
-            if fields.get("fun_content_completed", "").lower() == "true":
+        if "low" in fields.get("sexual_health_lit_risk", ""):
+            if fields.get("fun_content_completed", "") == "true":
                 search_term = get_content_search_term(fields)
             else:
                 search_term = "fun"
         else:
-            if fields.get("educational_content_completed", "").lower() == "true":
+            if fields.get("educational_content_completed", "") == "true":
                 search_term = get_content_search_term(fields)
             else:
                 search_term = "low lit"
     elif weekday <= 4:
         # Tuesday to Friday
-        if fields.get("push_message_intro_completed", "").lower() == "true":
+        if fields.get("push_message_intro_completed", "") == "true":
             search_term = get_content_search_term(fields)
         else:
-            if fields.get("depression_and_anxiety_risk", "").lower() == "low_risk":
+            if fields.get("depression_and_anxiety_risk", "") == "low_risk":
                 search_term = "intro low-risk"
             else:
                 search_term = "intro high-risk"
@@ -38,8 +39,19 @@ def get_ordered_content_set(org, fields):
     return None
 
 
+def clean_contact_fields(fields):
+    new_fields = {}
+    for key, value in fields.items():
+        if value:
+            try:
+                new_fields[key] = int(value)
+            except ValueError:
+                new_fields[key] = value.lower()
+    return new_fields
+
+
 def get_relationship_status(rp_rel_status):
-    if rp_rel_status and rp_rel_status.lower() in ("relationship", "yes"):
+    if rp_rel_status and rp_rel_status in ("relationship", "yes"):
         return "in_a_relationship"
 
     return "single"
@@ -53,9 +65,9 @@ def get_gender(rp_gender):
 
 
 def get_content_search_term(fields):
-    last_topic_sent = fields.get("last_topic_sent", "").lower()
+    last_topic_sent = fields.get("last_topic_sent", "")
 
-    if fields.get("depression_and_anxiety_risk", "").lower() == "low_risk":
+    if fields.get("depression_and_anxiety_risk", "") == "low_risk":
         flow = {
             "depression": {
                 "complete": "depression_content_complete",
@@ -121,11 +133,11 @@ def get_content_search_term(fields):
         if not next:
             return ""
 
-        if fields.get(flow[next]["complete"], "").lower() == "true":
+        if fields.get(flow[next]["complete"], "") == "true":
             return get_next_topic_and_risk(next)
         else:
             risk_label = "high-risk"
-            if "low" in fields.get(flow[next]["risk"], "").lower():
+            if "low" in fields.get(flow[next]["risk"], ""):
                 risk_label = "mandatory"
             return f"{next} {risk_label}"
 
