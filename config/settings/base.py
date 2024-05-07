@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "rp_transferto",
     "rp_recruit",
     "rp_interceptors",
+    "rp_yal",
     "randomisation",
 ]
 

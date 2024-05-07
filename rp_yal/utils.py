@@ -1,0 +1,187 @@
+from datetime import datetime
+from urllib.parse import urljoin
+
+import requests
+
+
+def get_ordered_content_set(org, fields):
+    search_term = None
+
+    weekday = datetime.today().weekday()
+
+    if weekday == 0:
+        # Monday
+        if "low" in fields.get("sexual_health_lit_risk", "").lower():
+            if fields.get("fun_content_completed", "").lower() == "true":
+                search_term = get_content_search_term(fields)
+            else:
+                search_term = "fun"
+        else:
+            if fields.get("educational_content_completed", "").lower() == "true":
+                search_term = get_content_search_term(fields)
+            else:
+                search_term = "low lit"
+    elif weekday <= 4:
+        # Tuesday to Friday
+        if fields.get("push_message_intro_completed", "").lower() == "true":
+            search_term = get_content_search_term(fields)
+        else:
+            if fields.get("depression_and_anxiety_risk", "").lower() == "low_risk":
+                search_term = "intro low-risk"
+            else:
+                search_term = "intro high-risk"
+
+    if search_term:
+        contentsets = search_ordered_content_sets(org, search_term)
+        return get_first_matching_content_set(contentsets, fields)
+
+    return None
+
+
+def get_relationship_status(rp_rel_status):
+    if rp_rel_status and rp_rel_status.lower() in ("relationship", "yes"):
+        return "in_a_relationship"
+
+    return "single"
+
+
+def get_gender(rp_gender):
+    if not rp_gender:
+        return "empty"
+
+    return rp_gender.replace("_", "-").lower()
+
+
+def get_content_search_term(fields):
+    last_topic_sent = fields.get("last_topic_sent", "").lower()
+
+    if fields.get("depression_and_anxiety_risk", "").lower() == "low_risk":
+        flow = {
+            "depression": {
+                "complete": "depression_content_complete",
+                "next": "gender attitudes",
+                "risk": "depression_and_anxiety_risk",
+            },
+            "gender attitudes": {
+                "complete": "gender_attitude_content_complete",
+                "next": "self perceived healthcare",
+                "risk": "gender_attitude_risk",
+            },
+            "self perceived healthcare": {
+                "complete": "selfperceived_healthcare_complete",
+                "next": "body image",
+                "risk": "selfperceived_healthcare_risk",
+            },
+            "body image": {
+                "complete": "body_image_content_complete",
+                "next": "connectedness",
+                "risk": "body_image_risk",
+            },
+            "connectedness": {
+                "complete": "connectedness_content_complete",
+                "next": "",
+                "risk": "connectedness_risk",
+            },
+        }
+    else:
+        flow = {
+            "depression": {
+                "complete": "depression_content_complete",
+                "next": "connectedness",
+                "risk": "depression_and_anxiety_risk",
+            },
+            "connectedness": {
+                "complete": "connectedness_content_complete",
+                "next": "body image",
+                "risk": "connectedness_risk",
+            },
+            "body image": {
+                "complete": "body_image_content_complete",
+                "next": "self perceived healthcare",
+                "risk": "body_image_risk",
+            },
+            "self perceived healthcare": {
+                "complete": "selfperceived_healthcare_complete",
+                "next": "gender attitudes",
+                "risk": "selfperceived_healthcare_risk",
+            },
+            "gender attitudes": {
+                "complete": "gender_attitude_content_complete",
+                "next": "",
+                "risk": "gender_attitude_risk",
+            },
+        }
+
+    def get_next_topic_and_risk(last):
+        if not last:
+            next = "depression"
+        else:
+            next = flow[last]["next"]
+
+        if not next:
+            return ""
+
+        if fields.get(flow[next]["complete"], "").lower() == "true":
+            return get_next_topic_and_risk(next)
+        else:
+            risk_label = "high-risk"
+            if "low" in fields.get(flow[next]["risk"], "").lower():
+                risk_label = "mandatory"
+            return f"{next} {risk_label}"
+
+    return get_next_topic_and_risk(last_topic_sent)
+
+
+def search_ordered_content_sets(org, search_term):
+    page = 1
+    next = True
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Token {}".format(org.contentrepo_token),
+    }
+    params = {"search": search_term}
+
+    contentsets = []
+    while next:
+        if page > 1:
+            params["page"] = page
+
+        response = requests.get(
+            urljoin(org.contentrepo_url, "api/v2/orderedcontent/"),
+            headers=headers,
+            params=params,
+        )
+        response.raise_for_status()
+
+        response_data = response.json()
+
+        for contentset in response_data["results"]:
+            contentset["field_count"] = len(contentset["profile_fields"])
+            for field in contentset["profile_fields"]:
+                contentset[field["profile_field"]] = field["value"]
+            contentsets.append(contentset)
+
+        next = response_data["next"]
+        page += 1
+
+    return contentsets
+
+
+def get_first_matching_content_set(contentsets, fields):
+    relationship_status = get_relationship_status(fields.get("relationship_status", ""))
+    gender = get_gender(fields.get("gender", ""))
+
+    for contentset in sorted(contentsets, key=lambda d: d["field_count"], reverse=True):
+        if contentset["field_count"] == 2:
+            if (
+                contentset["gender"] == gender
+                and contentset["relationship"] == relationship_status
+            ):
+                return contentset["id"]
+        if contentset["field_count"] == 1:
+
+            if contentset["relationship"] == relationship_status:
+                return contentset["id"]
+        if contentset["field_count"] == 0:
+            return contentset["id"]
