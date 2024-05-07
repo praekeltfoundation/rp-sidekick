@@ -24,7 +24,7 @@ def get_ordered_content_set(org, fields):
                 search_term = "low lit"
     elif weekday <= 4:
         # Tuesday to Friday
-        if fields.get("push_message_intro_completed", "") == "true":
+        if fields.get("push_msg_intro_completed", "") == "true":
             search_term = get_content_search_term(fields)
         else:
             if fields.get("depression_and_anxiety_risk", "") == "low_risk":
@@ -148,10 +148,6 @@ def search_ordered_content_sets(org, search_term):
     page = 1
     next = True
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Token {}".format(org.contentrepo_token),
-    }
     params = {"search": search_term}
 
     contentsets = []
@@ -161,7 +157,7 @@ def search_ordered_content_sets(org, search_term):
 
         response = requests.get(
             urljoin(org.contentrepo_url, "api/v2/orderedcontent/"),
-            headers=headers,
+            headers=get_contentrepo_headers(org),
             params=params,
         )
         response.raise_for_status()
@@ -197,3 +193,50 @@ def get_first_matching_content_set(contentsets, fields):
                 return contentset["id"]
         if contentset["field_count"] == 0:
             return contentset["id"]
+
+
+def get_unique_page_seen_ids(org, msisdn):
+    params = {
+        "data__user_addr": msisdn,
+        "unique_pages": "true",
+    }
+    response = requests.get(
+        urljoin(org.contentrepo_url, "api/v2/custom/pageviews/"),
+        headers=get_contentrepo_headers(org),
+        params=params,
+    )
+    response.raise_for_status()
+
+    pages_seen = response.json()
+    return [p["page"] for p in pages_seen["results"]]
+
+
+def get_contentrepo_headers(org):
+    return {
+        "Content-Type": "application/json",
+        "Authorization": "Token {}".format(org.contentrepo_token),
+    }
+
+
+def get_contentset(org, contentset_id, msisdn):
+    pages_seen_ids = get_unique_page_seen_ids(org, msisdn)
+
+    params = {
+        "show_related": "true",
+        "show_tags": "true",
+    }
+    response = requests.get(
+        urljoin(org.contentrepo_url, f"api/v2/orderedcontent/{contentset_id}"),
+        headers=get_contentrepo_headers(org),
+        params=params,
+    )
+    response.raise_for_status()
+    contentset_data = response.json()
+
+    unseen_pages = []
+    for page in contentset_data["pages"]:
+        if page["id"] not in pages_seen_ids:
+            unseen_pages.append(page)
+    contentset_data["pages"] = unseen_pages
+
+    return contentset_data
