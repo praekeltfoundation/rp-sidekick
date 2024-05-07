@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.11.2
+------------
+YAL: Add clean fields function
+
 1.11.1
 ------------
 YAL: Add GetOrderedContentSet API
