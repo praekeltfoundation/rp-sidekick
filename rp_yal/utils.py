@@ -10,6 +10,12 @@ def get_ordered_content_set(org, fields):
 
     weekday = datetime.today().weekday()
 
+    if fields.get("test_day"):
+        try:
+            weekday = int(fields.get("test_day")) - 1
+        except ValueError:
+            pass
+
     if weekday == 0:
         # Monday
         if "low" in fields.get("sexual_health_lit_risk", ""):

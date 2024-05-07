@@ -44,6 +44,25 @@ class TestGetOrderedContentSet(TestCase):
         self.assertIsNone(contentset_id)
         mock_search_ocs.assert_not_called()
 
+    @freeze_time("2024-05-05 01:30:00")
+    @patch("rp_yal.utils.search_ordered_content_sets")
+    @patch("rp_yal.utils.get_first_matching_content_set")
+    def test_get_ordered_content_set_weekend_and_override(
+        self, mock_first_mcs, mock_search_ocs
+    ):
+        """
+        On the weekend we can override to Monday using the test_day field.
+        """
+        mock_search_ocs.return_value = TEST_CONTENT_SETS
+        mock_first_mcs.return_value = 1
+
+        fields = {"test_day": 1}
+        contentset_id = utils.get_ordered_content_set(self.org, fields)
+
+        self.assertEqual(contentset_id, 1)
+        mock_search_ocs.assert_called_with(self.org, "low lit")
+        mock_first_mcs.assert_called_with(TEST_CONTENT_SETS, fields)
+
     @freeze_time("2024-05-06 01:30:00")
     @patch("rp_yal.utils.search_ordered_content_sets")
     @patch("rp_yal.utils.get_first_matching_content_set")
