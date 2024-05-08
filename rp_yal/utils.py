@@ -70,84 +70,90 @@ def get_gender(rp_gender):
     return rp_gender.replace("_", "-").lower()
 
 
-def get_content_search_term(fields):
-    last_topic_sent = fields.get("last_topic_sent", "")
+def get_content_search_term(fields, last_topic_sent=None):
+    if not last_topic_sent:
+        last_topic_sent = fields.get("last_topic_sent", "")
+
+    risks = {
+        "depression": "depression_and_anxiety_risk",
+        "gender attitudes": "gender_attitude_risk",
+        "self perceived healthcare": "selfperceived_healthcare_risk",
+        "body image": "body_image_risk",
+        "connectedness": "connectedness_risk",
+    }
+
+    def all_complete():
+        return (
+            fields.get("depression_content_complete", "") == "true"
+            and fields.get("gender_attitude_content_complete", "") == "true"
+            and fields.get("selfperceived_healthcare_complete", "") == "true"
+            and fields.get("body_image_content_complete", "") == "true"
+            and fields.get("connectedness_content_complete", "") == "true"
+        )
 
     if fields.get("depression_and_anxiety_risk", "") == "low_risk":
-        flow = {
-            "depression": {
-                "complete": "depression_content_complete",
-                "next": "gender attitudes",
-                "risk": "depression_and_anxiety_risk",
-            },
-            "gender attitudes": {
-                "complete": "gender_attitude_content_complete",
-                "next": "self perceived healthcare",
-                "risk": "gender_attitude_risk",
-            },
-            "self perceived healthcare": {
-                "complete": "selfperceived_healthcare_complete",
-                "next": "body image",
-                "risk": "selfperceived_healthcare_risk",
-            },
-            "body image": {
-                "complete": "body_image_content_complete",
-                "next": "connectedness",
-                "risk": "body_image_risk",
-            },
-            "connectedness": {
-                "complete": "connectedness_content_complete",
-                "next": "",
-                "risk": "connectedness_risk",
-            },
-        }
+        if last_topic_sent == "depression":
+            if fields.get("gender_attitude_content_complete", "") == "true":
+                return get_content_search_term(fields, "gender attitudes")
+            else:
+                next_topic = "gender attitudes"
+        elif last_topic_sent == "gender attitudes":
+            if fields.get("selfperceived_healthcare_complete", "") == "true":
+                return get_content_search_term(fields, "self perceived healthcare")
+            else:
+                return "self perceived healthcare"
+        elif last_topic_sent == "self perceived healthcare":
+            if fields.get("body_image_content_complete", "") == "true":
+                return get_content_search_term(fields, "body image")
+            else:
+                next_topic = "body image"
+        elif last_topic_sent == "body image":
+            if fields.get("connectedness_content_complete", "") == "true":
+                return get_content_search_term(fields, "connectedness")
+            else:
+                next_topic = "connectedness"
+        else:
+            if fields.get("depression_content_complete", "") == "true":
+                if all_complete():
+                    return None
+                else:
+                    return get_content_search_term(fields, "depression")
+            else:
+                next_topic = "depression"
     else:
-        flow = {
-            "depression": {
-                "complete": "depression_content_complete",
-                "next": "connectedness",
-                "risk": "depression_and_anxiety_risk",
-            },
-            "connectedness": {
-                "complete": "connectedness_content_complete",
-                "next": "body image",
-                "risk": "connectedness_risk",
-            },
-            "body image": {
-                "complete": "body_image_content_complete",
-                "next": "self perceived healthcare",
-                "risk": "body_image_risk",
-            },
-            "self perceived healthcare": {
-                "complete": "selfperceived_healthcare_complete",
-                "next": "gender attitudes",
-                "risk": "selfperceived_healthcare_risk",
-            },
-            "gender attitudes": {
-                "complete": "gender_attitude_content_complete",
-                "next": "",
-                "risk": "gender_attitude_risk",
-            },
-        }
-
-    def get_next_topic_and_risk(last):
-        if not last:
-            next = "depression"
+        if last_topic_sent == "self perceived healthcare":
+            if fields.get("gender_attitude_content_complete", "") == "true":
+                return get_content_search_term(fields, "gender attitudes")
+            else:
+                next_topic = "gender attitudes"
+        elif last_topic_sent == "body image":
+            if fields.get("selfperceived_healthcare_complete", "") == "true":
+                return get_content_search_term(fields, "self perceived healthcare")
+            else:
+                return "self perceived healthcare"
+        elif last_topic_sent == "connectedness":
+            if fields.get("body_image_content_complete", "") == "true":
+                return get_content_search_term(fields, "body image")
+            else:
+                next_topic = "body image"
+        elif last_topic_sent == "depression":
+            if fields.get("connectedness_content_complete", "") == "true":
+                return get_content_search_term(fields, "connectedness")
+            else:
+                next_topic = "connectedness"
         else:
-            next = flow[last]["next"]
+            if fields.get("depression_content_complete", "") == "true":
+                if all_complete():
+                    return None
+                else:
+                    return get_content_search_term(fields, "depression")
+            else:
+                next_topic = "depression"
 
-        if not next:
-            return ""
-
-        if fields.get(flow[next]["complete"], "") == "true":
-            return get_next_topic_and_risk(next)
-        else:
-            risk_label = "high-risk"
-            if "low" in fields.get(flow[next]["risk"], ""):
-                risk_label = "mandatory"
-            return f"{next} {risk_label}"
-
-    return get_next_topic_and_risk(last_topic_sent)
+    risk_label = "high-risk"
+    if "low" in fields.get(risks[next_topic], ""):
+        risk_label = "mandatory"
+    return f"{next_topic} {risk_label}"
 
 
 def search_ordered_content_sets(org, search_term):
