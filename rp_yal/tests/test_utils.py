@@ -347,7 +347,7 @@ class GetContentSearchTerm(TestCase):
             "gender_attitude_content_complete": "true",
         }
         search_term = utils.get_content_search_term(fields)
-        self.assertEqual(search_term, "")
+        self.assertIsNone(search_term)
 
     def test_get_content_search_term_high_risk_with_last_topic(self):
         """
@@ -356,6 +356,41 @@ class GetContentSearchTerm(TestCase):
         fields = {"last_topic_sent": "connectedness"}
         search_term = utils.get_content_search_term(fields)
         self.assertEqual(search_term, "body image high-risk")
+
+    def test_get_content_search_term_last_topic_depression_not_complete(self):
+        """
+        If last topic is set we start looping from there
+        """
+        fields = {"last_topic_sent": "gender attitudes"}
+        search_term = utils.get_content_search_term(fields)
+        self.assertEqual(search_term, "depression high-risk")
+
+    def test_get_content_search_term_last_topic_depression_completed(self):
+        """
+        If the last topic is gender attitudes and depression is completed return
+        connectedness high-risk
+        """
+        fields = {
+            "last_topic_sent": "gender attitudes",
+            "depression_content_complete": "true",
+        }
+        search_term = utils.get_content_search_term(fields)
+        self.assertEqual(search_term, "connectedness high-risk")
+
+    def test_get_content_search_term_last_topic_all_completed(self):
+        """
+        If the last topic is gender attitudes and all sets are completed return None
+        """
+        fields = {
+            "last_topic_sent": "gender attitudes",
+            "depression_content_complete": "true",
+            "connectedness_content_complete": "true",
+            "body_image_content_complete": "true",
+            "selfperceived_healthcare_complete": "true",
+            "gender_attitude_content_complete": "true",
+        }
+        search_term = utils.get_content_search_term(fields)
+        self.assertIsNone(search_term)
 
 
 class SearchOrderedContentSetsTestcase(TestCase):
