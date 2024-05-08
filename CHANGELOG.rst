@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.11.5
+------------
+YAL: Hardcode the get_content_search_term function.
+
 1.11.4
 ------------
 YAL: Add test day functionality
