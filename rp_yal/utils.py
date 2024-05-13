@@ -1,7 +1,10 @@
 from datetime import datetime
 from urllib.parse import urljoin
 
+import redis
 import requests
+
+redis_conn = redis.StrictRedis(decode_responses=True)
 
 
 def get_ordered_content_set(org, fields):
@@ -208,6 +211,11 @@ def get_first_matching_content_set(contentsets, fields):
 
 
 def get_unique_page_seen_ids(org, msisdn):
+    key_name = f"page_seen_ids_{msisdn}"
+
+    if redis_conn.get(key_name):
+        return [int(id) for id in redis_conn.get(key_name).split(",")]
+
     params = {
         "data__user_addr": msisdn,
         "unique_pages": "true",
@@ -220,7 +228,13 @@ def get_unique_page_seen_ids(org, msisdn):
     response.raise_for_status()
 
     pages_seen = response.json()
-    return [p["page"] for p in pages_seen["results"]]
+    ids = [p["page"] for p in pages_seen["results"]]
+
+    value = ",".join([str(id) for id in ids])
+    redis_conn.set(key_name, value)
+    redis_conn.expire(key_name, time=5 * 60 * 60)
+
+    return ids
 
 
 def get_contentrepo_headers(org):
@@ -250,5 +264,6 @@ def get_contentset(org, contentset_id, msisdn):
         if page["id"] not in pages_seen_ids:
             unseen_pages.append(page)
     contentset_data["pages"] = unseen_pages
+    contentset_data["pages_seen_ids"] = pages_seen_ids
 
     return contentset_data
