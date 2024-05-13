@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.11.6
+------------
+YAL: Add page view caching
+
 1.11.5
 ------------
 YAL: Hardcode the get_content_search_term function.
