@@ -5,6 +5,7 @@ from django.test import TestCase
 from freezegun import freeze_time
 
 from rp_yal import utils
+from rp_yal.utils import redis_conn
 from sidekick.tests.utils import create_org
 
 TEST_CONTENT_SETS = [
@@ -495,3 +496,38 @@ class GetFirstMatchingContentSet(TestCase):
         contentset_id = utils.get_first_matching_content_set(TEST_CONTENT_SETS, fields)
 
         self.assertEqual(contentset_id, 3)
+
+
+class GetUniquePageSeenIds(TestCase):
+    def setUp(self):
+        self.org = create_org()
+
+    def tearDown(self):
+        redis_conn.delete("page_seen_ids_27831231234")
+
+    @responses.activate
+    def test_get_unique_page_seen_ids_cache(self):
+        msisdn = "27831231234"
+        responses.add(
+            method=responses.GET,
+            url="http://contentrepo/api/v2/custom/pageviews/",
+            json={
+                "results": [
+                    {"page": 164},
+                    {"page": 165},
+                    {"page": 166},
+                ],
+            },
+            status=200,
+            match=[
+                responses.matchers.query_param_matcher(
+                    {"data__user_addr": msisdn, "unique_pages": "true"}
+                )
+            ],
+        )
+
+        ids = utils.get_unique_page_seen_ids(self.org, msisdn)
+        self.assertEqual(ids, [164, 165, 166])
+        ids = utils.get_unique_page_seen_ids(self.org, msisdn)
+        self.assertEqual(ids, [164, 165, 166])
+        self.assertEqual(len(responses.calls), 1)

@@ -223,3 +223,5 @@ sentry_sdk.init(
     # something more human-readable.
     # release="myapp@1.0.0",
 )
+
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
