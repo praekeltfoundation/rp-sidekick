@@ -3,8 +3,9 @@ from urllib.parse import urljoin
 
 import redis
 import requests
+from django.conf import settings
 
-redis_conn = redis.StrictRedis(decode_responses=True)
+redis_conn = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 
 def get_ordered_content_set(org, fields):
