@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.11.7
+------------
+YAL: Fix redis connection
+
 1.11.6
 ------------
 YAL: Add page view caching
