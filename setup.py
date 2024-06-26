@@ -16,7 +16,7 @@ setup(
         "django-extensions==3.1.5",
         "django-phonenumber-field==3.0.1",
         "django-prometheus==2.2.0",
-        "djangorestframework==3.15.1",
+        "djangorestframework==3.15.2",
         "json2html==1.3.0",
         "phonenumbers==8.10.23",
         "psycopg2-binary==2.8.6",
