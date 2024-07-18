@@ -26,7 +26,7 @@ setup(
         "raven==6.10.0",
         "hashids==1.3.1",
         "django-filter==2.4.0",
-        "sentry-sdk==1.14.0",
+        "sentry-sdk==2.8.0",
         "dj-database-url==0.5.0",
         "boto3",
         "jsonschema==4.21.1",
