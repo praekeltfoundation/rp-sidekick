@@ -1,8 +1,8 @@
 import json
 
 import pkg_resources
-from django.contrib.postgres.fields import JSONField
 from django.db import models
+from django.db.models import JSONField
 from django.utils import timezone
 
 from sidekick.models import Organization

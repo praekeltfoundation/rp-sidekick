@@ -1,5 +1,6 @@
 from celery.exceptions import SoftTimeLimitExceeded
 from requests import RequestException
+from temba_client.exceptions import TembaHttpError
 
 from config.celery import app
 from sidekick.models import Organization
@@ -67,3 +68,28 @@ def archive_turn_conversation(org_id, wa_id, reason):
     last_inbound_message = max(inbounds, key=lambda m: m.get("timestamp"))
 
     archive_whatsapp_conversation(org, wa_id, last_inbound_message["id"], reason)
+
+
+@app.task(
+    autoretry_for=(RequestException, SoftTimeLimitExceeded, TembaHttpError),
+    retry_backoff=True,
+    max_retries=15,
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def check_rapidpro_group_membership_count():
+    for org in Organization.objects.all():
+        client = org.get_rapidpro_client()
+
+        for group_monitor in org.group_monitors.all():
+            group = client.get_groups(name=group_monitor.group_name).first()
+            if group and group_monitor.check_group_count(group.count):
+                raise_group_membership_error.delay(
+                    f"Org: {org.name} - {group_monitor.group_name} group is empty"
+                )
+
+
+@app.task()
+def raise_group_membership_error(error):
+    raise Exception(error)

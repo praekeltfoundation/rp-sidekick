@@ -16,7 +16,7 @@
    apps/redcap.md
    apps/transferto.md
    apps/recruit.md
-   apps/gpconnect.rst
+   apps/randomisation.md
 
    ways-of-working.md
 

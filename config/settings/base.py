@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/2.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.1/ref/settings/
 """
+
 import os
 from os.path import join
 
@@ -23,7 +24,6 @@ root = environ.Path(__file__) - 3
 env = environ.Env(DEBUG=(bool, False))
 
 ROOT_DIR = root()
-environ.Env.read_env(join(ROOT_DIR, ".env"))
 
 ALLOWED_HOSTS = []
 
@@ -41,9 +41,12 @@ INSTALLED_APPS = [
     "django_extensions",
     "django_prometheus",
     "sidekick",
+    "rp_dtone",
     "rp_transferto",
     "rp_recruit",
-    "rp_gpconnect",
+    "rp_interceptors",
+    "rp_yal",
+    "randomisation",
 ]
 
 MIDDLEWARE = [
@@ -98,8 +101,6 @@ TIME_ZONE = "UTC"
 
 USE_I18N = True
 
-USE_L10N = True
-
 USE_TZ = True
 
 
@@ -113,7 +114,14 @@ STATICFILES_FINDERS = (
 
 STATIC_ROOT = join(ROOT_DIR, "staticfiles")
 STATIC_URL = "/static/"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 COMPRESS_ENABLED = True
 
 MEDIA_ROOT = join(ROOT_DIR, "media")
@@ -145,11 +153,8 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
-    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
 }
 
-GP_CONNECT_FILE_DIR = env.str("GP_CONNECT_FILE_DIR", "")
-GP_CONNECT_ORG_NAME = env.str("GP_CONNECT_ORG_NAME", "")
 AWS_ACCESS_KEY_ID = env.str("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = env.str("AWS_SECRET_ACCESS_KEY", "")
 AWS_STORAGE_BUCKET_NAME = env.str("AWS_STORAGE_BUCKET_NAME", "")
@@ -173,14 +178,12 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 
-CELERYBEAT_SCHEDULE = {}
-
-if GP_CONNECT_FILE_DIR:
-    CELERYBEAT_SCHEDULE["rp_gpconnect_find_new_import_file"] = {
-        "task": "rp_gpconnect.tasks.pull_new_import_file",
-        "schedule": crontab(minute="0", hour="*"),
-        "kwargs": {"upload_dir": GP_CONNECT_FILE_DIR, "org_name": GP_CONNECT_ORG_NAME},
+CELERYBEAT_SCHEDULE = {
+    "check-rapidpro-group-membership-count": {
+        "task": "sidekick.tasks.check_rapidpro_group_membership_count",
+        "schedule": crontab(minute="*/5"),
     }
+}
 
 TRANSFERTO_LOGIN = env.str("TRANSFERTO_LOGIN", "")
 TRANSFERTO_TOKEN = env.str("TRANSFERTO_TOKEN", "")
@@ -202,6 +205,7 @@ RABBITMQ_MANAGEMENT_INTERFACE = env.str("RABBITMQ_MANAGEMENT_INTERFACE", "")
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", False)
 SENTRY_DSN = env.str("SENTRY_DSN", env.str("RAVEN_DSN", ""))
+TRACES_SAMPLE_RATE = env.float("TRACES_SAMPLE_RATE", 1.0)
 
 sentry_sdk.init(
     dsn=SENTRY_DSN if SENTRY_DSN else {},
@@ -209,7 +213,7 @@ sentry_sdk.init(
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production,
-    traces_sample_rate=1.0,
+    traces_sample_rate=TRACES_SAMPLE_RATE,
     # If you wish to associate users to errors (assuming you are using
     # django.contrib.auth) you may enable sending PII data.
     send_default_pii=True,
@@ -219,3 +223,5 @@ sentry_sdk.init(
     # something more human-readable.
     # release="myapp@1.0.0",
 )
+
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")

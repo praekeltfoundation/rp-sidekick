@@ -21,6 +21,9 @@ class Organization(models.Model):
     engage_url = models.URLField(max_length=200, null=True)
     engage_token = models.CharField(max_length=1000, null=True)
     point_of_contact = models.EmailField(null=True)
+    filter_rapidpro_fields = models.CharField(max_length=4000, null=True, blank=True)
+    contentrepo_url = models.URLField(max_length=200, null=True)
+    contentrepo_token = models.CharField(max_length=200, null=True)
 
     def __str__(self):
         return self.name
@@ -39,6 +42,31 @@ class Organization(models.Model):
 def user_token_creation(sender, instance, created, **kwargs):
     if created:
         Token.objects.create(user=instance)
+
+
+class GroupMonitor(models.Model):
+    org = models.ForeignKey(
+        Organization,
+        related_name="group_monitors",
+        null=False,
+        on_delete=models.CASCADE,
+    )
+    group_name = models.CharField(max_length=200, null=False, blank=False)
+    minimum_count = models.IntegerField(default=0)
+    triggered = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.group_name} - {self.minimum_count}"
+
+    def check_group_count(self, group_count):
+        if self.triggered and group_count > self.minimum_count:
+            self.triggered = False
+            self.save()
+        elif not self.triggered and group_count <= self.minimum_count:
+            self.triggered = True
+            self.save()
+            return True
+        return False
 
 
 class Consent(models.Model):

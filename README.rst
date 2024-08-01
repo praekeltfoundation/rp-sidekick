@@ -52,6 +52,20 @@ Tools
 - `black`_ - this repository uses an opinionated python code formatter. See ``pyproject.toml`` for config.
 - `pre-commit`_ - lints staged code as a git pre-commit check. Will prevent commits if linting fails. Currently runs black, flake8 and yamllint.
 
+---------------------
+Running in Production
+---------------------
+
+There is a [docker image](https://github.com/praekeltfoundation/rp-sidekick/pkgs/container/rp-sidekick) that can be used to easily run this service. It uses the following environment variables for configuration:
+
+| Variable      | Description |
+| ----------    | ----------- |
+| SECRET_KEY    | The django secret key, set to a long, random sequence of characters |
+| DATABASE_URL  | Where to find the database. Set to `postgresql://host:port/db` for a postgresql database |
+| ALLOWED_HOSTS | Comma separated list of hostnames for this service, eg. `host1.example.org,host2.example.org` |
+| BROKER_URL    | Where to find the broker. Set to `amqp://username:password@host:post/vhost` to connect to RabbitMQ |
+| SENTRY_DSN    | Where to send exceptions to |
+
 ------------
 Contributing
 ------------

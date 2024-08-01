@@ -5,15 +5,22 @@ on: [pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+         postgres_version: ['14']
     services:
       postgres:
-        image: postgres:9.6
+        image: postgres:${{ matrix.postgres_version }}
         env:
           POSTGRES_DB: rp_sidekick
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
+      redis:
+        image: redis:6.0
+        ports:
+          - 6379:6379
     env:
       RP_SIDEKICK_DATABASE: postgres://postgres:postgres@localhost/rp_sidekick
     steps:
@@ -34,7 +41,7 @@ jobs:
       - name: Lint
         run: |
           flake8
-          python manage.py makemigrations rp_transferto rp_gpconnect rp_recruit\
+          python manage.py makemigrations rp_dtone rp_transferto rp_recruit\
            sidekick --dry-run | grep 'No changes detected' || (echo 'There are\
            changes which require migrations.' && exit 1)
           black --check .

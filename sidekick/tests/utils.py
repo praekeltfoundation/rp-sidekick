@@ -8,6 +8,8 @@ def create_org(**kwargs):
         "token": "REPLACEME",
         "engage_url": "http://whatsapp/",
         "engage_token": "test-token",
+        "contentrepo_url": "http://contentrepo",
+        "contentrepo_token": "test-token",
     }
     data.update(kwargs)
     return Organization.objects.create(**data)

@@ -18,5 +18,7 @@ exclude = '''
   | build
   | dist
   | migrations
+  | env
+  | ve
 )/
 '''

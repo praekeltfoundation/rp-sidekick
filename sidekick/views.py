@@ -1,8 +1,10 @@
 import json
 from os import environ
+from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import connections
 from django.db.utils import OperationalError
 from django.http import HttpResponse, JsonResponse
@@ -338,3 +340,82 @@ class ListContactsView(GenericAPIView):
             )
 
         return JsonResponse({"contacts": uuids}, status=status.HTTP_200_OK)
+
+
+class RapidproFlowsView(GenericAPIView):
+    def get(self, request, *args, **kwargs):
+        user = get_user_model().objects.get(id=request.user.id)
+        org = user.org_users.first()
+
+        if not org:
+            return JsonResponse(
+                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Token {}".format(org.token),
+        }
+        response = requests.get(urljoin(org.url, "api/v2/flows.json"), headers=headers)
+
+        return JsonResponse(response.json(), status=response.status_code)
+
+
+class RapidproFlowStartView(GenericAPIView):
+    def post(self, request):
+        """
+        Starts the specified flow
+        """
+        user = get_user_model().objects.get(id=request.user.id)
+        org = user.org_users.first()
+
+        if not org:
+            return JsonResponse(
+                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Token {}".format(org.token),
+        }
+        response = requests.post(
+            urljoin(org.url, "api/v2/flow_starts.json"),
+            json=request.data,
+            headers=headers,
+        )
+
+        return JsonResponse(response.json(), status=response.status_code)
+
+
+class RapidproContactView(GenericAPIView):
+    def get(self, request, *args, **kwargs):
+        user = get_user_model().objects.get(id=request.user.id)
+        org = user.org_users.first()
+
+        if not org:
+            return JsonResponse(
+                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Token {}".format(org.token),
+        }
+        response = requests.get(
+            urljoin(org.url, "api/v2/contacts.json"),
+            params=request.GET,
+            headers=headers,
+        )
+
+        contact_data = response.json()
+
+        if org.filter_rapidpro_fields:
+            filter_fields = org.filter_rapidpro_fields.split(",")
+            for contact in contact_data.get("results", []):
+                new_fields = {}
+                for field, value in contact["fields"].items():
+                    if field in filter_fields:
+                        new_fields[field] = value
+                contact["fields"] = new_fields
+
+        return JsonResponse(contact_data, status=response.status_code)

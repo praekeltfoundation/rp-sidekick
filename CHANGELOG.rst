@@ -4,6 +4,120 @@ VERSIONS
 Next Release
 ------------
 
+1.11.7
+------------
+YAL: Fix redis connection
+
+1.11.6
+------------
+YAL: Add page view caching
+
+1.11.5
+------------
+YAL: Hardcode the get_content_search_term function.
+
+1.11.4
+------------
+YAL: Add test day functionality
+
+1.11.3
+------------
+YAL: Add contentset endpoint and fix field name bug
+
+1.11.2
+------------
+YAL: Add clean fields function
+
+1.11.1
+------------
+YAL: Add GetOrderedContentSet API
+
+1.11.0
+------------
+Sidekick: Upgrade django to 4.2.11 and djangorestframework to 3.15.1
+Added new randomisation app
+
+1.10.6
+------------
+Sidekick: Bump django from 3.2.23 to 3.2.24
+
+1.10.5
+------------
+Sidekick: Fix GroupMonitor __str__ function
+
+1.10.4
+------------
+Sidekick: Add model to save group monitors
+
+1.10.3
+------------
+Sidekick: Remove org_id from Rapidpro urls
+
+1.10.2
+------------
+Sidekick: Add rapidpro flow start endpoint
+
+1.10.1
+------------
+Sidekick: Multiple org fix for rapidpro group count monitor
+
+1.10.0
+------------
+Sidekick: Added Rapdipro views for Turn
+Sidekick: Add rapidpro group count monitor
+
+1.9.4
+------------
+DTone: Fix airtime transfers for all networks
+
+1.9.3
+------------
+DTone: Fix submit transaction body
+
+1.9.2
+------------
+DTone: Fix submit transaction uuid
+
+1.9.1
+------------
+DTone: Fix transaction serializer
+
+1.9.0
+------------
+Added DTOne integration
+
+1.8.9
+------------
+Sentry config for sample rate
+
+1.8.8
+------------
+Upgrade redis library
+
+1.8.7
+------------
+Interceptors: Handle empty events from WhatsApp
+
+1.8.6
+------------
+Sidekick: Added threading to Dockerfile
+
+1.8.5
+------------
+Interceptors: Handle no message or recipient_id in event
+
+1.8.4
+------------
+Interceptors: Added a new app called rp_interceptors, which will accept inbound messages from WhatsApp and ensure that any status objects contain the recipient_id field before forwarding them.
+
+1.8.3
+------------
+Sidekick: Django 3.2.18 and changed docker base image
+
+1.8.2
+------------
+Sidekick: Django 3.2.14 and removed redcap dependancy
+
 1.8.1
 ------------
 Sidekick: Upgraded celery and libraries to latest versions

@@ -68,7 +68,6 @@ class DetailedHealthViewTest(APITestCase):
                 "name": name,
             },
             status=200,
-            match_querystring=True,
         )
 
     @responses.activate
@@ -136,7 +135,6 @@ class TestSendTemplateView(SidekickAPITestCase):
                 "meta": {"api_status": "stable", "version": "2.19.4"},
             },
             status=201,
-            match_querystring=True,
         )
 
     @responses.activate
@@ -278,7 +276,6 @@ class TestCheckContactView(SidekickAPITestCase):
                 ]
             },
             status=201,
-            match_querystring=True,
         )
 
         # get result
@@ -313,7 +310,6 @@ class TestCheckContactView(SidekickAPITestCase):
             "{}/v1/contacts".format(FAKE_ENGAGE_URL),
             json={"contacts": [{"input": telephone_number, "status": "invalid"}]},
             status=201,
-            match_querystring=True,
         )
 
         # get result
@@ -348,7 +344,6 @@ class TestCheckContactView(SidekickAPITestCase):
             "{}/v1/contacts".format(FAKE_ENGAGE_URL),
             "Invalid WhatsApp Token",
             status=status.HTTP_403_FORBIDDEN,
-            match_querystring=True,
         )
 
         # get result
@@ -876,3 +871,203 @@ class ListContactsViewTests(SidekickAPITestCase):
                 "may have exceeded the rate limit. Please try again later."
             },
         )
+
+
+class RapidproFlowsViewTests(SidekickAPITestCase):
+    @responses.activate
+    def test_get_rapidpro_flows(self):
+        """
+        Get flows from rapidpro
+        """
+        response_body = {
+            "results": [
+                {
+                    "uuid": "flow-1-uuid",
+                    "name": "Flow 1",
+                },
+                {
+                    "uuid": "flow-2-uuid",
+                    "name": "Flow 2",
+                },
+            ]
+        }
+        responses.add(
+            responses.GET,
+            "http://localhost:8002/api/v2/flows.json",
+            json=response_body,
+            status=200,
+        )
+
+        self.client.force_authenticate(self.user)
+
+        url = reverse("rapidpro-flows")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), response_body)
+
+    def test_start_rapidpro_flow_not_in_org(self):
+        """
+        Should not attempt to get flows from rapidpro if user is not in org
+        """
+
+        user = get_user_model().objects.create_superuser(
+            username="tseet", email="test@email.com", password="pass"
+        )
+
+        self.client.force_authenticate(user)
+
+        url = reverse("rapidpro-flows")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"error": "Organization not found"})
+
+
+class RapidproFlowStartViewTests(SidekickAPITestCase):
+    @responses.activate
+    def test_start_rapidpro_flow(self):
+        """
+        Start Rapidpro flow
+        """
+        response_body = {
+            "id": 111,
+            "uuid": "34a03ea7-6fae-45a3-8e36-a26de6c74140",
+            "flow": {
+                "uuid": "2ea1416c-ce3d-4c02-8534-b8d8b667bcee",
+                "name": "Test flow",
+            },
+            "status": "pending",
+        }
+        responses.add(
+            responses.POST,
+            "http://localhost:8002/api/v2/flow_starts.json",
+            json=response_body,
+            status=200,
+        )
+        self.client.force_authenticate(self.user)
+
+        url = reverse("rapidpro-flowstart")
+        response = self.client.post(
+            url,
+            json={
+                "flow": "2ea1416c-ce3d-4c02-8534-b8d8b667bcee",
+                "urns": ["whatsapp:27123"],
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), response_body)
+
+    def test_start_rapidpro_flow_not_in_org(self):
+        """
+        Should not attempt to start flow on rapidpro if user is not in org
+        """
+
+        user = get_user_model().objects.create_superuser(
+            username="tseet", email="test@email.com", password="pass"
+        )
+
+        self.client.force_authenticate(user)
+
+        url = reverse("rapidpro-flowstart")
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"error": "Organization not found"})
+
+
+class RapidproContactViewTests(SidekickAPITestCase):
+    @responses.activate
+    def test_get_rapidpro_contact(self):
+        """
+        Get contact from rapidpro
+        """
+
+        response_body = {
+            "results": [
+                {
+                    "uuid": "49e49903-5a4e-464c-9e6b-f93b6e845e2e",
+                    "name": "Test Contact",
+                    "fields": {
+                        "whatsapp_consent": "TRUE",
+                        "identification_type": "sa_id",
+                        "public_messaging": "TRUE",
+                        "loss_start_date": None,
+                    },
+                }
+            ]
+        }
+        responses.add(
+            responses.GET,
+            "http://localhost:8002/api/v2/contacts.json",
+            json=response_body,
+            status=200,
+        )
+
+        self.client.force_authenticate(self.user)
+
+        url = reverse("rapidpro-contact")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(response.json(), response_body)
+
+    @responses.activate
+    def test_get_rapidpro_contact_with_field_filter(self):
+        """
+        Get contact from rapidpro and filter fields
+        """
+        self.org.filter_rapidpro_fields = "whatsapp_consent,public_messaging"
+        self.org.save()
+
+        response_body = {
+            "results": [
+                {
+                    "uuid": "49e49903-5a4e-464c-9e6b-f93b6e845e2e",
+                    "name": "Test Contact",
+                    "fields": {
+                        "whatsapp_consent": "TRUE",
+                        "identification_type": "sa_id",
+                        "public_messaging": "TRUE",
+                        "loss_start_date": None,
+                    },
+                }
+            ]
+        }
+        responses.add(
+            responses.GET,
+            "http://localhost:8002/api/v2/contacts.json",
+            json=response_body,
+            status=200,
+        )
+
+        self.client.force_authenticate(self.user)
+
+        url = reverse("rapidpro-contact")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_body["results"][0]["fields"].pop("identification_type")
+        response_body["results"][0]["fields"].pop("loss_start_date")
+
+        self.assertEqual(response.json(), response_body)
+
+    def test_get_rapidpro_contact_not_in_org(self):
+        """
+        Should not attempt to get contact from rapidpro if user is not in org
+        """
+
+        user = get_user_model().objects.create_superuser(
+            username="tseet", email="test@email.com", password="pass"
+        )
+
+        self.client.force_authenticate(user)
+
+        url = reverse("rapidpro-contact")
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {"error": "Organization not found"})

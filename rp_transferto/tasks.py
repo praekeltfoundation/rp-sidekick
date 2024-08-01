@@ -35,7 +35,7 @@ def take_action(
 
     if values_to_update and call_result:
         fields = {}
-        for (rapidpro_field, transferto_field) in values_to_update.items():
+        for rapidpro_field, transferto_field in values_to_update.items():
             fields[rapidpro_field] = call_result[transferto_field]
 
         rapidpro_client.update_contact(user_uuid, fields=fields)
@@ -58,7 +58,7 @@ def update_values(org, user_uuid, values_to_update, transferto_response):
     rapidpro_client = org.get_rapidpro_client()
 
     fields = {}
-    for (rapidpro_field, transferto_field) in values_to_update.items():
+    for rapidpro_field, transferto_field in values_to_update.items():
         fields[rapidpro_field] = transferto_response.get(transferto_field, "NONE")
 
     rapidpro_client.update_contact(user_uuid, fields=fields)
@@ -335,12 +335,14 @@ def buy_airtime_take_action(
                 "topup_attempt_failed": topup_attempt_failed,
                 "topup_attempt": json2html.convert(json.loads(topup_attempt.__str__())),
                 "values_to_update": json2html.convert(values_to_update),
-                "flow_start": get_flow_url(topup_attempt.org, flow_start)
-                if flow_start
-                else None,
-                "fail_flow_start": get_flow_url(topup_attempt.org, fail_flow_start)
-                if fail_flow_start
-                else None,
+                "flow_start": (
+                    get_flow_url(topup_attempt.org, flow_start) if flow_start else None
+                ),
+                "fail_flow_start": (
+                    get_flow_url(topup_attempt.org, fail_flow_start)
+                    if fail_flow_start
+                    else None
+                ),
                 "should_update_fields": should_update_fields,
                 "should_start_success_flow": should_start_success_flow,
                 "should_start_fail_flow": should_start_fail_flow,
