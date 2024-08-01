@@ -12,7 +12,7 @@ setup(
     install_requires=[
         "celery==5.2.3",
         "coreapi==2.3.3",
-        "Django==3.2.11",
+        "Django==4.2.14",
         "django-environ==0.4.5",
         "django-extensions==3.1.5",
         "django-phonenumber-field==3.0.1",
@@ -27,9 +27,10 @@ setup(
         "raven==6.10.0",
         "hashids==1.3.1",
         "django-filter==2.4.0",
-        "sentry-sdk==1.5.4",
+        "sentry-sdk==2.12.0",
         "dj-database-url==0.5.0",
         "boto3",
+        "urllib3==1.26.11",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
