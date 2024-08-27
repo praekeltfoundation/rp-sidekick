@@ -11,7 +11,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "celery==5.2.3",
-        "Django==4.2.14",
+        "Django==4.2.15",
         "django-environ==0.4.5",
         "django-extensions==3.1.5",
         "django-phonenumber-field==3.0.1",
