@@ -18,7 +18,7 @@ setup(
         "django-prometheus==2.2.0",
         "djangorestframework==3.15.2",
         "json2html==1.3.0",
-        "phonenumbers==8.10.23",
+        "phonenumbers==8.13.45",
         "psycopg2-binary==2.8.6",
         "rapidpro-python==2.6.1",
         "redis==4.5.4",

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "rp_interceptors",
     "rp_yal",
     "randomisation",
+    "timezone_utils",
 ]
 
 MIDDLEWARE = [
@@ -72,7 +73,8 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": dj_database_url.config(
         default=os.environ.get(
-            "RP_SIDEKICK_DATABASE", "postgres://postgres@localhost/rp_sidekick"
+            "RP_SIDEKICK_DATABASE",
+            "postgres://postgres:dev_secret_key@localhost/rp_sidekick",
         ),
         engine="django_prometheus.db.backends.postgresql",
     )
