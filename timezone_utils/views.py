@@ -35,9 +35,9 @@ class GetMsisdnTimezones(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            msisdn = request.data["msisdn"]
+            msisdn = request.data["whatsapp_id"]
         except KeyError:
-            raise ValidationError({"msisdn": ["This field is required."]})
+            raise ValidationError({"whatsapp_id": ["This field is required."]})
 
         msisdn = msisdn if msisdn.startswith("+") else "+" + msisdn
 
@@ -45,7 +45,11 @@ class GetMsisdnTimezones(APIView):
             msisdn = phonenumbers.parse(msisdn)
         except phonenumbers.phonenumberutil.NumberParseException:
             raise ValidationError(
-                {"msisdn": ["This value must be a phone number with a region prefix."]}
+                {
+                    "whatsapp_id": [
+                        "This value must be a phone number with a region prefix."
+                    ]
+                }
             )
 
         if not (
@@ -53,7 +57,11 @@ class GetMsisdnTimezones(APIView):
             and phonenumbers.is_valid_number(msisdn)
         ):
             raise ValidationError(
-                {"msisdn": ["This value must be a phone number with a region prefix."]}
+                {
+                    "whatsapp_id": [
+                        "This value must be a phone number with a region prefix."
+                    ]
+                }
             )
 
         zones = list(ph_timezone.time_zones_for_number(msisdn))

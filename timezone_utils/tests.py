@@ -3,17 +3,25 @@ from datetime import datetime
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from rest_framework.test import APITestCase
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient, APITestCase
 
 
 class GetMsisdnTimezonesTest(APITestCase):
     def setUp(self):
+        self.api_client = APIClient()
+
         self.admin_user = User.objects.create_superuser("adminuser", "admin_password")
 
+        token = Token.objects.get(user=self.admin_user)
+        self.token = token.key
+
+        self.api_client.credentials(HTTP_AUTHORIZATION="Token " + self.token)
+
     def test_auth_required_to_get_timezones(self):
-        response = self.client.post(
+        response = self.api_client.post(
             "/timezone_utils/timezones/",
-            data={"contacts": [{"msisdn": "something"}]},
+            data=json.dumps({"whatsapp_id": "something"}),
             content_type="application/json",
         )
 
@@ -23,24 +31,28 @@ class GetMsisdnTimezonesTest(APITestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
             "/timezone_utils/timezones/",
-            data=json.dumps({"contact": {"urn": "something"}}),
+            data=json.dumps({}),
             content_type="application/json",
         )
 
-        self.assertEqual(response.data, {"msisdn": ["This field is required."]})
+        self.assertEqual(response.data, {"whatsapp_id": ["This field is required."]})
         self.assertEqual(response.status_code, 400)
 
     def test_phonenumber_unparseable_returns_400(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
             "/timezone_utils/timezones/",
-            data=json.dumps({"msisdn": "something"}),
+            data=json.dumps({"whatsapp_id": "something"}),
             content_type="application/json",
         )
 
         self.assertEqual(
             response.data,
-            {"msisdn": ["This value must be a phone number with a region prefix."]},
+            {
+                "whatsapp_id": [
+                    "This value must be a phone number with a region prefix."
+                ]
+            },
         )
         self.assertEqual(response.status_code, 400)
 
@@ -49,13 +61,17 @@ class GetMsisdnTimezonesTest(APITestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
             "/timezone_utils/timezones/",
-            data=json.dumps({"msisdn": "120012301"}),
+            data=json.dumps({"whatsapp_id": "120012301"}),
             content_type="application/json",
         )
 
         self.assertEqual(
             response.data,
-            {"msisdn": ["This value must be a phone number with a region prefix."]},
+            {
+                "whatsapp_id": [
+                    "This value must be a phone number with a region prefix."
+                ]
+            },
         )
         self.assertEqual(response.status_code, 400)
 
@@ -64,13 +80,17 @@ class GetMsisdnTimezonesTest(APITestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
             "/timezone_utils/timezones/",
-            data=json.dumps({"msisdn": "12001230101"}),
+            data=json.dumps({"whatsapp_id": "12001230101"}),
             content_type="application/json",
         )
 
         self.assertEqual(
             response.data,
-            {"msisdn": ["This value must be a phone number with a region prefix."]},
+            {
+                "whatsapp_id": [
+                    "This value must be a phone number with a region prefix."
+                ]
+            },
         )
         self.assertEqual(response.status_code, 400)
 
@@ -78,7 +98,7 @@ class GetMsisdnTimezonesTest(APITestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
             "/timezone_utils/timezones/",
-            data=json.dumps({"msisdn": "+27345678910"}),
+            data=json.dumps({"whatsapp_id": "+27345678910"}),
             content_type="application/json",
         )
 
@@ -91,7 +111,7 @@ class GetMsisdnTimezonesTest(APITestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
             "/timezone_utils/timezones/",
-            data=json.dumps({"msisdn": "27345678910"}),
+            data=json.dumps({"whatsapp_id": "27345678910"}),
             content_type="application/json",
         )
 
@@ -104,7 +124,7 @@ class GetMsisdnTimezonesTest(APITestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
             "/timezone_utils/timezones/",
-            data=json.dumps({"msisdn": "61498765432"}),
+            data=json.dumps({"whatsapp_id": "61498765432"}),
             content_type="application/json",
         )
 
@@ -133,7 +153,7 @@ class GetMsisdnTimezonesTest(APITestCase):
             mock_datetime.utcnow.return_value = datetime(2022, 8, 8)
             response = self.client.post(
                 "/timezone_utils/timezones/?return_one=true",
-                data=json.dumps({"msisdn": "61498765432"}),
+                data=json.dumps({"whatsapp_id": "61498765432"}),
                 content_type="application/json",
             )
 
