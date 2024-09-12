@@ -4,6 +4,14 @@ VERSIONS
 Next Release
 ------------
 
+1.11.9
+------------
+msisdn_utils: An application that has small tools for handling phone numbers
+
+1.11.8
+------------
+Merge pull request #193 from praekeltfoundation/dependabot/pip/django-4.2.15
+
 1.11.7
 ------------
 YAL: Fix redis connection
