@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     "rp_interceptors",
     "rp_yal",
     "randomisation",
-    "timezone_utils",
+    "msisdn_utils",
 ]
 
 MIDDLEWARE = [

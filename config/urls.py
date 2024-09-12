@@ -10,5 +10,5 @@ urlpatterns = [
     path("dtone/", include("rp_dtone.urls")),
     path("randomisation/", include("randomisation.urls")),
     path("yal/", include("rp_yal.urls"), name="rp_yal"),
-    path("timezone_utils/", include("timezone_utils.urls")),
+    path("msisdn_utils/", include("msisdn_utils.urls")),
 ]

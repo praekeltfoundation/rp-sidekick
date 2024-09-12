@@ -20,7 +20,7 @@ class GetMsisdnTimezonesTest(APITestCase):
 
     def test_auth_required_to_get_timezones(self):
         response = self.api_client.post(
-            "/timezone_utils/timezones/",
+            "/msisdn_utils/timezones/",
             data=json.dumps({"whatsapp_id": "something"}),
             content_type="application/json",
         )
@@ -30,7 +30,7 @@ class GetMsisdnTimezonesTest(APITestCase):
     def test_no_msisdn_returns_400(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
-            "/timezone_utils/timezones/",
+            "/msisdn_utils/timezones/",
             data=json.dumps({}),
             content_type="application/json",
         )
@@ -41,7 +41,7 @@ class GetMsisdnTimezonesTest(APITestCase):
     def test_phonenumber_unparseable_returns_400(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
-            "/timezone_utils/timezones/",
+            "/msisdn_utils/timezones/",
             data=json.dumps({"whatsapp_id": "something"}),
             content_type="application/json",
         )
@@ -60,7 +60,7 @@ class GetMsisdnTimezonesTest(APITestCase):
         # If the length of a number doesn't match accepted length for it's region
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
-            "/timezone_utils/timezones/",
+            "/msisdn_utils/timezones/",
             data=json.dumps({"whatsapp_id": "120012301"}),
             content_type="application/json",
         )
@@ -79,7 +79,7 @@ class GetMsisdnTimezonesTest(APITestCase):
         # If a phone number is invalid for it's region
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
-            "/timezone_utils/timezones/",
+            "/msisdn_utils/timezones/",
             data=json.dumps({"whatsapp_id": "12001230101"}),
             content_type="application/json",
         )
@@ -97,7 +97,7 @@ class GetMsisdnTimezonesTest(APITestCase):
     def test_phonenumber_with_plus(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
-            "/timezone_utils/timezones/",
+            "/msisdn_utils/timezones/",
             data=json.dumps({"whatsapp_id": "+27345678910"}),
             content_type="application/json",
         )
@@ -110,7 +110,7 @@ class GetMsisdnTimezonesTest(APITestCase):
     def test_single_timezone_number(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
-            "/timezone_utils/timezones/",
+            "/msisdn_utils/timezones/",
             data=json.dumps({"whatsapp_id": "27345678910"}),
             content_type="application/json",
         )
@@ -123,7 +123,7 @@ class GetMsisdnTimezonesTest(APITestCase):
     def test_multiple_timezone_number_returns_all(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(
-            "/timezone_utils/timezones/",
+            "/msisdn_utils/timezones/",
             data=json.dumps({"whatsapp_id": "61498765432"}),
             content_type="application/json",
         )
@@ -149,10 +149,10 @@ class GetMsisdnTimezonesTest(APITestCase):
     def test_return_one_flag_gives_middle_timezone(self):
         self.client.force_authenticate(user=self.admin_user)
 
-        with patch("timezone_utils.views.datetime") as mock_datetime:
+        with patch("msisdn_utils.views.datetime") as mock_datetime:
             mock_datetime.utcnow.return_value = datetime(2022, 8, 8)
             response = self.client.post(
-                "/timezone_utils/timezones/?return_one=true",
+                "/msisdn_utils/timezones/?return_one=true",
                 data=json.dumps({"whatsapp_id": "61498765432"}),
                 content_type="application/json",
             )
