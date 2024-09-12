@@ -2,7 +2,7 @@
 exclude: ^(ve/|venv/)
 repos:
   - repo: https://github.com/ambv/black
-    rev: 1fbf7251ccdb58ba93301622388615633ecc348a
+    rev: 24.8.0
     hooks:
       - id: black
         language_version: python3.9
@@ -16,7 +16,7 @@ repos:
         additional_dependencies: ['flake8-print']
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.16.0
+    rev: v1.35.1
     hooks:
       - id: yamllint
         files: ^.*\.(yml|yaml)$
