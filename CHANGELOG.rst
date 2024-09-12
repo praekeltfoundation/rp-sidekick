@@ -4,6 +4,10 @@ VERSIONS
 Next Release
 ------------
 
+1.11.8
+------------
+msisdn_utils: An application that has small tools for handling phone numbers
+
 1.11.7
 ------------
 YAL: Fix redis connection
