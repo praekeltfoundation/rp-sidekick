@@ -204,7 +204,6 @@ def get_first_matching_content_set(contentsets, fields):
             ):
                 return contentset["id"]
         if contentset["field_count"] == 1:
-
             if contentset["relationship"] == relationship_status:
                 return contentset["id"]
         if contentset["field_count"] == 0:
