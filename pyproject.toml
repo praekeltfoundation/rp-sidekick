@@ -5,7 +5,19 @@ description = ""
 authors = ["Praekelt Foundation <dev@praekeltfoundation.org>"]
 repository = "http://github.com/praekeltfoundation/rp-sidekick"
 license = "BSD"
-readme = "README.md"
+readme = "README.rst"
+
+packages = [
+  { include = "config" },
+  { include = "msisdn_utils" },
+  { include = "randomisation" },
+  { include = "rp_dtone"},
+  { include = "rp_interceptors"},
+  { include = "rp_recruit"},
+  { include = "rp_transferto"},
+  { include = "rp_yal"},
+  { include = "sidekick" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
