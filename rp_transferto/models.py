@@ -1,7 +1,6 @@
+import importlib.metadata
 import json
 
-import pkg_resources
-import importlib.metadata
 from django.db import models
 from django.db.models import JSONField
 from django.utils import timezone

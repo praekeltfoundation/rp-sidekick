@@ -1,7 +1,7 @@
+import importlib.metadata
 import json
 from unittest.mock import Mock, patch
 
-import pkg_resources
 import responses
 from django.test import TestCase
 from django.utils import timezone
@@ -33,14 +33,12 @@ class UtilsTests(TestCase):
         )
 
     def test_build_turn_headers(self):
-        distribution = pkg_resources.get_distribution("rp-sidekick")
+        version = importlib.metadata.version("rp-sidekick")
 
         headers = utils.build_turn_headers("FAKE_TOKEN")
 
         self.assertEqual(headers["Authorization"], "Bearer FAKE_TOKEN")
-        self.assertEqual(
-            headers["User-Agent"], "rp-sidekick/{}".format(distribution.version)
-        )
+        self.assertEqual(headers["User-Agent"], "rp-sidekick/{}".format(version))
         self.assertEqual(headers["Content-Type"], "application/json")
 
     @responses.activate

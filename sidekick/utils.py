@@ -1,7 +1,7 @@
+import importlib.metadata
 import json
 from urllib.parse import urljoin
 
-import pkg_resources
 import requests
 from django.utils import timezone
 from requests.adapters import HTTPAdapter
@@ -33,10 +33,10 @@ def clean_msisdn(msisdn):
 
 
 def build_turn_headers(token, api_extensions=False):
-    distribution = pkg_resources.get_distribution("rp-sidekick")
+    version = importlib.metadata.version("rp-sidekick")
     headers = {
         "Authorization": "Bearer {}".format(token),
-        "User-Agent": "rp-sidekick/{}".format(distribution.version),
+        "User-Agent": "rp-sidekick/{}".format(version),
         "Content-Type": "application/json",
     }
     if api_extensions:
