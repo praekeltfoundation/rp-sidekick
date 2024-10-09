@@ -1,7 +1,7 @@
+import importlib.metadata
 import json
 from unittest.mock import Mock, patch
 
-import pkg_resources
 import responses
 from django.test import TestCase
 from django.utils import timezone
@@ -33,14 +33,12 @@ class UtilsTests(TestCase):
         )
 
     def test_build_turn_headers(self):
-        distribution = pkg_resources.get_distribution("rp-sidekick")
+        version = importlib.metadata.version("rp-sidekick")
 
         headers = utils.build_turn_headers("FAKE_TOKEN")
 
         self.assertEqual(headers["Authorization"], "Bearer FAKE_TOKEN")
-        self.assertEqual(
-            headers["User-Agent"], "rp-sidekick/{}".format(distribution.version)
-        )
+        self.assertEqual(headers["User-Agent"], f"rp-sidekick/{version}")
         self.assertEqual(headers["Content-Type"], "application/json")
 
     @responses.activate
@@ -131,10 +129,10 @@ class UtilsTests(TestCase):
         mock_create_contact,
     ):
         MSISDN = "+27820001001"
-        OLD_URNS = ["tel:{}".format(MSISDN)]
+        OLD_URNS = [f"tel:{MSISDN}"]
 
         NEW_WA_MSISDN = MSISDN.replace("+", "")
-        NEW_URNS = ["tel:{}".format(MSISDN), "whatsapp:{}".format(NEW_WA_MSISDN)]
+        NEW_URNS = [f"tel:{MSISDN}", f"whatsapp:{NEW_WA_MSISDN}"]
 
         UUID = "1234"
 
@@ -174,7 +172,7 @@ class UtilsTests(TestCase):
         UUID = "1234"
         MSISDN = "+27822222222"
         WA_MSISDN = MSISDN.replace("+", "")
-        URNS = ["tel:{}".format(MSISDN), "whatsapp:{}".format(WA_MSISDN)]
+        URNS = [f"tel:{MSISDN}", f"whatsapp:{WA_MSISDN}"]
 
         mock_get_whatsapp_contact_id.return_value = WA_MSISDN
 
@@ -205,7 +203,7 @@ class UtilsTests(TestCase):
     ):
         MSISDN = "+27822222222"
         WA_MSISDN = MSISDN.replace("+", "")
-        URNS = ["tel:{}".format(MSISDN), "whatsapp:{}".format(WA_MSISDN)]
+        URNS = [f"tel:{MSISDN}", f"whatsapp:{WA_MSISDN}"]
 
         mock_get_whatsapp_contact_id.return_value = WA_MSISDN
 
@@ -255,7 +253,7 @@ class UtilsTests(TestCase):
 
         responses.add(
             method=responses.GET,
-            url="http://whatsapp/v1/groups/{}/invite".format(group_id),
+            url=f"http://whatsapp/v1/groups/{group_id}/invite",
             json={"groups": [{"link": "group-invite-link"}]},
             status=200,
         )
@@ -277,7 +275,7 @@ class UtilsTests(TestCase):
 
         responses.add(
             method=responses.GET,
-            url="http://whatsapp/v1/groups/{}".format(group_id),
+            url=f"http://whatsapp/v1/groups/{group_id}",
             json={"groups": [group_info]},
             status=200,
         )
@@ -292,7 +290,7 @@ class UtilsTests(TestCase):
 
         responses.add(
             method=responses.PATCH,
-            url="http://whatsapp/v1/groups/{}/admins".format(group_id),
+            url=f"http://whatsapp/v1/groups/{group_id}/admins",
             json={},
             status=200,
         )
@@ -326,7 +324,7 @@ class UtilsTests(TestCase):
 
         responses.add(
             method=responses.GET,
-            url="http://whatsapp/v1/contacts/{}/messages".format(contact_id),
+            url=f"http://whatsapp/v1/contacts/{contact_id}/messages",
             json=data,
         )
 
@@ -339,7 +337,7 @@ class UtilsTests(TestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://whatsapp/v1/messages/{}/labels".format(message_id),
+            url=f"http://whatsapp/v1/messages/{message_id}/labels",
             json={},
         )
 
@@ -358,7 +356,7 @@ class UtilsTests(TestCase):
 
         responses.add(
             method=responses.POST,
-            url="http://whatsapp/v1/chats/{}/archive".format(wa_id),
+            url=f"http://whatsapp/v1/chats/{wa_id}/archive",
             json={},
         )
 
@@ -384,7 +382,7 @@ class UtilsTests(TestCase):
         test_org = create_org(url=base_url)
         self.assertEqual(
             utils.get_flow_url(test_org, flow_uuid),
-            "{}/flow/editor/{}".format(base_url, flow_uuid),
+            f"{base_url}/flow/editor/{flow_uuid}",
         )
 
     def test_get_flow_url_2(self):
@@ -393,5 +391,5 @@ class UtilsTests(TestCase):
         test_org = create_org(url=base_url)
         self.assertEqual(
             utils.get_flow_url(test_org, flow_uuid),
-            "{}flow/editor/{}".format(base_url, flow_uuid),
+            f"{base_url}flow/editor/{flow_uuid}",
         )

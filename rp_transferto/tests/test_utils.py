@@ -23,7 +23,13 @@ class TestTransferToClient(TestCase):
         """
         Returns a dict of the airtime API body response
         """
-        test_input = b"authentication_key=1111111111111111\r\nerror_code=919\r\nerror_txt=All needed argument not received\r\n"
+        test_input = b"\r\n".join(
+            [
+                b"authentication_key=1111111111111111",
+                b"error_code=919",
+                b"error_txt=All needed argument not received",
+            ]
+        )
         expected_output = {
             "authentication_key": "1111111111111111",
             "error_code": "919",
@@ -34,10 +40,18 @@ class TestTransferToClient(TestCase):
 
     @responses.activate
     def test_make_transferto_request(self):
+        test_input = b"\r\n".join(
+            [
+                b"info_txt=pong",
+                b"authentication_key=1111111111111111",
+                b"error_code=0",
+                b"error_txt=Transaction successful",
+            ]
+        )
         responses.add(
             responses.POST,
             self.client.url,
-            body=b"info_txt=pong\r\nauthentication_key=1111111111111111\r\nerror_code=0\r\nerror_txt=Transaction successful\r\n",
+            body=test_input,
             status=200,
         )
         output = self.client._make_transferto_request(action="ping")
@@ -151,7 +165,7 @@ class TestTransferToClient(TestCase):
             headers["x-transferto-hmac"],
             base64.b64encode(
                 hmac.new(
-                    bytes("fake_apisecret".encode("utf-8")),
+                    b"fake_apisecret",
                     bytes(("fake_apikey" + expected_nonce).encode("utf-8")),
                     digestmod=hashlib.sha256,
                 ).digest()
@@ -164,18 +178,14 @@ class TestTransferToClient(TestCase):
         fake_country_id = 99
         responses.add(
             responses.GET,
-            "https://api.transferto.com/v1.1/operators/{}/products".format(
-                fake_country_id
-            ),
+            f"https://api.transferto.com/v1.1/operators/{fake_country_id}/products",
             json={"fake": "payload"},
             status=200,
         )
 
         output = self.client._make_transferto_api_request(
             "some_action",
-            url="https://api.transferto.com/v1.1/operators/{}/products".format(
-                fake_country_id
-            ),
+            url=f"https://api.transferto.com/v1.1/operators/{fake_country_id}/products",
         )
         expected_output = {"fake": "payload"}
         self.assertDictEqual(output, expected_output)
@@ -211,9 +221,7 @@ class TestTransferToClient(TestCase):
 
         mock.assert_called_once_with(
             "get_operator_products",
-            "https://api.transferto.com/v1.1/operators/{}/products".format(
-                fake_operator_id
-            ),
+            f"https://api.transferto.com/v1.1/operators/{fake_operator_id}/products",
         )
 
     def test_get_country_services(self):
@@ -223,9 +231,7 @@ class TestTransferToClient(TestCase):
 
         mock.assert_called_once_with(
             "get_country_services",
-            "https://api.transferto.com/v1.1/countries/{}/services".format(
-                fake_country_id
-            ),
+            f"https://api.transferto.com/v1.1/countries/{fake_country_id}/services",
         )
 
     @freeze_time("2000-01-01")

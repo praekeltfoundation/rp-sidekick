@@ -38,10 +38,10 @@ class HmacAuthentication(BaseAuthentication):
         try:
             interceptor_pk = request.parser_context["kwargs"]["pk"]
             interceptor = Interceptor.objects.get(pk=interceptor_pk)
-        except KeyError:
-            raise AuthenticationFailed("No Interceptor found")
-        except Interceptor.DoesNotExist:
-            raise AuthenticationFailed("No Interceptor found")
+        except KeyError as e:
+            raise AuthenticationFailed("No Interceptor found") from e
+        except Interceptor.DoesNotExist as e:
+            raise AuthenticationFailed("No Interceptor found") from e
 
         signature = request.META.get("HTTP_X_TURN_HOOK_SIGNATURE")
         if not signature:

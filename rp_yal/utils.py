@@ -1,3 +1,4 @@
+import contextlib
 from datetime import datetime
 from urllib.parse import urljoin
 
@@ -15,10 +16,8 @@ def get_ordered_content_set(org, fields):
     weekday = datetime.today().weekday()
 
     if fields.get("test_day"):
-        try:
+        with contextlib.suppress(ValueError):
             weekday = int(fields.get("test_day")) - 1
-        except ValueError:
-            pass
 
     if weekday == 0:
         # Monday
@@ -197,16 +196,17 @@ def get_first_matching_content_set(contentsets, fields):
     gender = get_gender(fields.get("gender", ""))
 
     for contentset in sorted(contentsets, key=lambda d: d["field_count"], reverse=True):
-        if contentset["field_count"] == 2:
-            if (
-                contentset["gender"] == gender
-                and contentset["relationship"] == relationship_status
-            ):
-                return contentset["id"]
-        if contentset["field_count"] == 1:
-
-            if contentset["relationship"] == relationship_status:
-                return contentset["id"]
+        if (
+            contentset["field_count"] == 2
+            and contentset["gender"] == gender
+            and contentset["relationship"] == relationship_status
+        ):
+            return contentset["id"]
+        if (
+            contentset["field_count"] == 1
+            and contentset["relationship"] == relationship_status
+        ):
+            return contentset["id"]
         if contentset["field_count"] == 0:
             return contentset["id"]
 
@@ -241,7 +241,7 @@ def get_unique_page_seen_ids(org, msisdn):
 def get_contentrepo_headers(org):
     return {
         "Content-Type": "application/json",
-        "Authorization": "Token {}".format(org.contentrepo_token),
+        "Authorization": f"Token {org.contentrepo_token}",
     }
 
 

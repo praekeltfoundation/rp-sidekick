@@ -478,7 +478,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         )
         self.assertEqual(exception.value.__str__(), "Error From TransferTo")
 
-    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
+    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")  # noqa: S106 - Hardcoded passwords OK for tests
     @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
     @patch("django.core.mail.EmailMessage.send")
     @patch("rp_transferto.tasks.update_values")
@@ -590,7 +590,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         )
         self.assertEqual(exception.value.__str__(), "Error From TransferTo")
 
-    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
+    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")  # noqa: S106 - Hardcoded passwords OK for tests
     @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
     @patch("django.core.mail.EmailMessage.send")
     @patch("rp_transferto.tasks.update_values")
@@ -634,7 +634,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         )
         self.assertTrue(fake_send.called)
 
-    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
+    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")  # noqa: S106 - Hardcoded passwords OK for tests
     @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
     @patch("django.core.mail.EmailMessage.send")
     @patch("rp_transferto.tasks.update_values")
@@ -678,7 +678,7 @@ class TestBuyAirtimeTakeAction(TestCase):
         )
         self.assertTrue(fake_send.called)
 
-    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")
+    @override_settings(EMAIL_HOST_PASSWORD="EMAIL_HOST_PASSWORD")  # noqa: S106 - Hardcoded passwords OK for tests
     @override_settings(EMAIL_HOST_USER="EMAIL_HOST_USER")
     @patch("django.core.mail.EmailMessage.send")
     @patch("rp_transferto.tasks.update_values")

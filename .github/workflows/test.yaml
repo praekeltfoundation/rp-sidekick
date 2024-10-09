@@ -24,28 +24,29 @@ jobs:
     env:
       RP_SIDEKICK_DATABASE: postgres://postgres:postgres@localhost/rp_sidekick
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install gettext
         run: sudo apt-get install gettext
-      - uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}-pip
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.9
-      - name: Install dependancies
+      - uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: "1.8.3"    
+      - name: Install dependencies
+        id: install-deps
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt
+          poetry install
+      - name: Check formatting
+        # Lints/tests should always run, even if other lints/tests have failed.
+        if: success() || failure() && steps.install-deps.outcome == 'success'
+        run: |
+          poetry run ruff format --check 
       - name: Lint
+        if: success() || failure() && steps.install-deps.outcome == 'success'
         run: |
-          flake8
-          python manage.py makemigrations rp_dtone rp_transferto rp_recruit\
-           sidekick --dry-run | grep 'No changes detected' || (echo 'There are\
-           changes which require migrations.' && exit 1)
-          black --check .
-          isort -c -rc .
-      - name: Test
+          poetry run ruff check 
+      - name: Run tests
+        if: success() || failure() && steps.install-deps.outcome == 'success'
         run: |
-          py.test
+          poetry run pytest -vv

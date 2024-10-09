@@ -32,6 +32,10 @@ from .tasks import (
 from .utils import clean_message, get_whatsapp_contacts, send_whatsapp_template_message
 
 
+def json_error(err_msg, status=status.HTTP_400_BAD_REQUEST):
+    return JsonResponse({"error": err_msg}, status=status)
+
+
 def health(request):
     app_id = environ.get("MARATHON_APP_ID", None)
     ver = environ.get("MARATHON_APP_VERSION", None)
@@ -46,7 +50,7 @@ def detailed_health(request):
         message = "queues ok"
         for queue in settings.CELERY_QUEUES:
             queue_results = requests.get(
-                "{}{}".format(settings.RABBITMQ_MANAGEMENT_INTERFACE, queue.name)
+                f"{settings.RABBITMQ_MANAGEMENT_INTERFACE}{queue.name}"
             ).json()
 
             details = {
@@ -89,14 +93,11 @@ class SendWhatsAppTemplateMessageView(APIView):
 
         missing_params = [key for key in required_params if key not in data]
         if missing_params:
-            return JsonResponse(
-                {"error": "Missing fields: {}".format(", ".join(missing_params))},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return json_error("Missing fields: {}".format(", ".join(missing_params)))
 
         localizable_params = [
             {"default": clean_message(data[_key])}
-            for _key in sorted([key for key in data.keys() if key.isdigit()])
+            for _key in sorted([key for key in data if key.isdigit()])
         ]
 
         org_id = data["org_id"]
@@ -107,14 +108,13 @@ class SendWhatsAppTemplateMessageView(APIView):
         try:
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
-            return JsonResponse(
-                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return json_error("Organization not found")
 
         if not org.users.filter(id=request.user.id).exists():
             return JsonResponse(
                 data={
-                    "error": "Authenticated user does not belong to specified Organization"
+                    "error": "Authenticated user does not belong to specified "
+                    "Organization"
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
@@ -137,19 +137,15 @@ class CheckContactView(APIView):
         try:
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
-            return JsonResponse(
-                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return json_error("Organization not found")
         if not org.users.filter(id=request.user.id).exists():
-            return JsonResponse(
-                data={
-                    "error": "Authenticated user does not belong to specified Organization"
-                },
+            return json_error(
+                "Authenticated user does not belong to specified Organization",
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
         turn_response = get_whatsapp_contacts(org, [msisdn])
-        if not (200 <= turn_response.status_code and turn_response.status_code < 300):
+        if not (turn_response.status_code >= 200 and turn_response.status_code < 300):
             return JsonResponse(
                 {"error": turn_response.content.decode("utf-8")},
                 status=turn_response.status_code,
@@ -298,7 +294,8 @@ class ListContactsView(GenericAPIView):
         if not org.users.filter(id=request.user.id).exists():
             return JsonResponse(
                 data={
-                    "error": "Authenticated user does not belong to specified Organization"
+                    "error": "Authenticated user does not belong to specified "
+                    "Organization"
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
@@ -323,7 +320,7 @@ class ListContactsView(GenericAPIView):
                             # get_contacts already filtered on this field
                             continue
                         elif (
-                            field not in contact.fields.keys()
+                            field not in contact.fields
                             or str(contact.fields[field]) != value
                         ):
                             match = False
@@ -334,7 +331,8 @@ class ListContactsView(GenericAPIView):
             return JsonResponse(
                 {
                     "error": "An error occured fulfilling your request. "
-                    "You may have exceeded the rate limit. Please try again later."
+                    "You may have exceeded the rate limit. "
+                    "Please try again later."
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
@@ -354,7 +352,7 @@ class RapidproFlowsView(GenericAPIView):
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Token {}".format(org.token),
+            "Authorization": f"Token {org.token}",
         }
         response = requests.get(urljoin(org.url, "api/v2/flows.json"), headers=headers)
 
@@ -376,7 +374,7 @@ class RapidproFlowStartView(GenericAPIView):
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Token {}".format(org.token),
+            "Authorization": f"Token {org.token}",
         }
         response = requests.post(
             urljoin(org.url, "api/v2/flow_starts.json"),
@@ -399,7 +397,7 @@ class RapidproContactView(GenericAPIView):
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Token {}".format(org.token),
+            "Authorization": f"Token {org.token}",
         }
         response = requests.get(
             urljoin(org.url, "api/v2/contacts.json"),

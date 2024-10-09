@@ -23,11 +23,13 @@ class InterceptorViewTests(APITestCase):
 
     def test_hmac_missing(self):
         """
-        If the HMAC secret is configured, and there's no HMAC header, or it's invalid,
-        then we should return a 403
+        If the HMAC secret is configured, and there's no HMAC header, or it's
+        invalid, then we should return a 403
         """
         interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url = reverse("interceptor-status", args=[interceptor.pk])
         data = {"test": "body"}
@@ -43,11 +45,14 @@ class InterceptorViewTests(APITestCase):
     @responses.activate
     def test_status_request(self):
         """
-        If the request is a status that doesn't have the recipient_id then the recipient_id
-        should be pulled from the message object and the request forwarded to the Org URL
+        If the request is a status that doesn't have the recipient_id then
+        the recipient_id should be pulled from the message object and the
+        request forwarded to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -95,10 +100,13 @@ class InterceptorViewTests(APITestCase):
 
     def test_empty_status_request(self):
         """
-        If the request only contains a empty status object, don't forward it to Rapidpro
+        If the request only contains a empty status object, don't
+        forward it to Rapidpro
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {"statuses": [{}]}
@@ -113,10 +121,13 @@ class InterceptorViewTests(APITestCase):
     @responses.activate
     def test_non_status_request(self):
         """
-        If the request does not contain a status object then it should be forwarded as is to the Org URL
+        If the request does not contain a status object then it
+        should be forwarded as is to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -153,7 +164,9 @@ class InterceptorViewTests(APITestCase):
         If the status has no message key it should forward it as is
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -185,11 +198,13 @@ class InterceptorViewTests(APITestCase):
     @responses.activate
     def test_status_request_contains_recipient_id(self):
         """
-        If the status in the request already contains the recipient_id then it should be forwarded
-        as is to the Org URL
+        If the status in the request already contains the recipient_id
+        then it should be forwarded as is to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -223,11 +238,14 @@ class InterceptorViewTests(APITestCase):
     @responses.activate
     def test_status_request_msg_has_no_recipient_id(self):
         """
-        If the message in the status in the request does not contain the recipient_id then we still add
-        the recipient_id key to the status object and forwarded it on to the Org URL
+        If the message in the status in the request does not contain the
+        recipient_id then we still add the recipient_id key to the status
+        object and forwarded it on to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
