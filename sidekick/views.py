@@ -145,7 +145,7 @@ class CheckContactView(APIView):
             )
 
         turn_response = get_whatsapp_contacts(org, [msisdn])
-        if not (200 <= turn_response.status_code and turn_response.status_code < 300):
+        if not (turn_response.status_code >= 200 and turn_response.status_code < 300):
             return JsonResponse(
                 {"error": turn_response.content.decode("utf-8")},
                 status=turn_response.status_code,
