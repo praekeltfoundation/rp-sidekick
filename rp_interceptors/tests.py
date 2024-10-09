@@ -27,7 +27,9 @@ class InterceptorViewTests(APITestCase):
         invalid, then we should return a 403
         """
         interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url = reverse("interceptor-status", args=[interceptor.pk])
         data = {"test": "body"}
@@ -48,7 +50,9 @@ class InterceptorViewTests(APITestCase):
         request forwarded to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -100,7 +104,9 @@ class InterceptorViewTests(APITestCase):
         forward it to Rapidpro
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {"statuses": [{}]}
@@ -119,7 +125,9 @@ class InterceptorViewTests(APITestCase):
         should be forwarded as is to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -156,7 +164,9 @@ class InterceptorViewTests(APITestCase):
         If the status has no message key it should forward it as is
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -192,7 +202,9 @@ class InterceptorViewTests(APITestCase):
         then it should be forwarded as is to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -231,7 +243,9 @@ class InterceptorViewTests(APITestCase):
         object and forwarded it on to the Org URL
         """
         interceptor: Interceptor = Interceptor.objects.create(
-            org=self.org, hmac_secret="test-secret", channel_uuid="1234343212"
+            org=self.org,
+            hmac_secret="test-secret",
+            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {

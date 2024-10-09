@@ -83,14 +83,13 @@ select = [
 
 ignore = [
     "E501",  # TODO: Something about these long lines.
-    "S113",  # TODO: Request timeouts.
+    "S113",  # TODO: Add request timeouts.
     "PTH118", # TODO: Switch to pathlib
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = [
     "S101",  # It's okay to use `assert` in tests.
-    "S106",  # TODO: Silent these in place
 ]
 
 "**/config/settings/{test,dev}.py" = [
@@ -101,5 +100,4 @@ ignore = [
 # TODO: Move this somewhere sensible?
 "**/tests.py" = [
     "S101",  # It's okay to use `assert` in tests.
-    "S106",  # TODO: Silent these in place
 ]

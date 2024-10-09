@@ -112,7 +112,9 @@ class SidekickAPITestCase(APITestCase):
         self.api_client = APIClient()
 
         self.user = get_user_model().objects.create_superuser(
-            username="superuser", email="superuser@email.com", password="pass"
+            username="superuser",
+            email="superuser@email.com",
+            password="pass",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         token = Token.objects.get(user=self.user)
         self.token = token.key
@@ -912,7 +914,9 @@ class RapidproFlowsViewTests(SidekickAPITestCase):
         """
 
         user = get_user_model().objects.create_superuser(
-            username="tseet", email="test@email.com", password="pass"
+            username="tseet",
+            email="test@email.com",
+            password="pass",  # noqa: S106 - Hardcoded passwords OK for tests
         )
 
         self.client.force_authenticate(user)
@@ -965,7 +969,9 @@ class RapidproFlowStartViewTests(SidekickAPITestCase):
         """
 
         user = get_user_model().objects.create_superuser(
-            username="tseet", email="test@email.com", password="pass"
+            username="tseet",
+            email="test@email.com",
+            password="pass",  # noqa: S106 - Hardcoded passwords OK for tests
         )
 
         self.client.force_authenticate(user)
@@ -1061,7 +1067,9 @@ class RapidproContactViewTests(SidekickAPITestCase):
         """
 
         user = get_user_model().objects.create_superuser(
-            username="tseet", email="test@email.com", password="pass"
+            username="tseet",
+            email="test@email.com",
+            password="pass",  # noqa: S106 - Hardcoded passwords OK for tests
         )
 
         self.client.force_authenticate(user)
