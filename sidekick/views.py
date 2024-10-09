@@ -32,6 +32,10 @@ from .tasks import (
 from .utils import clean_message, get_whatsapp_contacts, send_whatsapp_template_message
 
 
+def json_error(err_msg, status=status.HTTP_400_BAD_REQUEST):
+    return JsonResponse({"error": err_msg}, status=status)
+
+
 def health(request):
     app_id = environ.get("MARATHON_APP_ID", None)
     ver = environ.get("MARATHON_APP_VERSION", None)
@@ -89,10 +93,7 @@ class SendWhatsAppTemplateMessageView(APIView):
 
         missing_params = [key for key in required_params if key not in data]
         if missing_params:
-            return JsonResponse(
-                {"error": "Missing fields: {}".format(", ".join(missing_params))},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return json_error("Missing fields: {}".format(", ".join(missing_params)))
 
         localizable_params = [
             {"default": clean_message(data[_key])}
@@ -107,9 +108,7 @@ class SendWhatsAppTemplateMessageView(APIView):
         try:
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
-            return JsonResponse(
-                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return json_error("Organization not found")
 
         if not org.users.filter(id=request.user.id).exists():
             return JsonResponse(
@@ -138,14 +137,10 @@ class CheckContactView(APIView):
         try:
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
-            return JsonResponse(
-                {"error": "Organization not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return json_error("Organization not found")
         if not org.users.filter(id=request.user.id).exists():
-            return JsonResponse(
-                data={
-                    "error": "Authenticated user does not belong to specified Organization"
-                },
+            return json_error(
+                "Authenticated user does not belong to specified Organization",
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 

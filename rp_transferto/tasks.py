@@ -27,7 +27,8 @@ def take_action(
 
     :parma obj org: Organization object
     :param str user_uuid: contact UUID in RapidPro
-    :param dict values_to_update: key-value mapping which represents variable_on_rapidpro_to_update:variable_from_response
+    :param dict values_to_update: key-value mapping which represents
+    variable_on_rapidpro_to_update:variable_from_response
     :param dict call_result: response from transferto call
     :param str flow_start: flow UUID in RapidPro
     """
@@ -52,7 +53,8 @@ def update_values(org, user_uuid, values_to_update, transferto_response):
 
     :parma obj org: Organization object
     :param str user_uuid: contact UUID in RapidPro
-    :param dict values_to_update: key-value mapping which represents variable_on_rapidpro_to_update:variable_from_response
+    :param dict values_to_update: key-value mapping which represents
+    variable_on_rapidpro_to_update:variable_from_response
     :param dict transferto_response: response from transferto call
     """
     rapidpro_client = org.get_rapidpro_client()
@@ -125,7 +127,8 @@ def buy_product_take_action(
     org_id, msisdn, product_id, user_uuid=None, values_to_update={}, flow_start=None
 ):
     """
-    Note: operates under the assumption that org_id is valid and has transferto account
+    Note: operates under the assumption that org_id is valid and has
+    transferto account
     """
     name = "rp_transferto.tasks.buy_product_take_action"
     log.info(

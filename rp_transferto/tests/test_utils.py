@@ -23,7 +23,13 @@ class TestTransferToClient(TestCase):
         """
         Returns a dict of the airtime API body response
         """
-        test_input = b"authentication_key=1111111111111111\r\nerror_code=919\r\nerror_txt=All needed argument not received\r\n"
+        test_input = b"\r\n".join(
+            [
+                b"authentication_key=1111111111111111",
+                b"error_code=919",
+                b"error_txt=All needed argument not received",
+            ]
+        )
         expected_output = {
             "authentication_key": "1111111111111111",
             "error_code": "919",
@@ -34,10 +40,18 @@ class TestTransferToClient(TestCase):
 
     @responses.activate
     def test_make_transferto_request(self):
+        test_input = b"\r\n".join(
+            [
+                b"info_txt=pong",
+                b"authentication_key=1111111111111111",
+                b"error_code=0",
+                b"error_txt=Transaction successful",
+            ]
+        )
         responses.add(
             responses.POST,
             self.client.url,
-            body=b"info_txt=pong\r\nauthentication_key=1111111111111111\r\nerror_code=0\r\nerror_txt=Transaction successful\r\n",
+            body=test_input,
             status=200,
         )
         output = self.client._make_transferto_request(action="ping")
