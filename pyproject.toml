@@ -92,12 +92,13 @@ ignore = [
     "S101",  # It's okay to use `assert` in tests.
 ]
 
+# TODO: Move this somewhere sensible?
+"**/tests.py" = [
+    "S101",  # It's okay to use `assert` in tests.
+]
+
 "**/config/settings/{test,dev}.py" = [
     "S104",  # It's okay to bind to all interfaces in tests
     "F405", # Its okay to import * in settings
     "S105", # Its okay to have hardcoded secrets in test config
-]
-# TODO: Move this somewhere sensible?
-"**/tests.py" = [
-    "S101",  # It's okay to use `assert` in tests.
 ]
