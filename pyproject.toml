@@ -80,10 +80,10 @@ select = [
     "PTH",         # flake8-use-pathlib
     # "RUF",         # ruff-specific rules
 ]
+
 ignore = [
     "E501",  # TODO: Something about these long lines.
     "S113",  # TODO: Request timeouts.
-    "UP032", # TODO: Use f strings instead of format
     "B904",  # TODO: Fix exceptions raised in exception handlers.
     "SIM102",  # It's often more convenient/readable to use nested conditionals.
     "SIM118", # TODO: Apply fixes for these
@@ -96,29 +96,23 @@ ignore = [
     "B006", # TODO: Fix mutable default
     "C408", # TODO: Replace with dict literals
     "S311", # TODO: Decide whether to fix or ignore
-    "C416", # TODO: Fix with list()
-    "B007", # TODO: Replace i with _i
     "PTH118", # TODO: Switch to pathlib
     "UP010",    # TODO: Fix unnecessary future import
-
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = [
     "S101",  # It's okay to use `assert` in tests.
     "S106",  # TODO: Silent these in place
-    
 ]
+
 "**/config/settings/{test,dev}.py" = [
     "S104",  # It's okay to bind to all interfaces in tests
     "F405", # Its okay to import * in settings
     "S105", # Its okay to have hardcoded secrets in test config
-    
-    
 ]
 # TODO: Move this somewhere sensible?
 "**/tests.py" = [
     "S101",  # It's okay to use `assert` in tests.
     "S106",  # TODO: Silent these in place
-    
 ]

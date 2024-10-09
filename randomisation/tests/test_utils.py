@@ -155,7 +155,7 @@ class TestGetRandomStratification(TestCase):
             totals[random_arm] += 1
 
         def check_arms_balanced(arms, diff, description):
-            values = [value for value in arms.values()]
+            values = list(arms.values())
             msg = f"Arms not balanced: {description} - {values}"
             assert max(values) - diff < values[0] < min(values) + diff, msg
 
