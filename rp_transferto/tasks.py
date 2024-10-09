@@ -133,16 +133,16 @@ def buy_product_take_action(
     name = "rp_transferto.tasks.buy_product_take_action"
     log.info(
         json.dumps(
-            dict(
-                sidekick_version=importlib.metadata.version("rp-sidekick"),
-                name=name,
-                org_id=org_id,
-                msisdn=msisdn,
-                product_id=product_id,
-                user_uuid=user_uuid,
-                values_to_update=values_to_update,
-                flow_start=flow_start,
-            ),
+            {
+                "sidekick_version": importlib.metadata.version("rp-sidekick"),
+                "name": name,
+                "org_id": org_id,
+                "msisdn": msisdn,
+                "product_id": product_id,
+                "user_uuid": user_uuid,
+                "values_to_update": values_to_update,
+                "flow_start": flow_start,
+            },
             indent=2,
         )
     )
@@ -163,14 +163,14 @@ def buy_product_take_action(
             for option in remaining_options:
                 log.info(
                     json.dumps(
-                        dict(
-                            name=name,
-                            msisdn=msisdn,
-                            product_id=option,
-                            user_uuid=user_uuid,
-                            values_to_update=values_to_update,
-                            flow_start=flow_start,
-                        ),
+                        {
+                            "name": name,
+                            "msisdn": msisdn,
+                            "product_id": option,
+                            "user_uuid": user_uuid,
+                            "values_to_update": values_to_update,
+                            "flow_start": flow_start,
+                        },
                         indent=2,
                     )
                 )

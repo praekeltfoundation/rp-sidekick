@@ -89,7 +89,6 @@ ignore = [
     "S324", # TODO: Look into a fix for this
     "SIM210", # TODO: Fix these with bool()
     "B006", # TODO: Fix mutable default
-    "C408", # TODO: Replace with dict literals
     "S311", # TODO: Decide whether to fix or ignore
     "PTH118", # TODO: Switch to pathlib
 ]
