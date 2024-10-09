@@ -84,7 +84,6 @@ select = [
 ignore = [
     "E501",  # TODO: Something about these long lines.
     "S113",  # TODO: Request timeouts.
-    "B904",  # TODO: Fix exceptions raised in exception handlers.
     "PTH118", # TODO: Switch to pathlib
 ]
 
