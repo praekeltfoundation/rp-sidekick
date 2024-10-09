@@ -87,7 +87,6 @@ ignore = [
     "B904",  # TODO: Fix exceptions raised in exception handlers.
     "SIM300", # TODO: Fix this, we must
     "S324", # TODO: Look into a fix for this
-    "SIM210", # TODO: Fix these with bool()
     "S311", # TODO: Decide whether to fix or ignore
     "PTH118", # TODO: Switch to pathlib
 ]

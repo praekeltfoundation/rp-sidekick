@@ -248,26 +248,16 @@ def buy_airtime_take_action(
 
     # take action
     topup_attempt_failed = topup_attempt.status == TopupAttempt.FAILED
-    should_update_fields = (
-        True if (values_to_update and topup_attempt.rapidpro_user_uuid) else False
+    should_update_fields = bool(values_to_update and topup_attempt.rapidpro_user_uuid)
+    should_start_success_flow = bool(
+        topup_attempt.status == TopupAttempt.SUCEEDED
+        and flow_start
+        and topup_attempt.rapidpro_user_uuid
     )
-    should_start_success_flow = (
-        True
-        if (
-            topup_attempt.status == TopupAttempt.SUCEEDED
-            and flow_start
-            and topup_attempt.rapidpro_user_uuid
-        )
-        else False
-    )
-    should_start_fail_flow = (
-        True
-        if (
-            topup_attempt.status == TopupAttempt.FAILED
-            and fail_flow_start
-            and topup_attempt.rapidpro_user_uuid
-        )
-        else False
+    should_start_fail_flow = bool(
+        topup_attempt.status == TopupAttempt.FAILED
+        and fail_flow_start
+        and topup_attempt.rapidpro_user_uuid
     )
 
     if should_update_fields:
