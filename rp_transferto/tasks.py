@@ -124,12 +124,14 @@ def topup_data(org_id, msisdn, user_uuid, recharge_value, *args, **kwargs):
 
 @app.task()
 def buy_product_take_action(
-    org_id, msisdn, product_id, user_uuid=None, values_to_update={}, flow_start=None
+    org_id, msisdn, product_id, user_uuid=None, values_to_update=None, flow_start=None
 ):
     """
     Note: operates under the assumption that org_id is valid and has
     transferto account
     """
+    if values_to_update is None:
+        values_to_update = {}
     name = "rp_transferto.tasks.buy_product_take_action"
     log.info(
         json.dumps(
@@ -227,12 +229,14 @@ def buy_product_take_action(
 
 @app.task()
 def buy_airtime_take_action(
-    topup_attempt_id, values_to_update={}, flow_start=None, fail_flow_start=None
+    topup_attempt_id, values_to_update=None, flow_start=None, fail_flow_start=None
 ):
     """
     Note: operates under the assumption that TopupAttempt has been created
     but make_request has not been called
     """
+    if values_to_update is None:
+        values_to_update = {}
     name = "rp_transferto.tasks.buy_airtime_take_action"
     topup_attempt = TopupAttempt.objects.get(id=topup_attempt_id)
     # log.info("{}\n{}".format(self.name, topup_attempt.__str__()))
