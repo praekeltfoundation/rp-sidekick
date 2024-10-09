@@ -73,7 +73,8 @@ class SignupView(View):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                pin = random.randint(1000, 10000)  # random 4 digit number
+                # random 4 digit number
+                pin = random.randint(1000, 10000)  # noqa: S311 This is not for crypto
                 client.create_contact(
                     name=form.cleaned_data["name"],
                     urns=[f"whatsapp:{wa_id}"],

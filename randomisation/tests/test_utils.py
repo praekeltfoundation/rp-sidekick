@@ -145,8 +145,8 @@ class TestGetRandomStratification(TestCase):
         totals = defaultdict(int)
         stratas = defaultdict(lambda: defaultdict(int))
         for _i in range(100):
-            random_age = random.choice(["18-29", "29-39"])
-            random_province = random.choice(["WC", "GT"])
+            random_age = random.choice(["18-29", "29-39"])  # noqa: S311 This is not for crypto
+            random_province = random.choice(["WC", "GT"])  # noqa: S311 This is not for crypto
 
             data = {"age-group": random_age, "province": random_province}
 
