@@ -149,7 +149,9 @@ class TransferToClient:
         return response.json()
 
     def get_operator_products(self, operator_id):
-        product_url = f"https://api.transferto.com/v1.1/operators/{operator_id}/products"
+        product_url = (
+            f"https://api.transferto.com/v1.1/operators/{operator_id}/products"
+        )
         return self._make_transferto_api_request("get_operator_products", product_url)
 
     def get_country_services(self, country_id):

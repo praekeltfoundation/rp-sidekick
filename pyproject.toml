@@ -97,7 +97,6 @@ ignore = [
     "C408", # TODO: Replace with dict literals
     "S311", # TODO: Decide whether to fix or ignore
     "PTH118", # TODO: Switch to pathlib
-    "UP010",    # TODO: Fix unnecessary future import
 ]
 
 [tool.ruff.lint.per-file-ignores]
