@@ -114,7 +114,8 @@ class SendWhatsAppTemplateMessageView(APIView):
         if not org.users.filter(id=request.user.id).exists():
             return JsonResponse(
                 data={
-                    "error": "Authenticated user does not belong to specified Organization"
+                    "error": "Authenticated user does not belong to specified "
+                    "Organization"
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
@@ -298,7 +299,8 @@ class ListContactsView(GenericAPIView):
         if not org.users.filter(id=request.user.id).exists():
             return JsonResponse(
                 data={
-                    "error": "Authenticated user does not belong to specified Organization"
+                    "error": "Authenticated user does not belong to specified "
+                    "Organization"
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
@@ -334,7 +336,8 @@ class ListContactsView(GenericAPIView):
             return JsonResponse(
                 {
                     "error": "An error occured fulfilling your request. "
-                    "You may have exceeded the rate limit. Please try again later."
+                    "You may have exceeded the rate limit. "
+                    "Please try again later."
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

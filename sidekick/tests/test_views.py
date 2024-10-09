@@ -822,8 +822,9 @@ class ListContactsViewTests(SidekickAPITestCase):
     @patch("temba_client.v2.TembaClient.get_contacts")
     def test_rp_and_non_rp_fields_filter(self, mock_get_contacts):
         """
-        If both RP and non RP allowed query parameters are supplied, the RP ones should be
-        passed to get contacts while the non RP ones are used to filter on fields
+        If both RP and non RP allowed query parameters are supplied, the RP
+        ones should be passed to get contacts while the non RP ones are used
+        to filter on fields
         """
         self.client.force_authenticate(self.user)
 
@@ -853,7 +854,8 @@ class ListContactsViewTests(SidekickAPITestCase):
     @patch("temba_client.clients.CursorIterator.__next__")
     def test_endpoint_forwards_some_http_errors(self, mock_next):
         """
-        HTTP Connection errors should be caught and an error returned to the client
+        HTTP Connection errors should be caught and an error returned to
+        the client
         """
         self.client.force_authenticate(self.user)
 

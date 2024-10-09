@@ -76,7 +76,8 @@ class TransferToClient:
 
     def get_operators(self, country_id):
         """
-        Return the list of operators offered to your account, for a specific country
+        Return the list of operators offered to your account, for a
+        specific country
 
         @param:integer country_id
         """
@@ -89,8 +90,8 @@ class TransferToClient:
 
     def get_operator_airtime_products(self, operator_id):
         """
-        Returns the list of denomination including wholesale and retail prices offered to your account,
-        for a specific operator
+        Returns the list of denomination including wholesale and retail
+        prices offered to your account,for a specific operator
         """
         if type(operator_id) is not int:
             raise TypeError("arg must be an int")
@@ -104,9 +105,12 @@ class TransferToClient:
         Make
 
         :param str msisdn: the msisdn that should receive the data
-        :param int product: integer representing amount of airtime to send to msisdn
-        :param str from_string: either in msisdn form or a name. e.g. "+6012345678" or "John" are all valid.
-        :param str reserve_id: [optional] see transferto documentation for more details about reserve id
+        :param int product: integer representing amount of airtime to send to
+        msisdn
+        :param str from_string: either in msisdn form or a name. e.g.
+        "+6012345678" or "John" are all valid.
+        :param str reserve_id: [optional] see transferto documentation for
+        more details about reserve id
         :return: dict of transaction response from transferto
         """
         if type(product) is not int:
