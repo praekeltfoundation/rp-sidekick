@@ -144,7 +144,7 @@ class TestGetRandomStratification(TestCase):
 
         totals = defaultdict(int)
         stratas = defaultdict(lambda: defaultdict(int))
-        for i in range(100):
+        for _i in range(100):
             random_age = random.choice(["18-29", "29-39"])
             random_province = random.choice(["WC", "GT"])
 
