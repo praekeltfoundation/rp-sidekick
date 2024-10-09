@@ -151,7 +151,7 @@ class TestTransferToClient(TestCase):
             headers["x-transferto-hmac"],
             base64.b64encode(
                 hmac.new(
-                    bytes("fake_apisecret".encode("utf-8")),
+                    b"fake_apisecret",
                     bytes(("fake_apikey" + expected_nonce).encode("utf-8")),
                     digestmod=hashlib.sha256,
                 ).digest()
