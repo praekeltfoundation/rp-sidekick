@@ -744,9 +744,7 @@ class ListContactsViewTests(SidekickAPITestCase):
         response = self.client.get(f"{url}?group=special&deleted=true")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        mock_get_contacts.assert_called_once_with(
-            **{"group": "special", "deleted": "true"}
-        )
+        mock_get_contacts.assert_called_once_with(group="special", deleted="true")
 
     @patch("temba_client.v2.TembaClient.get_contacts")
     def test_endpoint_returns_contact_uuids(self, mock_get_contacts):
@@ -848,7 +846,7 @@ class ListContactsViewTests(SidekickAPITestCase):
         response = self.client.get(f"{url}?something=special&deleted=true")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        mock_get_contacts.assert_called_once_with(**{"deleted": "true"})
+        mock_get_contacts.assert_called_once_with(deleted="true")
         self.assertEqual(response.json(), {"contacts": ["123456"]})
 
     @patch("temba_client.clients.CursorIterator.__next__")
