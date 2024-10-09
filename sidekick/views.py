@@ -96,7 +96,7 @@ class SendWhatsAppTemplateMessageView(APIView):
 
         localizable_params = [
             {"default": clean_message(data[_key])}
-            for _key in sorted([key for key in data.keys() if key.isdigit()])
+            for _key in sorted([key for key in data if key.isdigit()])
         ]
 
         org_id = data["org_id"]
@@ -325,7 +325,7 @@ class ListContactsView(GenericAPIView):
                             # get_contacts already filtered on this field
                             continue
                         elif (
-                            field not in contact.fields.keys()
+                            field not in contact.fields
                             or str(contact.fields[field]) != value
                         ):
                             match = False
