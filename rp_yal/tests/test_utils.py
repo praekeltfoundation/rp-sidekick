@@ -244,7 +244,6 @@ class TestGetOrderedContentSet(TestCase):
 
 
 class TestCleanContactFields(TestCase):
-
     def test_clean_contact_fields(self):
         fields = {
             "test 1": None,

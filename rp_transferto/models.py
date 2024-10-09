@@ -1,6 +1,6 @@
+import importlib.metadata
 import json
 
-import pkg_resources
 from django.db import models
 from django.db.models import JSONField
 from django.utils import timezone
@@ -111,7 +111,7 @@ class TopupAttempt(models.Model):
             else:
                 self.status = self.FAILED
 
-        self.sidekick_version = pkg_resources.get_distribution("rp-sidekick").version
+        self.sidekick_version = importlib.metadata.version("rp-sidekick")
         self.msisdn = clean_msisdn(self.msisdn)
         super().save(*args, **kwargs)
 

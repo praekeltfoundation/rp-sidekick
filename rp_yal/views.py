@@ -9,7 +9,6 @@ from .utils import get_contentset, get_ordered_content_set
 
 
 class GetOrderedContentSet(APIView):
-
     def post(self, request, org_id):
         serializer = GetOrderedContentSetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -39,7 +38,6 @@ class GetOrderedContentSet(APIView):
 
 
 class GetContentSet(APIView):
-
     def get(self, request, org_id, contentset_id, msisdn):
         try:
             org = Organization.objects.get(id=org_id)

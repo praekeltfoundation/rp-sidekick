@@ -1,6 +1,6 @@
+import importlib.metadata
 import json
 
-import pkg_resources
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -131,7 +131,7 @@ def buy_product_take_action(
     log.info(
         json.dumps(
             dict(
-                sidekick_version=pkg_resources.get_distribution("rp-sidekick").version,
+                sidekick_version=importlib.metadata.version("rp-sidekick"),
                 name=name,
                 org_id=org_id,
                 msisdn=msisdn,

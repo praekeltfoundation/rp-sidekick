@@ -1,2 +1,0 @@
-# Our dependencies are all specified in setup.py.
--e .

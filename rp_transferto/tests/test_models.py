@@ -1,7 +1,7 @@
+import importlib.metadata
 import json
 from unittest.mock import patch
 
-import pkg_resources
 from django.test import TestCase
 from freezegun import freeze_time
 
@@ -29,9 +29,7 @@ class TestTopupAttempt(TestCase):
             json.loads(topup_attempt.__str__()),
             {
                 "id": topup_attempt.id,
-                "sidekick_version": pkg_resources.get_distribution(
-                    "rp-sidekick"
-                ).version,
+                "sidekick_version": importlib.metadata.version("rp-sidekick"),
                 "msisdn": clean_msisdn(msisdn),
                 "from_string": "",
                 "amount": airtime_amount,
@@ -62,9 +60,7 @@ class TestTopupAttempt(TestCase):
             json.loads(topup_attempt.__str__()),
             {
                 "id": topup_attempt.id,
-                "sidekick_version": pkg_resources.get_distribution(
-                    "rp-sidekick"
-                ).version,
+                "sidekick_version": importlib.metadata.version("rp-sidekick"),
                 "msisdn": clean_msisdn(msisdn),
                 "from_string": from_string,
                 "amount": airtime_amount,
