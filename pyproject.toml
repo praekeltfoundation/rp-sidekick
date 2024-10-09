@@ -86,7 +86,6 @@ ignore = [
     "S113",  # TODO: Request timeouts.
     "B904",  # TODO: Fix exceptions raised in exception handlers.
     "SIM300", # TODO: Fix this, we must
-    "S324", # TODO: Look into a fix for this
     "S311", # TODO: Decide whether to fix or ignore
     "PTH118", # TODO: Switch to pathlib
 ]

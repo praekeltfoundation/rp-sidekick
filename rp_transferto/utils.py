@@ -42,7 +42,7 @@ class TransferToClient:
         Reduces the boilerplate for constructing TransferTo requests
         """
         key = str(int(1000000 * time.time()))
-        md5 = hashlib.md5((self.login + self.token + key).encode("UTF-8")).hexdigest()
+        md5 = hashlib.md5((self.login + self.token + key).encode("UTF-8")).hexdigest()  # noqa: S324 (Transferto expects md5)
         data = dict(login=self.login, key=key, md5=md5, action=action, **kwargs)
         with transferto_request_time.labels(action=action).time():
             response = requests.post(self.url, data=data)
