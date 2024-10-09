@@ -85,7 +85,6 @@ ignore = [
     "E501",  # TODO: Something about these long lines.
     "S113",  # TODO: Request timeouts.
     "B904",  # TODO: Fix exceptions raised in exception handlers.
-    "SIM102",  # It's often more convenient/readable to use nested conditionals.
     "SIM300", # TODO: Fix this, we must
     "S324", # TODO: Look into a fix for this
     "SIM210", # TODO: Fix these with bool()

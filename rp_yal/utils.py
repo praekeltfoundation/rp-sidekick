@@ -196,15 +196,17 @@ def get_first_matching_content_set(contentsets, fields):
     gender = get_gender(fields.get("gender", ""))
 
     for contentset in sorted(contentsets, key=lambda d: d["field_count"], reverse=True):
-        if contentset["field_count"] == 2:
-            if (
-                contentset["gender"] == gender
-                and contentset["relationship"] == relationship_status
-            ):
-                return contentset["id"]
-        if contentset["field_count"] == 1:
-            if contentset["relationship"] == relationship_status:
-                return contentset["id"]
+        if (
+            contentset["field_count"] == 2
+            and contentset["gender"] == gender
+            and contentset["relationship"] == relationship_status
+        ):
+            return contentset["id"]
+        if (
+            contentset["field_count"] == 1
+            and contentset["relationship"] == relationship_status
+        ):
+            return contentset["id"]
         if contentset["field_count"] == 0:
             return contentset["id"]
 
