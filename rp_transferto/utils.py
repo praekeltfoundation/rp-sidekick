@@ -149,15 +149,11 @@ class TransferToClient:
         return response.json()
 
     def get_operator_products(self, operator_id):
-        product_url = "https://api.transferto.com/v1.1/operators/{}/products".format(
-            operator_id
-        )
+        product_url = f"https://api.transferto.com/v1.1/operators/{operator_id}/products"
         return self._make_transferto_api_request("get_operator_products", product_url)
 
     def get_country_services(self, country_id):
-        service_url = "https://api.transferto.com/v1.1/countries/{}/services".format(
-            country_id
-        )
+        service_url = f"https://api.transferto.com/v1.1/countries/{country_id}/services"
         return self._make_transferto_api_request("get_country_services", service_url)
 
     def topup_data(self, msisdn, product_id, simulate=False):

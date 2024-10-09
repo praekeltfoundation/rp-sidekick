@@ -164,18 +164,14 @@ class TestTransferToClient(TestCase):
         fake_country_id = 99
         responses.add(
             responses.GET,
-            "https://api.transferto.com/v1.1/operators/{}/products".format(
-                fake_country_id
-            ),
+            f"https://api.transferto.com/v1.1/operators/{fake_country_id}/products",
             json={"fake": "payload"},
             status=200,
         )
 
         output = self.client._make_transferto_api_request(
             "some_action",
-            url="https://api.transferto.com/v1.1/operators/{}/products".format(
-                fake_country_id
-            ),
+            url=f"https://api.transferto.com/v1.1/operators/{fake_country_id}/products",
         )
         expected_output = {"fake": "payload"}
         self.assertDictEqual(output, expected_output)
@@ -211,9 +207,7 @@ class TestTransferToClient(TestCase):
 
         mock.assert_called_once_with(
             "get_operator_products",
-            "https://api.transferto.com/v1.1/operators/{}/products".format(
-                fake_operator_id
-            ),
+            f"https://api.transferto.com/v1.1/operators/{fake_operator_id}/products",
         )
 
     def test_get_country_services(self):
@@ -223,9 +217,7 @@ class TestTransferToClient(TestCase):
 
         mock.assert_called_once_with(
             "get_country_services",
-            "https://api.transferto.com/v1.1/countries/{}/services".format(
-                fake_country_id
-            ),
+            f"https://api.transferto.com/v1.1/countries/{fake_country_id}/services",
         )
 
     @freeze_time("2000-01-01")

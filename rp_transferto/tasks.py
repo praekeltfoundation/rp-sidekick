@@ -97,8 +97,8 @@ def topup_data(org_id, msisdn, user_uuid, recharge_value, *args, **kwargs):
             product_description = product["product_short_desc"]
             break
 
-    log.info("product_id: {}".format(product_id))
-    log.info("product_description: {}".format(product_description))
+    log.info(f"product_id: {product_id}")
+    log.info(f"product_description: {product_description}")
 
     topup_result = transferto_client.topup_data(msisdn, product_id, simulate=False)
 
@@ -153,7 +153,7 @@ def buy_product_take_action(
     if purchase_result["status"] != "0":
         # HANDLE USE CASE FOR 100MB in ZAR
         if purchase_result["status"] == "1000204" and product_id in [1194, 1601, 1630]:
-            log.info("{} failed, attempting fallback".format(product_id))
+            log.info(f"{product_id} failed, attempting fallback")
             remaining_options = [1194, 1601, 1630]
             remaining_options.remove(product_id)
 
@@ -185,38 +185,27 @@ def buy_product_take_action(
                             flow_start=flow_start,
                         )
                     return None
-            subject = "FAILURE WITH RETRIES: {} {}".format(name, timezone.now())
+            subject = f"FAILURE WITH RETRIES: {name} {timezone.now()}"
             message = (
-                "{}\n"
+                f"{json.dumps(purchase_result, indent=2)}\n"
                 "-------\n"
-                "user_uuid: {}\n"
-                "values_to_update:{}\n"
-                "flow_start: {}\n"
-                "also tried: {}"
-            ).format(
-                json.dumps(purchase_result, indent=2),
-                user_uuid,
-                json.dumps(values_to_update, indent=2),
-                flow_start,
-                remaining_options,
+                f"user_uuid: {user_uuid}\n"
+                f"values_to_update:{json.dumps(values_to_update, indent=2)}\n"
+                f"flow_start: {flow_start}\n"
+                f"also tried: {remaining_options}"
             )
             from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
             email = EmailMessage(subject, message, from_string, [org.point_of_contact])
             email.send()
             return None
 
-        subject = "FAILURE: {}".format(name)
+        subject = f"FAILURE: {name}"
         message = (
-            "{}\n"
+            f"{json.dumps(purchase_result, indent=2)}\n"
             "-------\n"
-            "user_uuid: {}\n"
-            "values_to_update:{}\n"
-            "flow_start: {}"
-        ).format(
-            json.dumps(purchase_result, indent=2),
-            user_uuid,
-            json.dumps(values_to_update, indent=2),
-            flow_start,
+            f"user_uuid: {user_uuid}\n"
+            f"values_to_update:{json.dumps(values_to_update, indent=2)}\n"
+            f"flow_start: {flow_start}"
         )
         from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
         email = EmailMessage(subject, message, from_string, [org.point_of_contact])
@@ -374,7 +363,7 @@ def buy_airtime_take_action(
                 "rp_transferto/topup_airtime_take_action_email.html", context
             )
             send_mail(
-                subject="FAILURE: {}".format(name),
+                subject=f"FAILURE: {name}",
                 message=strip_tags(html_message),
                 from_email="celery@rp-sidekick.prd.mhealthengagementlab.org",
                 recipient_list=[topup_attempt.org.point_of_contact],

@@ -24,7 +24,7 @@ def get_middle_tz(zones):
     approx_tz = ordered_tzs[floor(len(ordered_tzs) / 2)]["name"]
 
     LOGGER.info(
-        "Available timezones: {}. Returned timezone: {}".format(ordered_tzs, approx_tz)
+        f"Available timezones: {ordered_tzs}. Returned timezone: {approx_tz}"
     )
     return approx_tz
 

@@ -46,7 +46,7 @@ def detailed_health(request):
         message = "queues ok"
         for queue in settings.CELERY_QUEUES:
             queue_results = requests.get(
-                "{}{}".format(settings.RABBITMQ_MANAGEMENT_INTERFACE, queue.name)
+                f"{settings.RABBITMQ_MANAGEMENT_INTERFACE}{queue.name}"
             ).json()
 
             details = {
@@ -357,7 +357,7 @@ class RapidproFlowsView(GenericAPIView):
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Token {}".format(org.token),
+            "Authorization": f"Token {org.token}",
         }
         response = requests.get(urljoin(org.url, "api/v2/flows.json"), headers=headers)
 
@@ -379,7 +379,7 @@ class RapidproFlowStartView(GenericAPIView):
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Token {}".format(org.token),
+            "Authorization": f"Token {org.token}",
         }
         response = requests.post(
             urljoin(org.url, "api/v2/flow_starts.json"),
@@ -402,7 +402,7 @@ class RapidproContactView(GenericAPIView):
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Token {}".format(org.token),
+            "Authorization": f"Token {org.token}",
         }
         response = requests.get(
             urljoin(org.url, "api/v2/contacts.json"),

@@ -240,7 +240,7 @@ def get_unique_page_seen_ids(org, msisdn):
 def get_contentrepo_headers(org):
     return {
         "Content-Type": "application/json",
-        "Authorization": "Token {}".format(org.contentrepo_token),
+        "Authorization": f"Token {org.contentrepo_token}",
     }
 
 
