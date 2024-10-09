@@ -1,3 +1,4 @@
+import contextlib
 from datetime import datetime
 from urllib.parse import urljoin
 
@@ -15,10 +16,8 @@ def get_ordered_content_set(org, fields):
     weekday = datetime.today().weekday()
 
     if fields.get("test_day"):
-        try:
+        with contextlib.suppress(ValueError):
             weekday = int(fields.get("test_day")) - 1
-        except ValueError:
-            pass
 
     if weekday == 0:
         # Monday

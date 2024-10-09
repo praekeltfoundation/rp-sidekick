@@ -89,7 +89,6 @@ ignore = [
     "SIM118", # TODO: Apply fixes for these
     "SIM300", # TODO: Fix this, we must
     "PIE804", # TODO: Use keyword args instead of **dict
-    "SIM105", # TODO: Replace this with contextlib.suppress
     "S324", # TODO: Look into a fix for this
     "SIM210", # TODO: Fix these with bool()
     "B006", # TODO: Fix mutable default
