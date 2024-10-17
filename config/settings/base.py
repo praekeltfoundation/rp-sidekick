@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     "sidekick",
     "rp_dtone",
     "rp_transferto",
-    "rp_recruit",
     "rp_interceptors",
     "rp_yal",
     "randomisation",
