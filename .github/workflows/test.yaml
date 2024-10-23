@@ -47,7 +47,7 @@ jobs:
       - name: Run migrations
         if: success() || failure() && steps.install-deps.outcome == 'success'
         run: |
-          python manage.py makemigrations rp_dtone rp_transferto\
+          poetry run ./manage.py makemigrations rp_dtone rp_transferto\
            sidekick --dry-run | grep 'No changes detected' || (echo 'There are\
            changes which require migrations.' && exit 1)
       - name: Run tests
