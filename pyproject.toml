@@ -94,7 +94,6 @@ ignore = [
 # TODO: Move this somewhere sensible?
 "**/tests.py" = [
     "S101",  # It's okay to use `assert` in tests.
-    "S106", # Its okay to use harcoded passwords in tests
 ]
 
 "**/config/settings/{test,dev}.py" = [

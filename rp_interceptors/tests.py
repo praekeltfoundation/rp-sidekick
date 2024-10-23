@@ -28,8 +28,8 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",
-            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
+            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            channel_uuid="1234343212",  # noqa: S106 - Its OK to hardcode passwords in tests
         )
         url = reverse("interceptor-status", args=[interceptor.pk])
         data = {"test": "body"}
@@ -51,8 +51,8 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",
-            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
+            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            channel_uuid="1234343212",  # noqa: S106 - Its OK to hardcode passwords in tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -105,8 +105,8 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",
-            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
+            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            channel_uuid="1234343212",  # noqa: S106 - Its OK to hardcode passwords in tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {"statuses": [{}]}
@@ -126,8 +126,8 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",
-            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
+            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            channel_uuid="1234343212",  # noqa: S106 - Its OK to hardcode passwords in tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -165,8 +165,8 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",
-            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
+            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            channel_uuid="1234343212",  # noqa: S106 - Its OK to hardcode passwords in tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -203,8 +203,8 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",
-            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
+            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            channel_uuid="1234343212",  # noqa: S106 - Its OK to hardcode passwords in tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
@@ -244,8 +244,8 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",
-            channel_uuid="1234343212",  # noqa: S106 - Hardcoded passwords OK for tests
+            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            channel_uuid="1234343212",  # noqa: S106 - Its OK to hardcode passwords in tests
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
         data = {
