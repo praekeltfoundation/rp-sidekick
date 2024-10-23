@@ -26,7 +26,7 @@ class GetOrderedContentSet(APIView):
 
         if not org.users.filter(id=request.user.id).exists():
             return json_error(
-                +"Authenticated user does not belong to specified Organization",
+                "Authenticated user does not belong to specified Organization",
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
