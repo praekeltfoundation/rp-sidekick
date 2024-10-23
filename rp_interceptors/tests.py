@@ -28,7 +28,7 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            hmac_secret="test-secret",  # noqa: S106 - Fake password/token for test purposes
             channel_uuid="1234343212",
         )
         url = reverse("interceptor-status", args=[interceptor.pk])
@@ -51,7 +51,7 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            hmac_secret="test-secret",  # noqa: S106 - Fake password/token for test purposes
             channel_uuid="1234343212",
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
@@ -105,7 +105,7 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            hmac_secret="test-secret",  # noqa: S106 - Fake password/token for test purposes
             channel_uuid="1234343212",
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
@@ -126,7 +126,7 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            hmac_secret="test-secret",  # noqa: S106 - Fake password/token for test purposes
             channel_uuid="1234343212",
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
@@ -165,7 +165,7 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            hmac_secret="test-secret",  # noqa: S106 - Fake password/token for test purposes
             channel_uuid="1234343212",
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
@@ -203,7 +203,7 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            hmac_secret="test-secret",  # noqa: S106 - Fake password/token for test purposes
             channel_uuid="1234343212",
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
@@ -244,7 +244,7 @@ class InterceptorViewTests(APITestCase):
         """
         interceptor: Interceptor = Interceptor.objects.create(
             org=self.org,
-            hmac_secret="test-secret",  # noqa: S106 - Its OK to hardcode passwords in tests
+            hmac_secret="test-secret",  # noqa: S106 - Fake password/token for test purposes
             channel_uuid="1234343212",
         )
         url: str = reverse("interceptor-status", args=[interceptor.pk])
