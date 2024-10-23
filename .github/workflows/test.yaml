@@ -45,18 +45,15 @@ jobs:
       - name: Lint
         if: success() || failure() && steps.install-deps.outcome == 'success'
         run: |
-<<<<<<< HEAD
           poetry run ruff check 
-      - name: Run tests
+      - name: Run migrations
         if: success() || failure() && steps.install-deps.outcome == 'success'
-=======
-          flake8
+        run: |
           python manage.py makemigrations rp_dtone rp_transferto\
            sidekick --dry-run | grep 'No changes detected' || (echo 'There are\
            changes which require migrations.' && exit 1)
-          black --check .
-          isort -c -rc .
-      - name: Test
->>>>>>> develop
+      - name: Run tests
+        if: success() || failure() && steps.install-deps.outcome == 'success'
         run: |
           poetry run pytest -vv
+
