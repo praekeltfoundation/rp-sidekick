@@ -1,7 +1,7 @@
 FROM ghcr.io/praekeltfoundation/docker-django-bootstrap-nw:py3.10-buster
 
-RUN pip install poetry==1.8.3
 COPY . /app
+RUN pip install poetry
 RUN poetry config virtualenvs.create false \
     && poetry install --no-dev --no-interaction --no-ansi --no-cache
 
