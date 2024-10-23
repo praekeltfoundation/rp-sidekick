@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+1.12.0
+------------
+NDOH: Merge pull request #199: rp-recruit cleanup from sidekick
 
 1.11.9
 ------------
