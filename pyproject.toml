@@ -13,7 +13,6 @@ packages = [
   { include = "randomisation" },
   { include = "rp_dtone"},
   { include = "rp_interceptors"},
-  { include = "rp_recruit"},
   { include = "rp_transferto"},
   { include = "rp_yal"},
   { include = "sidekick" },
