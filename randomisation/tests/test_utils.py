@@ -144,9 +144,9 @@ class TestGetRandomStratification(TestCase):
 
         totals = defaultdict(int)
         stratas = defaultdict(lambda: defaultdict(int))
-        for i in range(100):
-            random_age = random.choice(["18-29", "29-39"])
-            random_province = random.choice(["WC", "GT"])
+        for _i in range(100):
+            random_age = random.choice(["18-29", "29-39"])  # noqa: S311 This is not for crypto
+            random_province = random.choice(["WC", "GT"])  # noqa: S311 This is not for crypto
 
             data = {"age-group": random_age, "province": random_province}
 
@@ -155,7 +155,7 @@ class TestGetRandomStratification(TestCase):
             totals[random_arm] += 1
 
         def check_arms_balanced(arms, diff, description):
-            values = [value for value in arms.values()]
+            values = list(arms.values())
             msg = f"Arms not balanced: {description} - {values}"
             assert max(values) - diff < values[0] < min(values) + diff, msg
 

@@ -15,8 +15,10 @@ MSISDN_INFO_RESPONSE_DICT = {
     "destination_msisdn": "27820000000",
     "destination_currency": "ZAR",
     "product_list": "2,5,10,15,30,40,50,100,150,300,500,750,1000",
-    "retail_price_list": "2.80,6.50,12.70,18.90,37.50,49.90,62.20,124.10,185.90,371.50,618.90,928.10,1243.90",
-    "wholesale_price_list": "2.23,5.20,10.15,15.10,29.94,39.84,49.74,99.22,148.70,297.14,495.06,742.47,995.08",
+    "retail_price_list": "2.80,6.50,12.70,18.90,37.50,49.90,62.20,124.10,"
+    "185.90,371.50,618.90,928.10,1243.90",
+    "wholesale_price_list": "2.23,5.20,10.15,15.10,29.94,39.84,49.74,99.22,"
+    "148.70,297.14,495.06,742.47,995.08",
     "authentication_key": "123456789",
     "error_code": "0",
     "error_txt": "Transaction successful",
@@ -74,7 +76,8 @@ TOPUP_ERROR_RESPONSE_DICT = {
 }
 
 GET_COUNTRIES_RESPONSE_DICT = {
-    "country": "Afghanistan,Albania,Anguilla,Antigua and Barbuda,Argentina,Armenia,Aruba",
+    "country": "Afghanistan,Albania,Anguilla,Antigua and Barbuda,Argentina,"
+    "Armenia,Aruba",
     "countryid": "661,662,916,668,669,670,671",
     "authentication_key": "1337662098",
     "error_code": "0",
@@ -85,7 +88,12 @@ GET_COUNTRIES_RESPONSE_DICT = {
 GET_OPERATORS_RESPONSE_DICT = {
     "country": "Indonesia",
     "countryid": "767",
-    "operator": "Indosat Starone Indonesia,Telkom Flexi Indonesia,Indosat IM3 Indonesia,AAA-TESTING Indone- sia,Esia Bakrie Telecom Indonesia,Indosat Mentari Indonesia,Telkomsel Simpati Indonesia,Three Telecom Indonesia,Telkomsel KartuAS Indonesia,Excelcom Indonesia,Axis Indonesia",
+    "operator": "Indosat Starone Indonesia,Telkom Flexi Indonesia,"
+    "Indosat IM3 Indonesia,"
+    "AAA-TESTING Indone- sia,Esia Bakrie Telecom Indonesia,"
+    "Indosat Mentari Indonesia,Telkomsel Simpati Indonesia,"
+    "Three Telecom Indonesia,Telkomsel KartuAS Indonesia,Excelcom Indonesia,"
+    "Axis Indonesia",
     "operatorid": "1320,1322,1313,1310,1326,1312,1324,1327,1325,215,1411",
     "authentication_key": "1337662386",
     "error_code": "0",

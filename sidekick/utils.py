@@ -1,7 +1,7 @@
+import importlib.metadata
 import json
 from urllib.parse import urljoin
 
-import pkg_resources
 import requests
 from django.utils import timezone
 from requests.adapters import HTTPAdapter
@@ -33,10 +33,10 @@ def clean_msisdn(msisdn):
 
 
 def build_turn_headers(token, api_extensions=False):
-    distribution = pkg_resources.get_distribution("rp-sidekick")
+    version = importlib.metadata.version("rp-sidekick")
     headers = {
-        "Authorization": "Bearer {}".format(token),
-        "User-Agent": "rp-sidekick/{}".format(distribution.version),
+        "Authorization": f"Bearer {token}",
+        "User-Agent": f"rp-sidekick/{version}",
         "Content-Type": "application/json",
     }
     if api_extensions:
@@ -117,11 +117,11 @@ def update_rapidpro_whatsapp_urn(org, msisdn):
     whatsapp_id = get_whatsapp_contact_id(org, msisdn)
 
     if whatsapp_id:
-        contact = client.get_contacts(urn="tel:{}".format(msisdn)).first()
+        contact = client.get_contacts(urn=f"tel:{msisdn}").first()
         if not contact:
-            contact = client.get_contacts(urn="whatsapp:{}".format(whatsapp_id)).first()
+            contact = client.get_contacts(urn=f"whatsapp:{whatsapp_id}").first()
 
-        urns = ["tel:{}".format(msisdn), "whatsapp:{}".format(whatsapp_id)]
+        urns = [f"tel:{msisdn}", f"whatsapp:{whatsapp_id}"]
 
         if contact:
             if urns != contact.urns:
@@ -148,7 +148,7 @@ def get_whatsapp_group_invite_link(org, group_id):
     Gets the invite link for a Whatsapp group with the group ID
     """
     response = requests.get(
-        urljoin(org.engage_url, "v1/groups/{}/invite".format(group_id)),
+        urljoin(org.engage_url, f"v1/groups/{group_id}/invite"),
         headers=build_turn_headers(org.engage_token),
     )
     response.raise_for_status()
@@ -160,7 +160,7 @@ def get_whatsapp_group_info(org, group_id):
     Gets info for a Whatsapp group with the group ID
     """
     result = requests.get(
-        urljoin(org.engage_url, "v1/groups/{}".format(group_id)),
+        urljoin(org.engage_url, f"v1/groups/{group_id}"),
         headers=build_turn_headers(org.engage_token),
     )
     result.raise_for_status()
@@ -172,7 +172,7 @@ def add_whatsapp_group_admin(org, group_id, wa_id):
     Adds a existing Whatsapp group member to the list of admins on the group
     """
     result = requests.patch(
-        urljoin(org.engage_url, "v1/groups/{}/admins".format(group_id)),
+        urljoin(org.engage_url, f"v1/groups/{group_id}/admins"),
         headers=build_turn_headers(org.engage_token),
         data=json.dumps({"wa_ids": [wa_id]}),
     )
@@ -185,7 +185,7 @@ def get_whatsapp_contact_messages(org, wa_id):
     Gets the list of messages for the contact "wa_id"
     """
     result = requests.get(
-        urljoin(org.engage_url, "v1/contacts/{}/messages".format(wa_id)),
+        urljoin(org.engage_url, f"v1/contacts/{wa_id}/messages"),
         headers=build_turn_headers(org.engage_token, api_extensions=True),
     )
     result.raise_for_status()
@@ -197,7 +197,7 @@ def label_whatsapp_message(org, message_id, labels):
     Labels the message with id "message_id" with the labels in the list "labels"
     """
     result = requests.post(
-        urljoin(org.engage_url, "v1/messages/{}/labels".format(message_id)),
+        urljoin(org.engage_url, f"v1/messages/{message_id}/labels"),
         headers=build_turn_headers(org.engage_token, api_extensions=True),
         json={"labels": labels},
     )
@@ -216,7 +216,7 @@ def archive_whatsapp_conversation(org, wa_id, message_id, reason):
         reason (str): The reason for archiving the conversation
     """
     result = requests.post(
-        urljoin(org.engage_url, "v1/chats/{}/archive".format(wa_id)),
+        urljoin(org.engage_url, f"v1/chats/{wa_id}/archive"),
         headers=build_turn_headers(org.engage_token, api_extensions=True),
         json={"before": message_id, "reason": reason},
     )

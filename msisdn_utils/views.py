@@ -23,9 +23,7 @@ def get_middle_tz(zones):
 
     approx_tz = ordered_tzs[floor(len(ordered_tzs) / 2)]["name"]
 
-    LOGGER.info(
-        "Available timezones: {}. Returned timezone: {}".format(ordered_tzs, approx_tz)
-    )
+    LOGGER.info(f"Available timezones: {ordered_tzs}. Returned timezone: {approx_tz}")
     return approx_tz
 
 
@@ -36,21 +34,21 @@ class GetMsisdnTimezones(APIView):
     def post(self, request, *args, **kwargs):
         try:
             msisdn = request.data["whatsapp_id"]
-        except KeyError:
-            raise ValidationError({"whatsapp_id": ["This field is required."]})
+        except KeyError as e:
+            raise ValidationError({"whatsapp_id": ["This field is required."]}) from e
 
         msisdn = msisdn if msisdn.startswith("+") else "+" + msisdn
 
         try:
             msisdn = phonenumbers.parse(msisdn)
-        except phonenumbers.phonenumberutil.NumberParseException:
+        except phonenumbers.phonenumberutil.NumberParseException as e:
             raise ValidationError(
                 {
                     "whatsapp_id": [
                         "This value must be a phone number with a region prefix."
                     ]
                 }
-            )
+            ) from e
 
         if not (
             phonenumbers.is_possible_number(msisdn)

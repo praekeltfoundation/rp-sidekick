@@ -61,7 +61,7 @@ class DetailedHealthViewTest(APITestCase):
     def mock_queue_lookup(self, name="rp_sidekick", messages=1256, rate=1.25):
         responses.add(
             responses.GET,
-            "{}{}".format(settings.RABBITMQ_MANAGEMENT_INTERFACE, name),
+            f"{settings.RABBITMQ_MANAGEMENT_INTERFACE}{name}",
             json={
                 "messages": messages,
                 "messages_details": {"rate": rate},
@@ -112,7 +112,9 @@ class SidekickAPITestCase(APITestCase):
         self.api_client = APIClient()
 
         self.user = get_user_model().objects.create_superuser(
-            username="superuser", email="superuser@email.com", password="pass"
+            username="superuser",
+            email="superuser@email.com",
+            password="pass",  # noqa: S106 - Hardcoded passwords OK for tests
         )
         token = Token.objects.get(user=self.user)
         self.token = token.key
@@ -129,7 +131,7 @@ class TestSendTemplateView(SidekickAPITestCase):
         """
         responses.add(
             responses.POST,
-            "{}/v1/messages".format(FAKE_ENGAGE_URL),
+            f"{FAKE_ENGAGE_URL}/v1/messages",
             json={
                 "messages": [{"id": "sdkjfgksjfgoksdflgs"}],
                 "meta": {"api_status": "stable", "version": "2.19.4"},
@@ -265,7 +267,7 @@ class TestCheckContactView(SidekickAPITestCase):
 
         responses.add(
             responses.POST,
-            "{}/v1/contacts".format(FAKE_ENGAGE_URL),
+            f"{FAKE_ENGAGE_URL}/v1/contacts",
             json={
                 "contacts": [
                     {
@@ -307,7 +309,7 @@ class TestCheckContactView(SidekickAPITestCase):
 
         responses.add(
             responses.POST,
-            "{}/v1/contacts".format(FAKE_ENGAGE_URL),
+            f"{FAKE_ENGAGE_URL}/v1/contacts",
             json={"contacts": [{"input": telephone_number, "status": "invalid"}]},
             status=201,
         )
@@ -341,7 +343,7 @@ class TestCheckContactView(SidekickAPITestCase):
 
         responses.add(
             responses.POST,
-            "{}/v1/contacts".format(FAKE_ENGAGE_URL),
+            f"{FAKE_ENGAGE_URL}/v1/contacts",
             "Invalid WhatsApp Token",
             status=status.HTTP_403_FORBIDDEN,
         )
@@ -741,12 +743,10 @@ class ListContactsViewTests(SidekickAPITestCase):
         mock_get_contacts.return_value.iterfetches.return_value = [[]]
 
         url = reverse("list_contacts", args=[self.org.pk])
-        response = self.client.get("{}?group=special&deleted=true".format(url))
+        response = self.client.get(f"{url}?group=special&deleted=true")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        mock_get_contacts.assert_called_once_with(
-            **{"group": "special", "deleted": "true"}
-        )
+        mock_get_contacts.assert_called_once_with(group="special", deleted="true")
 
     @patch("temba_client.v2.TembaClient.get_contacts")
     def test_endpoint_returns_contact_uuids(self, mock_get_contacts):
@@ -813,7 +813,7 @@ class ListContactsViewTests(SidekickAPITestCase):
         ]
 
         url = reverse("list_contacts", args=[self.org.pk])
-        response = self.client.get("{}?something=special&empty=0".format(url))
+        response = self.client.get(f"{url}?something=special&empty=0")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         mock_get_contacts.assert_called_once_with()
@@ -822,8 +822,9 @@ class ListContactsViewTests(SidekickAPITestCase):
     @patch("temba_client.v2.TembaClient.get_contacts")
     def test_rp_and_non_rp_fields_filter(self, mock_get_contacts):
         """
-        If both RP and non RP allowed query parameters are supplied, the RP ones should be
-        passed to get contacts while the non RP ones are used to filter on fields
+        If both RP and non RP allowed query parameters are supplied, the RP
+        ones should be passed to get contacts while the non RP ones are used
+        to filter on fields
         """
         self.client.force_authenticate(self.user)
 
@@ -844,16 +845,17 @@ class ListContactsViewTests(SidekickAPITestCase):
         ]
 
         url = reverse("list_contacts", args=[self.org.pk])
-        response = self.client.get("{}?something=special&deleted=true".format(url))
+        response = self.client.get(f"{url}?something=special&deleted=true")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        mock_get_contacts.assert_called_once_with(**{"deleted": "true"})
+        mock_get_contacts.assert_called_once_with(deleted="true")
         self.assertEqual(response.json(), {"contacts": ["123456"]})
 
     @patch("temba_client.clients.CursorIterator.__next__")
     def test_endpoint_forwards_some_http_errors(self, mock_next):
         """
-        HTTP Connection errors should be caught and an error returned to the client
+        HTTP Connection errors should be caught and an error returned to
+        the client
         """
         self.client.force_authenticate(self.user)
 
@@ -912,7 +914,9 @@ class RapidproFlowsViewTests(SidekickAPITestCase):
         """
 
         user = get_user_model().objects.create_superuser(
-            username="tseet", email="test@email.com", password="pass"
+            username="tseet",
+            email="test@email.com",
+            password="pass",  # noqa: S106 - Hardcoded passwords OK for tests
         )
 
         self.client.force_authenticate(user)
@@ -965,7 +969,9 @@ class RapidproFlowStartViewTests(SidekickAPITestCase):
         """
 
         user = get_user_model().objects.create_superuser(
-            username="tseet", email="test@email.com", password="pass"
+            username="tseet",
+            email="test@email.com",
+            password="pass",  # noqa: S106 - Hardcoded passwords OK for tests
         )
 
         self.client.force_authenticate(user)
@@ -1061,7 +1067,9 @@ class RapidproContactViewTests(SidekickAPITestCase):
         """
 
         user = get_user_model().objects.create_superuser(
-            username="tseet", email="test@email.com", password="pass"
+            username="tseet",
+            email="test@email.com",
+            password="pass",  # noqa: S106 - Hardcoded passwords OK for tests
         )
 
         self.client.force_authenticate(user)

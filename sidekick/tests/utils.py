@@ -29,7 +29,7 @@ def assertCallMadeWith(call, **kwargs):
         matching_keys_incorrect_value = []
         for key in kwargs:
             # get a list of all of the keywords that are _not_ in kwargs
-            if key not in call_kwargs.keys():
+            if key not in call_kwargs:
                 missing_keys.append(key)
             # get a list of all of the keywords that do not have matching objects
             elif call_kwargs[key] != kwargs[key]:

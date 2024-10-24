@@ -42,7 +42,7 @@ class TransferToClient:
         Reduces the boilerplate for constructing TransferTo requests
         """
         key = str(int(1000000 * time.time()))
-        md5 = hashlib.md5((self.login + self.token + key).encode("UTF-8")).hexdigest()
+        md5 = hashlib.md5((self.login + self.token + key).encode("UTF-8")).hexdigest()  # noqa: S324 (Transferto expects md5)
         data = dict(login=self.login, key=key, md5=md5, action=action, **kwargs)
         with transferto_request_time.labels(action=action).time():
             response = requests.post(self.url, data=data)
@@ -76,7 +76,8 @@ class TransferToClient:
 
     def get_operators(self, country_id):
         """
-        Return the list of operators offered to your account, for a specific country
+        Return the list of operators offered to your account, for a
+        specific country
 
         @param:integer country_id
         """
@@ -89,8 +90,8 @@ class TransferToClient:
 
     def get_operator_airtime_products(self, operator_id):
         """
-        Returns the list of denomination including wholesale and retail prices offered to your account,
-        for a specific operator
+        Returns the list of denomination including wholesale and retail
+        prices offered to your account,for a specific operator
         """
         if type(operator_id) is not int:
             raise TypeError("arg must be an int")
@@ -104,9 +105,12 @@ class TransferToClient:
         Make
 
         :param str msisdn: the msisdn that should receive the data
-        :param int product: integer representing amount of airtime to send to msisdn
-        :param str from_string: either in msisdn form or a name. e.g. "+6012345678" or "John" are all valid.
-        :param str reserve_id: [optional] see transferto documentation for more details about reserve id
+        :param int product: integer representing amount of airtime to send to
+        msisdn
+        :param str from_string: either in msisdn form or a name. e.g.
+        "+6012345678" or "John" are all valid.
+        :param str reserve_id: [optional] see transferto documentation for
+        more details about reserve id
         :return: dict of transaction response from transferto
         """
         if type(product) is not int:
@@ -145,15 +149,13 @@ class TransferToClient:
         return response.json()
 
     def get_operator_products(self, operator_id):
-        product_url = "https://api.transferto.com/v1.1/operators/{}/products".format(
-            operator_id
+        product_url = (
+            f"https://api.transferto.com/v1.1/operators/{operator_id}/products"
         )
         return self._make_transferto_api_request("get_operator_products", product_url)
 
     def get_country_services(self, country_id):
-        service_url = "https://api.transferto.com/v1.1/countries/{}/services".format(
-            country_id
-        )
+        service_url = f"https://api.transferto.com/v1.1/countries/{country_id}/services"
         return self._make_transferto_api_request("get_country_services", service_url)
 
     def topup_data(self, msisdn, product_id, simulate=False):
