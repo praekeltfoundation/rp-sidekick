@@ -335,3 +335,7 @@ class ContactsPayloadSerializer(serializers.Serializer):
     def get_message_body(self):
         message_body = self.validated_data["messages"][0]["text"]["body"]
         return message_body
+
+    def get_author_id(self):
+        author_id = self.validated_data["messages"][0]["_vnd"]["v1"]["author"]["id"]
+        return author_id
