@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "rp_yal",
     "randomisation",
     "msisdn_utils",
+    "turn_alerts",
 ]
 
 MIDDLEWARE = [
@@ -226,3 +227,9 @@ sentry_sdk.init(
 )
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
+#Turn Alerts
+
+TURN_ALERTS_JOURNEY_URL = env.str("TURN_ALERTS_JOURNEY_URL", None)
+TURN_ALERTS_JOURNEY_TOKEN = env.str("TURN_ALERTS_JOURNEY_TOKEN", None)
+
