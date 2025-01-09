@@ -28,7 +28,7 @@ def start_turn_journey(wa_id):
         "Content-Type": "application/json",
     }
     data = {"wa_id": wa_id}
-    journey_id = turn_alerts.journey_id  # Assuming journey_id is a field on TurnAlerts
+    journey_id = turn_alerts.journey_id
 
     url = urljoin(organization.url, f"/v1/stacks/{journey_id}/start")
     response = requests.post(url, headers=headers, json=data)

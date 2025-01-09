@@ -13,7 +13,6 @@ from turn_alerts.serializers import (
 
 from .tasks import start_turn_journey
 
-# Prometheus counters for events and messages
 message_requests_total = Counter(
     "turn_alerts_message_requests_total",
     "Total number of message requests",
