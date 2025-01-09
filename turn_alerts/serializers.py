@@ -78,11 +78,11 @@ class StatusPayloadSerializer(serializers.Serializer):
         recipient_id = self.validated_data["statuses"][0]["recipient_id"]
         return recipient_id
 
-    def get_message_type(self):
-        message_type = self.validated_data["statuses"][0]["conversation"]["origin"][
-            "type"
-        ]
-        return message_type
+    def get_conversation_type(self):
+        conversation_type = self.validated_data["statuses"][0]["conversation"][
+            "origin"
+        ]["type"]
+        return conversation_type
 
     def get_conversation_id(self):
         conversation_id = self.validated_data["statuses"][0]["conversation"]["id"]
