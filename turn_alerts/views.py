@@ -1,9 +1,11 @@
 import re
 
+from django.http import JsonResponse
 from prometheus_client import Counter
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
+from sidekick.models import Organization
 from turn_alerts.serializers import (
     ContactsPayloadSerializer,
     Status_ErrorPayloadSerializer,
@@ -11,6 +13,7 @@ from turn_alerts.serializers import (
     VendorPayloadSerializer,
 )
 
+from .models import TurnActions
 from .tasks import start_turn_journey
 
 message_requests_total = Counter(
@@ -35,9 +38,23 @@ class TurnAlertsLayerView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        org_id = kwargs["org_id"]
+        try:
+            organization = Organization.objects.get(id=org_id)
+            turn_alerts = TurnActions.objects.filter(org=organization)
+        except Organization.DoesNotExist:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
 
         body = request.data
         request_type = list(body.keys())[0]
+
+        org_id = kwargs["org_id"]
+
+        for alert in turn_alerts:
+            journey_id = alert.journey_id
+            org_error_code = alert.error_code
+            engage_token = organization.engage_token
+            engage_url = organization.engage_url
 
         if request_type in ["contacts", "_vnd"]:
             if request_type == "contacts":
@@ -64,8 +81,7 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                     conversation_id=None,
                     conversation_type=None,
                 ).inc()
-
-                if error_code == 131026:
+                if error_code == org_error_code:
                     match = re.match(
                         (
                             r"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]"
@@ -74,7 +90,9 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                         whatsappid,
                     )
                     if match:
-                        start_turn_journey(whatsappid)
+                        start_turn_journey(
+                            whatsappid, journey_id, engage_url, engage_token
+                        )
             else:
                 serializer = StatusPayloadSerializer(data=body)
                 serializer.is_valid(raise_exception=True)

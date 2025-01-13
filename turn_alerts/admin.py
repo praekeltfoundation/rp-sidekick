@@ -1,5 +1,5 @@
 from django.contrib import admin
 
-from .models import TurnAlerts
+from .models import TurnActions
 
-admin.site.register(TurnAlerts)
+admin.site.register(TurnActions)

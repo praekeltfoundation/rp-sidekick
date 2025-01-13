@@ -7,8 +7,6 @@ from temba_client.exceptions import TembaHttpError
 
 from config.celery import app
 
-from .models import TurnAlerts
-
 
 @app.task(
     autoretry_for=(RequestException, SoftTimeLimitExceeded, TembaHttpError),
@@ -18,19 +16,15 @@ from .models import TurnAlerts
     soft_time_limit=10,
     time_limit=15,
 )
-def start_turn_journey(wa_id):
-
-    turn_alerts = TurnAlerts.objects.get(pk=1)
-    organization = turn_alerts.org
+def start_turn_journey(wa_id, journey_id, engage_url, engage_token):
 
     headers = {
-        "Authorization": f"Bearer {turn_alerts.hmac_secret}",
+        "Authorization": f"Bearer {engage_token}",
         "Content-Type": "application/json",
     }
     data = {"wa_id": wa_id}
-    journey_id = turn_alerts.journey_id
 
-    url = urljoin(organization.url, f"/v1/stacks/{journey_id}/start")
+    url = urljoin(engage_url, f"/v1/stacks/{journey_id}/start")
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
     return response.json()
