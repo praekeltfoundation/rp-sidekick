@@ -1,11 +1,20 @@
+import base64
+import hmac
 import json
+from hashlib import sha256
+from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
+from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.renderers import JSONRenderer
+from rest_framework.test import APIRequestFactory, APITestCase
 
+from sidekick.models import Organization
 from sidekick.tests.utils import create_org
+from turn_alerts.models import TurnActions
+from turn_alerts.views import TurnAlertsLayerView
 
 from .utils import create_turnalerts_account
 
@@ -18,32 +27,75 @@ class TestAlertsViewAbstract(APITestCase):
         self.org = create_org()
         self.turnalerts_account = create_turnalerts_account(org=self.org)
 
-    def test_org_does_not_exist(self):
+    def generate_hmac_signature(self, data, key):
+        data = JSONRenderer().render(data)
+        h = hmac.new(key.encode(), data, sha256)
+        return base64.b64encode(h.digest()).decode()
+
+    def test_signature_required(self):
+        """
+        Should return 400 if signature is not provided
+        """
+
+        data = {
+            "statuses": [
+                {
+                    "errors": [
+                        {
+                            "code": 131026,
+                            "error_data": {"details": "Message Undeliverable."},
+                            "message": "Message undeliverable",
+                            "title": "Message undeliverable",
+                        }
+                    ],
+                    "id": "wamid.HBgFMzE1MzEVAgARGBIzMzQ2RUY0MUU4OTJGOEM5MjAA",
+                    "recipient_id": "31531",
+                    "status": "failed",
+                    "timestamp": "1735425598",
+                }
+            ]
+        }
         response = self.client.post(
             reverse("turn-messages", kwargs={"org_id": self.org.id + 1}),
-            (
-                {
-                    "statuses": [
-                        {
-                            "errors": [
-                                {
-                                    "code": 131026,
-                                    "error_data": {"details": "Message Undeliverable."},
-                                    "message": "Message undeliverable",
-                                    "title": "Message undeliverable",
-                                }
-                            ],
-                            "id": "wamid.HBgFMzE1MzEVAgARGBIzMzQ2RUY0MUU4OTJGOEM5MjAA",
-                            "recipient_id": "31531",
-                            "status": "failed",
-                            "timestamp": "1735425598",
-                        }
-                    ]
-                }
-            ),
+            data,
+            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(json.loads(response.content), {})
+        self.assertEqual(
+            response.data, {"X-Turn-Hook-Subscription": ["This header is required."]}
+        )
+
+    def test_org_does_not_exist(self):
+        """
+        Should return 400 if org does not exist
+        """
+
+        data = {
+            "statuses": [
+                {
+                    "errors": [
+                        {
+                            "code": 131026,
+                            "error_data": {"details": "Message Undeliverable."},
+                            "message": "Message undeliverable",
+                            "title": "Message undeliverable",
+                        }
+                    ],
+                    "id": "wamid.HBgFMzE1MzEVAgARGBIzMzQ2RUY0MUU4OTJGOEM5MjAA",
+                    "recipient_id": "31531",
+                    "status": "failed",
+                    "timestamp": "1735425598",
+                }
+            ]
+        }
+        response = self.client.post(
+            reverse("turn-messages", kwargs={"org_id": self.org.id + 1}),
+            data,
+            format="json",
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class TestAlertsRoundTrip(APITestCase):
@@ -54,7 +106,15 @@ class TestAlertsRoundTrip(APITestCase):
         self.org = create_org()
         self.turnalerts_account = create_turnalerts_account(org=self.org)
 
+    def generate_hmac_signature(self, data, key):
+        data = JSONRenderer().render(data)
+        h = hmac.new(key.encode(), data, sha256)
+        return base64.b64encode(h.digest()).decode()
+
     def test_fail_status_payload_roundtrip(self):
+        """
+        Test roundtrip for status failed event
+        """
         data = {
             "statuses": [
                 {
@@ -74,16 +134,19 @@ class TestAlertsRoundTrip(APITestCase):
             ]
         }
 
-        json_data = json.dumps(data)
-
         response = self.client.post(
             reverse("turn-messages", kwargs={"org_id": self.org.id}),
-            content_type="application/json",
-            data=json_data.encode("utf-8"),
+            data,
+            format="json",
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_status_payload_roundtrip(self):
+        """
+        Test roundtrip for status payload
+        """
         data = {
             "statuses": [
                 {
@@ -105,16 +168,19 @@ class TestAlertsRoundTrip(APITestCase):
             ]
         }
 
-        json_data = json.dumps(data)
-
         response = self.client.post(
             reverse("turn-messages", kwargs={"org_id": self.org.id}),
-            content_type="application/json",
-            data=json_data.encode("utf-8"),
+            data,
+            format="json",
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_vendor_payload_roundtrip(self):
+        """
+        Test roundtrip for vnd payload
+        """
         data = {
             "_vnd": {
                 "v1": {
@@ -165,16 +231,19 @@ class TestAlertsRoundTrip(APITestCase):
             "type": "text",
         }
 
-        json_data = json.dumps(data)
-
         response = self.client.post(
             reverse("turn-messages", kwargs={"org_id": self.org.id}),
-            content_type="application/json",
-            data=json_data.encode("utf-8"),
+            data,
+            format="json",
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SUBSCRIPTION="turn",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_contacts_payload_roundtrip(self):
+        """
+        Test roundtrip for contacts payload
+        """
         data = {
             "contacts": [
                 {"profile": {"name": "Chima Chinda"}, "wa_id": "2349039756628"}
@@ -226,11 +295,75 @@ class TestAlertsRoundTrip(APITestCase):
             ],
         }
 
-        json_data = json.dumps(data)
-
         response = self.client.post(
             reverse("turn-messages", kwargs={"org_id": self.org.id}),
+            data,
+            format="json",
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class TurnAlertsLayerViewTest(TestCase):
+
+    def generate_hmac_signature(self, data, key):
+        data = JSONRenderer().render(data)
+        h = hmac.new(key.encode(), data, sha256)
+        return base64.b64encode(h.digest()).decode()
+
+    """
+    Mock data for Turn failed event and assert that Turn journey
+    is called with the expected arguments
+    """
+
+    @patch("turn_alerts.views.start_turn_journey")
+    def test_start_turn_journey_called_with_correct_arguments(
+        self, mock_start_turn_journey
+    ):
+        request_data = {
+            "statuses": [
+                {
+                    "errors": [
+                        {
+                            "code": 131026,
+                            "error_data": {"details": "Message Undeliverable."},
+                            "message": "Message undeliverable",
+                            "title": "Message undeliverable",
+                        }
+                    ],
+                    "id": "wamid.HBgFMzE1MzEVAgARGBIzMzQ2RUY0MUU4OTJGOEM5MjAA",
+                    "recipient_id": "27796312456",
+                    "status": "failed",
+                    "timestamp": "1735425598",
+                }
+            ]
+        }
+        self.org = create_org()
+        turn_action = Mock()
+        turn_action.journey_id = "journey_id"
+        turn_action.error_code = 131026
+
+        rf = APIRequestFactory()
+        request = rf.post(
+            "/1/api/v2/messages",
+            data=json.dumps(request_data),
             content_type="application/json",
-            data=json_data.encode("utf-8"),
+        )
+
+        request.META["HTTP_X_TURN_HOOK_SIGNATURE"] = self.generate_hmac_signature(
+            request_data, "REPLACEME"
+        )
+        request.META["HTTP_X_TURN_HOOK_SUBSCRIPTION"] = "whatsapp"
+
+        request.data = json.loads(request.body)
+
+        with patch.object(TurnActions.objects, "filter", return_value=[turn_action]):
+            with patch.object(Organization.objects, "get", return_value=self.org):
+                view = TurnAlertsLayerView()
+                response = view.post(request, org_id=1)
+
+        mock_start_turn_journey.assert_called_once_with(
+            "27796312456", "journey_id", "http://whatsapp/", "test-token"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)

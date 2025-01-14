@@ -6,12 +6,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
 from sidekick.models import Organization
-from turn_alerts.serializers import (
-    ContactsPayloadSerializer,
-    Status_ErrorPayloadSerializer,
-    StatusPayloadSerializer,
-    VendorPayloadSerializer,
-)
+from turn_alerts.serializers import TurnOutboundSerializer, WhatsAppWebhookSerializer
 
 from .models import TurnActions
 from .tasks import start_turn_journey
@@ -38,17 +33,23 @@ class TurnAlertsLayerView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        try:
+            webhook_type = request.headers["X-Turn-Hook-Subscription"]
+        except KeyError:
+            return Response(
+                {"X-Turn-Hook-Subscription": ["This header is required."]},
+                status.HTTP_400_BAD_REQUEST,
+            )
         org_id = kwargs["org_id"]
+
         try:
             organization = Organization.objects.get(id=org_id)
             turn_alerts = TurnActions.objects.filter(org=organization)
         except Organization.DoesNotExist:
             return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
 
-        body = request.data
-        request_type = list(body.keys())[0]
-
-        org_id = kwargs["org_id"]
+        on_fallback_channel = request.headers.get("X-Turn-Fallback-Channel", "0") == "1"
+        is_turn_event = request.headers.get("X-Turn-Event", "0") == "1"
 
         for alert in turn_alerts:
             journey_id = alert.journey_id
@@ -56,55 +57,72 @@ class TurnAlertsLayerView(generics.GenericAPIView):
             engage_token = organization.engage_token
             engage_url = organization.engage_url
 
-        if request_type in ["contacts", "_vnd"]:
-            if request_type == "contacts":
-                serializer = ContactsPayloadSerializer(data=body)
-            else:
-                serializer = VendorPayloadSerializer(data=body)
-            serializer.is_valid(raise_exception=True)
-            message_requests_total.labels(
-                fallback_channel=serializer.get_fallback_channel(),
-                direction=serializer.get_direction(),
-                message_type=serializer.get_message_type(),
-            ).inc()
+        if webhook_type == "whatsapp" or is_turn_event:
+            WhatsAppWebhookSerializer(data=request.data).is_valid(raise_exception=True)
+            for inbound in request.data.get("messages", []):
 
-        else:
-            if body["statuses"][0]["status"].upper() == "FAILED":
-                serializer = Status_ErrorPayloadSerializer(data=body)
-                serializer.is_valid(raise_exception=True)
-                error_code = serializer.get_error_code()
-                message_status = serializer.get_message_status()
-                whatsappid = serializer.get_recipient_id()
-                event_count.labels(
-                    message_status=message_status,
-                    error_code=error_code,
-                    conversation_id=None,
-                    conversation_type=None,
+                message_type = inbound.pop("type")
+                direction = inbound["_vnd"]["v1"]["direction"]
+                message_requests_total.labels(
+                    fallback_channel=on_fallback_channel,
+                    direction=direction,
+                    message_type=message_type,
                 ).inc()
-                if error_code == org_error_code:
-                    match = re.match(
-                        (
-                            r"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]"
-                            r"*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$"
-                        ),
-                        whatsappid,
-                    )
-                    if match:
-                        start_turn_journey(
-                            whatsappid, journey_id, engage_url, engage_token
+            for statuses in request.data.get("statuses", []):
+                message_status = statuses.get("status")
+
+                if "errors" in statuses:
+                    recipient_id = statuses.get("recipient_id")
+                    error_code = statuses["errors"][0].get("code")
+                    event_count.labels(
+                        message_status=message_status,
+                        error_code=error_code,
+                        conversation_id=None,
+                        conversation_type=None,
+                    ).inc()
+                    if error_code == org_error_code:
+                        match = re.match(
+                            (
+                                r"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]"
+                                r"*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$"
+                            ),
+                            recipient_id,
                         )
-            else:
-                serializer = StatusPayloadSerializer(data=body)
-                serializer.is_valid(raise_exception=True)
-                whatsappid = serializer.get_recipient_id()
-                conversation_type = serializer.get_conversation_type()
-                message_status = serializer.get_message_status()
-                conversation_id = serializer.get_conversation_id()
-                event_count.labels(
-                    message_status=message_status,
-                    error_code=None,
-                    conversation_id=conversation_id,
-                    conversation_type=conversation_type,
-                ).inc()
+                        if match:
+                            start_turn_journey(
+                                recipient_id, journey_id, engage_url, engage_token
+                            )
 
+                else:
+                    recipient_id = statuses.get("recipient_id")
+                    conversation_id = statuses.get("conversation").get("id")
+                    conversation_type = (
+                        statuses.get("conversation").get("origin").get("type")
+                    )
+                    event_count.labels(
+                        message_status=message_status,
+                        error_code=None,
+                        conversation_id=conversation_id,
+                        conversation_type=conversation_type,
+                    ).inc()
+
+        elif webhook_type == "turn":
+            TurnOutboundSerializer(data=request.data).is_valid(raise_exception=True)
+            outbound = request.data
+            direction = outbound["_vnd"]["v1"].get("direction")
+            message_type = (outbound.get("type", ""),)
+            message_requests_total.labels(
+                fallback_channel=on_fallback_channel,
+                direction=direction,
+                message_type=message_type,
+            ).inc()
+        else:
+            return Response(
+                {
+                    "X-Turn-Hook-Subscription": [
+                        f'"{webhook_type}" is not a valid choice for this header.'
+                    ]
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response({}, status=status.HTTP_200_OK)
