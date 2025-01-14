@@ -5,7 +5,6 @@ from hashlib import sha256
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.renderers import JSONRenderer
@@ -60,10 +59,7 @@ class TestAlertsViewAbstract(APITestCase):
             data,
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            response.data, {"X-Turn-Hook-Subscription": ["This header is required."]}
-        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_org_does_not_exist(self):
         """
@@ -127,21 +123,39 @@ class TestAlertsRoundTrip(APITestCase):
                         }
                     ],
                     "id": "wamid.HBgFMzE1MzEVAgARGBIzMzQ2RUY0MUU4OTJGOEM5MjAA",
-                    "recipient_id": "31531",
+                    "recipient_id": "2779631245",
                     "status": "failed",
                     "timestamp": "1735425598",
                 }
             ]
         }
 
-        response = self.client.post(
-            reverse("turn-messages", kwargs={"org_id": self.org.id}),
-            data,
-            format="json",
-            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
-            HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        url = reverse("turn-messages", kwargs={"org_id": self.org.id})
+
+        with patch("requests.post") as mock_post:
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"success": True}
+            mock_post.return_value = mock_response
+
+            response = self.client.post(
+                url,
+                data,
+                format="json",
+                HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                    data, "REPLACEME"
+                ),
+                HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            mock_post.assert_called_once_with(
+                "http://whatsapp/v1/stacks/fake_journey_id/start",
+                headers={
+                    "Authorization": "Bearer test-token",
+                    "Content-Type": "application/json",
+                },
+                json={"wa_id": "2779631245"},
+            )
 
     def test_status_payload_roundtrip(self):
         """
@@ -305,17 +319,19 @@ class TestAlertsRoundTrip(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
-class TurnAlertsLayerViewTest(TestCase):
+class TurnAlertsLayerViewTest(APITestCase):
+
+    def setUp(self):
+        user = get_user_model().objects.create_user("test")
+        self.client.force_authenticate(user)
+
+        self.org = create_org()
+        self.turnalerts_account = create_turnalerts_account(org=self.org)
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
         h = hmac.new(key.encode(), data, sha256)
         return base64.b64encode(h.digest()).decode()
-
-    """
-    Mock data for Turn failed event and assert that Turn journey
-    is called with the expected arguments
-    """
 
     @patch("turn_alerts.views.start_turn_journey")
     def test_start_turn_journey_called_with_correct_arguments(
@@ -333,13 +349,12 @@ class TurnAlertsLayerViewTest(TestCase):
                         }
                     ],
                     "id": "wamid.HBgFMzE1MzEVAgARGBIzMzQ2RUY0MUU4OTJGOEM5MjAA",
-                    "recipient_id": "27796312456",
+                    "recipient_id": "2779631245",
                     "status": "failed",
                     "timestamp": "1735425598",
                 }
             ]
         }
-        self.org = create_org()
         turn_action = Mock()
         turn_action.journey_id = "journey_id"
         turn_action.error_code = 131026
@@ -347,13 +362,13 @@ class TurnAlertsLayerViewTest(TestCase):
         rf = APIRequestFactory()
         request = rf.post(
             "/1/api/v2/messages",
-            data=json.dumps(request_data),
-            content_type="application/json",
+            request_data,
+            format="json",
         )
 
-        request.META["HTTP_X_TURN_HOOK_SIGNATURE"] = self.generate_hmac_signature(
-            request_data, "REPLACEME"
-        )
+        secret_key = "REPLACEME"
+        generated_signature = self.generate_hmac_signature(request_data, secret_key)
+        request.META["HTTP_X_TURN_HOOK_SIGNATURE"] = generated_signature
         request.META["HTTP_X_TURN_HOOK_SUBSCRIPTION"] = "whatsapp"
 
         request.data = json.loads(request.body)
@@ -364,6 +379,6 @@ class TurnAlertsLayerViewTest(TestCase):
                 response = view.post(request, org_id=1)
 
         mock_start_turn_journey.assert_called_once_with(
-            "27796312456", "journey_id", "http://whatsapp/", "test-token"
+            "2779631245", "journey_id", "http://whatsapp/", "test-token"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)

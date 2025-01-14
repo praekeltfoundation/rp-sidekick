@@ -10,6 +10,7 @@ from turn_alerts.serializers import TurnOutboundSerializer, WhatsAppWebhookSeria
 
 from .models import TurnActions
 from .tasks import start_turn_journey
+from .utils import validate_signature
 
 message_requests_total = Counter(
     "turn_alerts_message_requests_total",
@@ -25,7 +26,13 @@ message_requests_total = Counter(
 event_count = Counter(
     "turn_alerts_event_count",
     "Number of events",
-    ["message_status", "error_code", "conversation_id", "conversation_type"],
+    [
+        "message_status",
+        "error_code",
+        "conversation_id",
+        "conversation_type",
+        "on_fallback_channel",
+    ],
 )
 
 
@@ -33,6 +40,7 @@ class TurnAlertsLayerView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        validate_signature(request)
         try:
             webhook_type = request.headers["X-Turn-Hook-Subscription"]
         except KeyError:
@@ -79,6 +87,7 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                         error_code=error_code,
                         conversation_id=None,
                         conversation_type=None,
+                        on_fallback_channel=on_fallback_channel,
                     ).inc()
                     if error_code == org_error_code:
                         match = re.match(
@@ -94,7 +103,6 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                             )
 
                 else:
-                    recipient_id = statuses.get("recipient_id")
                     conversation_id = statuses.get("conversation").get("id")
                     conversation_type = (
                         statuses.get("conversation").get("origin").get("type")
@@ -104,12 +112,13 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                         error_code=None,
                         conversation_id=conversation_id,
                         conversation_type=conversation_type,
+                        on_fallback_channel=on_fallback_channel,
                     ).inc()
 
         elif webhook_type == "turn":
             TurnOutboundSerializer(data=request.data).is_valid(raise_exception=True)
             outbound = request.data
-            direction = outbound["_vnd"]["v1"].get("direction")
+            direction = outbound["_vnd"]["v1"]["direction"]
             message_type = (outbound.get("type", ""),)
             message_requests_total.labels(
                 fallback_channel=on_fallback_channel,

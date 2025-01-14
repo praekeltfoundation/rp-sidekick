@@ -1,19 +1,24 @@
-from django.db import models
+from __future__ import absolute_import, division
 
-from sidekick.models import Organization
+import base64
+import hmac
+from hashlib import sha256
+
+from django.conf import settings
+from rest_framework.exceptions import AuthenticationFailed
 
 
-class TurnAlerts(models.Model):
-    org = models.ForeignKey(Organization, default=100, on_delete=models.CASCADE)
-    journey_id = models.CharField(
-        max_length=255,
-        null=False,
-        default="00000",
-        help_text="The id of the Turn journey",
-    )
-    error_code = models.CharField(
-        max_length=255,
-        null=False,
-        default="00000",
-        help_text="The error code that starts an event",
-    )
+def validate_signature(request):
+    secret = settings.TURN_HMAC_SECRET
+    try:
+        signature = request.META["HTTP_X_TURN_HOOK_SIGNATURE"]
+    except KeyError:
+        raise AuthenticationFailed("X-Turn-Hook-Signature header required")
+
+    raw_data = request.body
+
+    h = hmac.new(secret.encode(), raw_data, sha256)
+    generated_signature = base64.b64encode(h.digest()).decode()
+
+    if not hmac.compare_digest(generated_signature, signature):
+        raise AuthenticationFailed("Invalid hook signature")
