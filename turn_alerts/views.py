@@ -119,7 +119,7 @@ class TurnAlertsLayerView(generics.GenericAPIView):
             TurnOutboundSerializer(data=request.data).is_valid(raise_exception=True)
             outbound = request.data
             direction = outbound["_vnd"]["v1"]["direction"]
-            message_type = (outbound.get("type", ""),)
+            message_type = outbound.get("type")
             message_requests_total.labels(
                 fallback_channel=on_fallback_channel,
                 direction=direction,
