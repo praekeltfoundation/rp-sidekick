@@ -15,7 +15,7 @@ from sidekick.tests.utils import create_org
 from turn_alerts.models import TurnActions
 from turn_alerts.views import TurnAlertsLayerView
 
-from .utils import create_turnalerts_account
+from .utils import create_turnalerts
 
 
 class TestAlertsViewAbstract(APITestCase):
@@ -24,7 +24,7 @@ class TestAlertsViewAbstract(APITestCase):
         self.client.force_authenticate(user)
 
         self.org = create_org()
-        self.turnalerts_account = create_turnalerts_account(org=self.org)
+        self.turnalerts_account = create_turnalerts(org=self.org)
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
@@ -100,14 +100,14 @@ class TestAlertsRoundTrip(APITestCase):
         self.client.force_authenticate(user)
 
         self.org = create_org()
-        self.turnalerts_account = create_turnalerts_account(org=self.org)
+        self.turnalerts_account = create_turnalerts(org=self.org)
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
         h = hmac.new(key.encode(), data, sha256)
         return base64.b64encode(h.digest()).decode()
 
-    def test_fail_status_payload_roundtrip(self):
+    def test_delivery_failure_event_roundtrip(self):
         """
         Test roundtrip for status failed event
         """
@@ -157,7 +157,7 @@ class TestAlertsRoundTrip(APITestCase):
                 json={"wa_id": "2779631245"},
             )
 
-    def test_status_payload_roundtrip(self):
+    def test_sent_event_roundtrip(self):
         """
         Test roundtrip for status payload
         """
@@ -191,7 +191,7 @@ class TestAlertsRoundTrip(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_vendor_payload_roundtrip(self):
+    def test_outbound_message_roundtrip(self):
         """
         Test roundtrip for vnd payload
         """
@@ -254,7 +254,7 @@ class TestAlertsRoundTrip(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_contacts_payload_roundtrip(self):
+    def test_inbound_message_roundtrip(self):
         """
         Test roundtrip for contacts payload
         """
@@ -326,7 +326,7 @@ class TurnAlertsLayerViewTest(APITestCase):
         self.client.force_authenticate(user)
 
         self.org = create_org()
-        self.turnalerts_account = create_turnalerts_account(org=self.org)
+        self.turnalerts_account = create_turnalerts(org=self.org)
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)

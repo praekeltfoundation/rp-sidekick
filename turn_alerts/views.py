@@ -29,8 +29,6 @@ event_count = Counter(
     [
         "message_status",
         "error_code",
-        "conversation_id",
-        "conversation_type",
         "on_fallback_channel",
     ],
 )
@@ -59,11 +57,11 @@ class TurnAlertsLayerView(generics.GenericAPIView):
         on_fallback_channel = request.headers.get("X-Turn-Fallback-Channel", "0") == "1"
         is_turn_event = request.headers.get("X-Turn-Event", "0") == "1"
 
-        for alert in turn_alerts:
-            journey_id = alert.journey_id
-            org_error_code = alert.error_code
-            engage_token = organization.engage_token
-            engage_url = organization.engage_url
+        turn_actions = {
+            alert.error_code: {"journey_id": alert.journey_id} for alert in turn_alerts
+        }
+        engage_token = organization.engage_token
+        engage_url = organization.engage_url
 
         if webhook_type == "whatsapp" or is_turn_event:
             WhatsAppWebhookSerializer(data=request.data).is_valid(raise_exception=True)
@@ -85,11 +83,10 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                     event_count.labels(
                         message_status=message_status,
                         error_code=error_code,
-                        conversation_id=None,
-                        conversation_type=None,
                         on_fallback_channel=on_fallback_channel,
                     ).inc()
-                    if error_code == org_error_code:
+                    if error_code in turn_actions:
+                        journey_id = turn_actions[error_code]["journey_id"]
                         match = re.match(
                             (
                                 r"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]"
@@ -103,15 +100,9 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                             )
 
                 else:
-                    conversation_id = statuses.get("conversation").get("id")
-                    conversation_type = (
-                        statuses.get("conversation").get("origin").get("type")
-                    )
                     event_count.labels(
                         message_status=message_status,
                         error_code=None,
-                        conversation_id=conversation_id,
-                        conversation_type=conversation_type,
                         on_fallback_channel=on_fallback_channel,
                     ).inc()
 
