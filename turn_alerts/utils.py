@@ -6,18 +6,15 @@ from hashlib import sha256
 
 from rest_framework.exceptions import AuthenticationFailed
 
-from .models import Organization, TurnSecret
+from .models import TurnSecret
 
 
 def validate_signature(request, org_id, turn_secret_id):
     try:
-        organization = Organization.objects.get(id=org_id)
-        turn_secret = TurnSecret.objects.get(id=turn_secret_id, org=organization)
+        turn_secret = TurnSecret.objects.get(id=turn_secret_id, org_id=org_id)
         secret = turn_secret.secret
-    except Organization.DoesNotExist:
-        raise AuthenticationFailed("Organization not found")
     except TurnSecret.DoesNotExist:
-        raise AuthenticationFailed("TurnSecret for organization not found")
+        raise AuthenticationFailed("TurnSecret for the given organization not found")
 
     try:
         signature = request.META["HTTP_X_TURN_HOOK_SIGNATURE"]

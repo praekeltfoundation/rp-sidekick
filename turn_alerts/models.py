@@ -22,4 +22,3 @@ class TurnActions(models.Model):
 class TurnSecret(models.Model):
     org = models.ForeignKey(Organization, on_delete=models.CASCADE)
     secret = models.CharField(max_length=255)
-    help_text = "The secret for validating webhook requests"
