@@ -2,7 +2,6 @@ import base64
 import hmac
 from hashlib import sha256
 from unittest.mock import patch
-
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
@@ -18,9 +17,8 @@ class TestAlertsViewAbstract(APITestCase):
     def setUp(self):
         user = get_user_model().objects.create_user("test")
         self.client.force_authenticate(user)
-
         # Create org and turn action instance
-        create_org()
+        self.org = create_org()
         create_turn_action(org=self.org)
 
     def generate_hmac_signature(self, data, key):
@@ -96,7 +94,7 @@ class TestAlertsRoundTrip(APITestCase):
         user = get_user_model().objects.create_user("test")
         self.client.force_authenticate(user)
 
-        create_org()
+        self.org = create_org()
         create_turn_action(org=self.org)
 
     def generate_hmac_signature(self, data, key):
