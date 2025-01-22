@@ -1,5 +1,3 @@
-import re
-
 from django.http import JsonResponse
 from prometheus_client import Counter
 from rest_framework import generics, permissions, status
@@ -87,17 +85,9 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                     ).inc()
                     if error_code in turn_actions:
                         journey_id = turn_actions[error_code]["journey_id"]
-                        match = re.match(
-                            (
-                                r"^\s*(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]"
-                                r"*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?\s*$"
-                            ),
-                            recipient_id,
+                        start_turn_journey(
+                            recipient_id, journey_id, engage_url, engage_token
                         )
-                        if match:
-                            start_turn_journey(
-                                recipient_id, journey_id, engage_url, engage_token
-                            )
 
                 else:
                     event_count.labels(
