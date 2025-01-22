@@ -10,6 +10,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 
 from sidekick.tests.utils import create_org
+from turn_alerts.models import TurnSecret
 
 from .utils import create_turn_action
 
@@ -18,9 +19,10 @@ class TestAlertsViewAbstract(APITestCase):
     def setUp(self):
         user = get_user_model().objects.create_user("test")
         self.client.force_authenticate(user)
-        # Create org and turn action instance
+
         self.org = create_org()
-        create_turn_action(org=self.org)
+        self.turn_action = create_turn_action(org=self.org)
+        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
@@ -51,7 +53,10 @@ class TestAlertsViewAbstract(APITestCase):
             ]
         }
         response = self.client.post(
-            reverse("turn-messages", kwargs={"org_id": self.org.id + 1}),
+            reverse(
+                "turn-messages",
+                kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+            ),
             data,
             format="json",
         )
@@ -81,10 +86,18 @@ class TestAlertsViewAbstract(APITestCase):
             ]
         }
         response = self.client.post(
-            reverse("turn-messages", kwargs={"org_id": self.org.id + 1}),
+            reverse(
+                "turn-messages",
+                kwargs={
+                    "org_id": self.org.id + 1,
+                    "turn_secret_id": self.turn_secret.id,
+                },
+            ),
             data,
             format="json",
-            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                data, self.turn_secret.secret
+            ),
             HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -96,7 +109,8 @@ class TestAlertsRoundTrip(APITestCase):
         self.client.force_authenticate(user)
 
         self.org = create_org()
-        create_turn_action(org=self.org)
+        self.turn_action = create_turn_action(org=self.org)
+        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
@@ -128,12 +142,17 @@ class TestAlertsRoundTrip(APITestCase):
             ]
         }
 
-        url = reverse("turn-messages", kwargs={"org_id": self.org.id})
+        url = reverse(
+            "turn-messages",
+            kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+        )
         response = self.client.post(
             url,
             data,
             format="json",
-            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                data, self.turn_secret.secret
+            ),
             HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -165,12 +184,17 @@ class TestAlertsRoundTrip(APITestCase):
             ]
         }
 
-        url = reverse("turn-messages", kwargs={"org_id": self.org.id})
+        url = reverse(
+            "turn-messages",
+            kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+        )
         response = self.client.post(
             url,
             data,
             format="json",
-            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                data, self.turn_secret.secret
+            ),
             HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -203,12 +227,17 @@ class TestAlertsRoundTrip(APITestCase):
             ]
         }
 
-        url = reverse("turn-messages", kwargs={"org_id": self.org.id})
+        url = reverse(
+            "turn-messages",
+            kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+        )
         response = self.client.post(
             url,
             data,
             format="json",
-            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                data, self.turn_secret.secret
+            ),
             HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -240,10 +269,15 @@ class TestAlertsRoundTrip(APITestCase):
         }
 
         response = self.client.post(
-            reverse("turn-messages", kwargs={"org_id": self.org.id}),
+            reverse(
+                "turn-messages",
+                kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+            ),
             data,
             format="json",
-            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                data, self.turn_secret.secret
+            ),
             HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -303,10 +337,15 @@ class TestAlertsRoundTrip(APITestCase):
         }
 
         response = self.client.post(
-            reverse("turn-messages", kwargs={"org_id": self.org.id}),
+            reverse(
+                "turn-messages",
+                kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+            ),
             data,
             format="json",
-            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                data, self.turn_secret.secret
+            ),
             HTTP_X_TURN_HOOK_SUBSCRIPTION="turn",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -367,10 +406,15 @@ class TestAlertsRoundTrip(APITestCase):
         }
 
         response = self.client.post(
-            reverse("turn-messages", kwargs={"org_id": self.org.id}),
+            reverse(
+                "turn-messages",
+                kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+            ),
             data,
             format="json",
-            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, "REPLACEME"),
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                data, self.turn_secret.secret
+            ),
             HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)

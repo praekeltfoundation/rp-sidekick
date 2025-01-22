@@ -36,7 +36,17 @@ class TurnAlertsLayerView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
-        validate_signature(request)
+        org_id = kwargs["org_id"]
+        turn_secret_id = kwargs["turn_secret_id"]
+
+        try:
+            organization = Organization.objects.get(id=org_id)
+            turn_alerts = TurnActions.objects.filter(org=organization)
+        except Organization.DoesNotExist:
+            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
+
+        validate_signature(request, org_id, turn_secret_id)
+
         try:
             webhook_type = request.headers["X-Turn-Hook-Subscription"]
         except KeyError:
@@ -44,13 +54,6 @@ class TurnAlertsLayerView(generics.GenericAPIView):
                 {"X-Turn-Hook-Subscription": ["This header is required."]},
                 status.HTTP_400_BAD_REQUEST,
             )
-        org_id = kwargs["org_id"]
-
-        try:
-            organization = Organization.objects.get(id=org_id)
-            turn_alerts = TurnActions.objects.filter(org=organization)
-        except Organization.DoesNotExist:
-            return JsonResponse(data={}, status=status.HTTP_400_BAD_REQUEST)
 
         on_fallback_channel = request.headers.get("X-Turn-Fallback-Channel", "0") == "1"
         is_turn_event = request.headers.get("X-Turn-Event", "0") == "1"

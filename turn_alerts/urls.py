@@ -4,7 +4,7 @@ from . import views
 
 urlpatterns = [
     path(
-        "<int:org_id>/api/v2/messages",
+        "turn-messages/<int:org_id>/<int:turn_secret_id>/",
         views.TurnAlertsLayerView.as_view(),
         name="turn-messages",
     ),

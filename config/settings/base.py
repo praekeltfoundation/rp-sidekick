@@ -227,5 +227,3 @@ sentry_sdk.init(
 )
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-
-TURN_HMAC_SECRET = os.environ.get("TURN_HMAC_SECRET", "REPLACEME")

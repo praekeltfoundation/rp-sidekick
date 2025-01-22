@@ -17,3 +17,9 @@ class TurnActions(models.Model):
         default="00000",
         help_text="The error code that starts an event",
     )
+
+
+class TurnSecret(models.Model):
+    org = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    secret = models.CharField(max_length=255)
+    help_text = "The secret for validating webhook requests"
