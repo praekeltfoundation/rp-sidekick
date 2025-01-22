@@ -3,6 +3,10 @@ VERSIONS
 
 Next Release
 ------------
+1.13.0
+------------
+Sidekick: Merge pull request #203: An application to handle turn events and initiate actions
+------------
 1.12.0
 ------------
 NDOH: Merge pull request #199: rp-recruit cleanup from sidekick
