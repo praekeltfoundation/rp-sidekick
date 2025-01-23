@@ -3,6 +3,10 @@ VERSIONS
 
 Next Release
 ------------
+1.13.1
+------------
+Sidekick: Merge pull request #206: Add turnsecret member model to admin
+------------
 1.13.0
 ------------
 Sidekick: Merge pull request #203: An application to handle turn events and initiate actions
