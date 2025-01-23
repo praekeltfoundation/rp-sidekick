@@ -33,7 +33,7 @@ event_count = Counter(
 
 
 class TurnAlertsLayerView(generics.GenericAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         org_id = kwargs["org_id"]
