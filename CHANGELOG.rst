@@ -3,6 +3,10 @@ VERSIONS
 
 Next Release
 ------------
+1.13.2
+------------
+Sidekick: Merge pull request #208: Remove TurnAlert Auth
+------------
 1.13.1
 ------------
 Sidekick: Merge pull request #206: Add turnsecret member model to admin
