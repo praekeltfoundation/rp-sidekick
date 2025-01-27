@@ -18,34 +18,19 @@ The Turn Alerts app is a bridge between sidekick and Turn. It acts as a listener
   - Utilizes Prometheus to track key metrics, such as message volume, error rates, and journey initiation counts.
   - Provides valuable insights into the performance and behavior of the Turn integration. We can visualize this in any of the grafana instances if the organization (ex, the ndoh one)
 
-# Installation
-
-1. Create a Virtual Env
-    1. python3 -m venv .venv
-    2. source .venv/bin/activate
-2. Activate Virtual environment
-    1. virtualenv -p python3 .venv
-    2. source .venv/bin/activate
-3. Install dependencies
-    1. pip install -r requirements.txt
-4. Install dev dependencies
-    1. pip install -r requirements-dev.txt
-5. Create django superuser
-    1. python manage.py createsuperuser
-    2. Follow the prompts to create a username, email, and password for the superuser account. You'll need this information to access the Django admin panel.
-6. Run the development server and access turnalerts admin
-    1. python manage.py runserver
-    2. <http://127.0.0.1:8000/admin/>
-
 # Configuration
 
 1. Create a TurnSecret model instance for each organization that will use the Turn Alerts Layer.
     1. The org field should be a reference to the corresponding Organization model instance.
-    2. The secret field should be set to the Turn secret associated with the organization.
+    2. The secret field should be set to the Turn secret associated with the specific webhook in turn.
 2. Create TurnActions model instances to define how the Turn Alerts Layer should respond to specific error codes.
     1. The org field should be a reference to the corresponding Organization model instance.
     2. The journey_id field should be set to the ID of the Turn journey that you want to start when the corresponding error code is encountered.
     3. The error_code field should be set to the Turn error code that triggers the journey start.
+    
+To find the Journey ID, navigate to the Journeys section in Turn, select the three dots to the right of the journey and "Copy ID".
+
+Whatsapp Cloud API Error Codes: https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes/
 
 # Usage
 
