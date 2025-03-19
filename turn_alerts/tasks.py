@@ -17,7 +17,6 @@ from config.celery import app
     time_limit=15,
 )
 def start_turn_journey(wa_id, journey_id, engage_url, engage_token):
-
     headers = {
         "Authorization": f"Bearer {engage_token}",
         "Content-Type": "application/json",

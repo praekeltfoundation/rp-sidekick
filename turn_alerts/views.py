@@ -67,7 +67,6 @@ class TurnAlertsLayerView(generics.GenericAPIView):
         if webhook_type == "whatsapp" or is_turn_event:
             WhatsAppWebhookSerializer(data=request.data).is_valid(raise_exception=True)
             for inbound in request.data.get("messages", []):
-
                 message_type = inbound.pop("type")
                 direction = inbound["_vnd"]["v1"]["direction"]
                 message_requests_total.labels(
