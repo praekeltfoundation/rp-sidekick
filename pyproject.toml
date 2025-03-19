@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rp-sidekick"
-version = "1.12.0"
+version = "1.13.2"
 description = ""
 authors = ["Praekelt Foundation <dev@praekeltfoundation.org>"]
 repository = "http://github.com/praekeltfoundation/rp-sidekick"
