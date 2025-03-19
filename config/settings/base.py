@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "rp_yal",
     "randomisation",
     "msisdn_utils",
+    "turn_alerts",
 ]
 
 MIDDLEWARE = [

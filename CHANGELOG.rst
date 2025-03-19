@@ -3,6 +3,18 @@ VERSIONS
 
 Next Release
 ------------
+1.13.2
+------------
+Sidekick: Merge pull request #208: Remove TurnAlert Auth
+------------
+1.13.1
+------------
+Sidekick: Merge pull request #206: Add turnsecret member model to admin
+------------
+1.13.0
+------------
+Sidekick: Merge pull request #203: An application to handle turn events and initiate actions
+------------
 1.12.0
 ------------
 NDOH: Merge pull request #199: rp-recruit cleanup from sidekick
