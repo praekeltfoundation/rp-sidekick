@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division
-
 import base64
 import hmac
 from hashlib import sha256
@@ -13,13 +11,15 @@ def validate_signature(request, org_id, turn_secret_id):
     try:
         turn_secret = TurnSecret.objects.get(id=turn_secret_id, org_id=org_id)
         secret = turn_secret.secret
-    except TurnSecret.DoesNotExist:
-        raise AuthenticationFailed("TurnSecret for the given organization not found")
+    except TurnSecret.DoesNotExist as e:
+        raise AuthenticationFailed(
+            "TurnSecret for the given organization not found"
+        ) from e
 
     try:
         signature = request.META["HTTP_X_TURN_HOOK_SIGNATURE"]
-    except KeyError:
-        raise AuthenticationFailed("X-Turn-Hook-Signature header required")
+    except KeyError as e:
+        raise AuthenticationFailed("X-Turn-Hook-Signature header required") from e
 
     raw_data = request.body
 

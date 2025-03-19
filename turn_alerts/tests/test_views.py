@@ -22,7 +22,7 @@ class TestAlertsViewAbstract(APITestCase):
 
         self.org = create_org()
         self.turn_action = create_turn_action(org=self.org)
-        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")
+        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")  # noqa: S106 - Fake password/token for test purposes
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
@@ -110,7 +110,7 @@ class TestAlertsRoundTrip(APITestCase):
 
         self.org = create_org()
         self.turn_action = create_turn_action(org=self.org)
-        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")
+        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")  # noqa: S106 - Fake password/token for test purposes
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
