@@ -1,4 +1,4 @@
-FROM ghcr.io/praekeltfoundation/docker-django-bootstrap-nw:py3.9-bullseye
+FROM ghcr.io/praekeltfoundation/docker-django-bootstrap-nw:py3.10-bullseye
 
 COPY . /app
 

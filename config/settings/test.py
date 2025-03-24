@@ -15,7 +15,7 @@ BROKER_BACKEND = "memory"
 PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
 
 ENV_HOSTS = [host for host in env.str("ALLOWED_HOSTS", "").split(",") if host]
-ALLOWED_HOSTS = ENV_HOSTS + ["localhost", ".localhost", "127.0.0.1", "0.0.0.0"]
+ALLOWED_HOSTS = [*ENV_HOSTS, "localhost", ".localhost", "127.0.0.1", "0.0.0.0"]
 
 TRANSFERTO_LOGIN = ("fake_transferto_login",)
 TRANSFERTO_TOKEN = ("fake_transferto_token",)

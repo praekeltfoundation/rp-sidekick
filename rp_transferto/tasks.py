@@ -1,6 +1,6 @@
+import importlib.metadata
 import json
 
-import pkg_resources
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -27,7 +27,8 @@ def take_action(
 
     :parma obj org: Organization object
     :param str user_uuid: contact UUID in RapidPro
-    :param dict values_to_update: key-value mapping which represents variable_on_rapidpro_to_update:variable_from_response
+    :param dict values_to_update: key-value mapping which represents
+    variable_on_rapidpro_to_update:variable_from_response
     :param dict call_result: response from transferto call
     :param str flow_start: flow UUID in RapidPro
     """
@@ -52,7 +53,8 @@ def update_values(org, user_uuid, values_to_update, transferto_response):
 
     :parma obj org: Organization object
     :param str user_uuid: contact UUID in RapidPro
-    :param dict values_to_update: key-value mapping which represents variable_on_rapidpro_to_update:variable_from_response
+    :param dict values_to_update: key-value mapping which represents
+    variable_on_rapidpro_to_update:variable_from_response
     :param dict transferto_response: response from transferto call
     """
     rapidpro_client = org.get_rapidpro_client()
@@ -97,8 +99,8 @@ def topup_data(org_id, msisdn, user_uuid, recharge_value, *args, **kwargs):
             product_description = product["product_short_desc"]
             break
 
-    log.info("product_id: {}".format(product_id))
-    log.info("product_description: {}".format(product_description))
+    log.info(f"product_id: {product_id}")
+    log.info(f"product_description: {product_description}")
 
     topup_result = transferto_client.topup_data(msisdn, product_id, simulate=False)
 
@@ -122,24 +124,27 @@ def topup_data(org_id, msisdn, user_uuid, recharge_value, *args, **kwargs):
 
 @app.task()
 def buy_product_take_action(
-    org_id, msisdn, product_id, user_uuid=None, values_to_update={}, flow_start=None
+    org_id, msisdn, product_id, user_uuid=None, values_to_update=None, flow_start=None
 ):
     """
-    Note: operates under the assumption that org_id is valid and has transferto account
+    Note: operates under the assumption that org_id is valid and has
+    transferto account
     """
+    if values_to_update is None:
+        values_to_update = {}
     name = "rp_transferto.tasks.buy_product_take_action"
     log.info(
         json.dumps(
-            dict(
-                sidekick_version=pkg_resources.get_distribution("rp-sidekick").version,
-                name=name,
-                org_id=org_id,
-                msisdn=msisdn,
-                product_id=product_id,
-                user_uuid=user_uuid,
-                values_to_update=values_to_update,
-                flow_start=flow_start,
-            ),
+            {
+                "sidekick_version": importlib.metadata.version("rp-sidekick"),
+                "name": name,
+                "org_id": org_id,
+                "msisdn": msisdn,
+                "product_id": product_id,
+                "user_uuid": user_uuid,
+                "values_to_update": values_to_update,
+                "flow_start": flow_start,
+            },
             indent=2,
         )
     )
@@ -153,21 +158,21 @@ def buy_product_take_action(
     if purchase_result["status"] != "0":
         # HANDLE USE CASE FOR 100MB in ZAR
         if purchase_result["status"] == "1000204" and product_id in [1194, 1601, 1630]:
-            log.info("{} failed, attempting fallback".format(product_id))
+            log.info(f"{product_id} failed, attempting fallback")
             remaining_options = [1194, 1601, 1630]
             remaining_options.remove(product_id)
 
             for option in remaining_options:
                 log.info(
                     json.dumps(
-                        dict(
-                            name=name,
-                            msisdn=msisdn,
-                            product_id=option,
-                            user_uuid=user_uuid,
-                            values_to_update=values_to_update,
-                            flow_start=flow_start,
-                        ),
+                        {
+                            "name": name,
+                            "msisdn": msisdn,
+                            "product_id": option,
+                            "user_uuid": user_uuid,
+                            "values_to_update": values_to_update,
+                            "flow_start": flow_start,
+                        },
                         indent=2,
                     )
                 )
@@ -185,38 +190,27 @@ def buy_product_take_action(
                             flow_start=flow_start,
                         )
                     return None
-            subject = "FAILURE WITH RETRIES: {} {}".format(name, timezone.now())
+            subject = f"FAILURE WITH RETRIES: {name} {timezone.now()}"
             message = (
-                "{}\n"
+                f"{json.dumps(purchase_result, indent=2)}\n"
                 "-------\n"
-                "user_uuid: {}\n"
-                "values_to_update:{}\n"
-                "flow_start: {}\n"
-                "also tried: {}"
-            ).format(
-                json.dumps(purchase_result, indent=2),
-                user_uuid,
-                json.dumps(values_to_update, indent=2),
-                flow_start,
-                remaining_options,
+                f"user_uuid: {user_uuid}\n"
+                f"values_to_update:{json.dumps(values_to_update, indent=2)}\n"
+                f"flow_start: {flow_start}\n"
+                f"also tried: {remaining_options}"
             )
             from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
             email = EmailMessage(subject, message, from_string, [org.point_of_contact])
             email.send()
             return None
 
-        subject = "FAILURE: {}".format(name)
+        subject = f"FAILURE: {name}"
         message = (
-            "{}\n"
+            f"{json.dumps(purchase_result, indent=2)}\n"
             "-------\n"
-            "user_uuid: {}\n"
-            "values_to_update:{}\n"
-            "flow_start: {}"
-        ).format(
-            json.dumps(purchase_result, indent=2),
-            user_uuid,
-            json.dumps(values_to_update, indent=2),
-            flow_start,
+            f"user_uuid: {user_uuid}\n"
+            f"values_to_update:{json.dumps(values_to_update, indent=2)}\n"
+            f"flow_start: {flow_start}"
         )
         from_string = "celery@rp-sidekick.prd.mhealthengagementlab.org"
         email = EmailMessage(subject, message, from_string, [org.point_of_contact])
@@ -235,12 +229,14 @@ def buy_product_take_action(
 
 @app.task()
 def buy_airtime_take_action(
-    topup_attempt_id, values_to_update={}, flow_start=None, fail_flow_start=None
+    topup_attempt_id, values_to_update=None, flow_start=None, fail_flow_start=None
 ):
     """
     Note: operates under the assumption that TopupAttempt has been created
     but make_request has not been called
     """
+    if values_to_update is None:
+        values_to_update = {}
     name = "rp_transferto.tasks.buy_airtime_take_action"
     topup_attempt = TopupAttempt.objects.get(id=topup_attempt_id)
     # log.info("{}\n{}".format(self.name, topup_attempt.__str__()))
@@ -252,26 +248,16 @@ def buy_airtime_take_action(
 
     # take action
     topup_attempt_failed = topup_attempt.status == TopupAttempt.FAILED
-    should_update_fields = (
-        True if (values_to_update and topup_attempt.rapidpro_user_uuid) else False
+    should_update_fields = bool(values_to_update and topup_attempt.rapidpro_user_uuid)
+    should_start_success_flow = bool(
+        topup_attempt.status == TopupAttempt.SUCEEDED
+        and flow_start
+        and topup_attempt.rapidpro_user_uuid
     )
-    should_start_success_flow = (
-        True
-        if (
-            topup_attempt.status == TopupAttempt.SUCEEDED
-            and flow_start
-            and topup_attempt.rapidpro_user_uuid
-        )
-        else False
-    )
-    should_start_fail_flow = (
-        True
-        if (
-            topup_attempt.status == TopupAttempt.FAILED
-            and fail_flow_start
-            and topup_attempt.rapidpro_user_uuid
-        )
-        else False
+    should_start_fail_flow = bool(
+        topup_attempt.status == TopupAttempt.FAILED
+        and fail_flow_start
+        and topup_attempt.rapidpro_user_uuid
     )
 
     if should_update_fields:
@@ -374,7 +360,7 @@ def buy_airtime_take_action(
                 "rp_transferto/topup_airtime_take_action_email.html", context
             )
             send_mail(
-                subject="FAILURE: {}".format(name),
+                subject=f"FAILURE: {name}",
                 message=strip_tags(html_message),
                 from_email="celery@rp-sidekick.prd.mhealthengagementlab.org",
                 recipient_list=[topup_attempt.org.point_of_contact],

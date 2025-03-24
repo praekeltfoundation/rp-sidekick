@@ -9,11 +9,10 @@ from turn_alerts.tasks import start_turn_journey
 class TestStartTurnJourney(TestCase):
     @patch("requests.post")
     def test_start_turn_journey_calls_requests_post(self, mock_requests_post):
-
         wa_id = "TEST_WA_ID"
         journey_id = "0000077-cb41-4e98-ac3f-de56635a99f6"
         engage_url = "https://whatsapp.praekelt.org"
-        engage_token = "ENGAGE_TOKEN"
+        engage_token = "ENGAGE_TOKEN"  # noqa: S105 - Fake password/token for test purposes
 
         expected_url = urljoin(engage_url, f"/v1/stacks/{journey_id}/start")
         expected_headers = {

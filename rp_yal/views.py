@@ -8,8 +8,11 @@ from .serializers import GetOrderedContentSetSerializer
 from .utils import get_contentset, get_ordered_content_set
 
 
-class GetOrderedContentSet(APIView):
+def json_error(err_msg, status=status.HTTP_400_BAD_REQUEST):
+    return JsonResponse({"error": err_msg}, status=status)
 
+
+class GetOrderedContentSet(APIView):
     def post(self, request, org_id):
         serializer = GetOrderedContentSetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -22,10 +25,8 @@ class GetOrderedContentSet(APIView):
             )
 
         if not org.users.filter(id=request.user.id).exists():
-            return JsonResponse(
-                data={
-                    "error": "Authenticated user does not belong to specified Organization"
-                },
+            return json_error(
+                "Authenticated user does not belong to specified Organization",
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -39,7 +40,6 @@ class GetOrderedContentSet(APIView):
 
 
 class GetContentSet(APIView):
-
     def get(self, request, org_id, contentset_id, msisdn):
         try:
             org = Organization.objects.get(id=org_id)
@@ -49,10 +49,8 @@ class GetContentSet(APIView):
             )
 
         if not org.users.filter(id=request.user.id).exists():
-            return JsonResponse(
-                data={
-                    "error": "Authenticated user does not belong to specified Organization"
-                },
+            return json_error(
+                "Authenticated user does not belong to specified Organization",
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
