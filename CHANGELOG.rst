@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+1.13.3
+------------
+Sidekick: Merge pull request #196: Repo consistency
 1.13.2
 ------------
 Sidekick: Merge pull request #208: Remove TurnAlert Auth
