@@ -34,6 +34,9 @@ FROM ghcr.io/praekeltfoundation/docker-django-bootstrap-nw:py3.10-bullseye
 # Copy the application from the builder
 COPY --from=builder --chown=app:app /app /app
 
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN RUN uv venv
+
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
