@@ -1,6 +1,7 @@
 # MomConnect App
 
-The `momconnect` app is responsible for managing clinic-related operations and integrations within the project. It provides APIs and utilities to validate clinic codes and retrieve clinic details.
+The `momconnect` app is responsible for all momconnect specific functionality, including:
+- **Clinic-related operations and integrations within the project**: It provides APIs and utilities to validate clinic codes and retrieve clinic details.
 
 ## Key Features
 
@@ -22,7 +23,7 @@ The `momconnect` app is responsible for managing clinic-related operations and i
 ## API Endpoints
 
 ### Clinic Details
-- **Endpoint**: `/api/clinic-details/`
+- **Endpoint**: `/momconnect/clinic-check/`
 - **Method**: `GET`
 - **Parameters**:
   - `clinic_code` (required): The code of the clinic to retrieve.
@@ -34,9 +35,3 @@ The `momconnect` app is responsible for managing clinic-related operations and i
 ## Testing
 
 The `momconnect` app includes comprehensive test coverage for its views and utilities. Tests are located in `momconnect/tests/`.
-
-## Usage
-
-1. Ensure the `momconnect` app is included in the `INSTALLED_APPS` setting of your Django project.
-2. Use the provided API endpoints to interact with clinic data.
-3. Refer to the test cases for examples of how to use the app's features programmatically.
