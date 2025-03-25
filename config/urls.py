@@ -11,4 +11,5 @@ urlpatterns = [
     path("yal/", include("rp_yal.urls"), name="rp_yal"),
     path("msisdn_utils/", include("msisdn_utils.urls")),
     path("turnalerts/", include("turn_alerts.urls"), name="turn_alerts"),
+    path("momconnect/", include("momconnect.urls"), name="momconnect"),
 ]

@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "randomisation",
     "msisdn_utils",
     "turn_alerts",
+    "momconnect",
 ]
 
 MIDDLEWARE = [
