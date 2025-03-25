@@ -1,0 +1,3 @@
+uid,value,code,name,province,location,area_type,unit_type,district,municipality
+123,123456,123456,Clinic One,GP,Location One,Urban,Type A,District A,Municipality A
+456,123457,123457,Clinic Two,WC,Location Two,Rural,Type B,District B,Municipality B
