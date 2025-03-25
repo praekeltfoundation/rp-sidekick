@@ -1,6 +1,6 @@
 [project]
 name = "rp-sidekick"
-version = "1.13.3"
+version = "1.14.0"
 description = ""
 authors = [
     {name = "Praekelt Foundation", email = "dev@praekeltfoundation.org"},

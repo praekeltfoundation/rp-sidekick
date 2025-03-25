@@ -3,6 +3,9 @@ VERSIONS
 
 Next Release
 ------------
+1.14.0
+------------
+Momconnect: Add new app to handle momconnect specific functionality like clinic lookup.
 1.13.3
 ------------
 Sidekick: Merge pull request #196: Repo consistency
