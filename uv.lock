@@ -1058,7 +1058,7 @@ wheels = [
 
 [[package]]
 name = "rp-sidekick"
-version = "1.13.3"
+version = "1.14.0"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
