@@ -22,8 +22,8 @@ class ClinicDetailsViewTests(APITestCase):
 
     def test_unauthenticated_client(self):
         """
-        Test that an unauthenticated client receives a 401 Unauthorized response
-        when attempting to access the clinic details endpoint.
+        Test that an unauthenticated client receives a 401 Unauthorized
+         response when attempting to access the clinic details endpoint.
         """
         response = self.client.get(self.url, {"clinic_code": self.clinic.value})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -61,6 +61,36 @@ class ClinicDetailsViewTests(APITestCase):
         when a valid clinic_code is provided.
         """
         response = self.api_client.get(self.url, {"clinic_code": self.clinic.value})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["code"], self.clinic.value)
+        self.assertEqual(response.data["name"], self.clinic.name)
+
+    def test_clinic_code_with_space(self):
+        """
+        Test that the endpoint returns a 200 successfully retrieves clinic
+         details when a valid clinic_code is contains a space.
+        """
+        response = self.api_client.get(self.url, {"clinic_code": "123 456"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["code"], self.clinic.value)
+        self.assertEqual(response.data["name"], self.clinic.name)
+
+    def test_clinic_code_with_clinic_name(self):
+        """
+        Test that the endpoint returns a 200 successfully retrieves clinic
+         details when a valid clinic_code is contains a clinic name.
+        """
+        response = self.api_client.get(self.url, {"clinic_code": "123456 Test Clinic"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["code"], self.clinic.value)
+        self.assertEqual(response.data["name"], self.clinic.name)
+
+    def test_clinic_code_with_a_dash(self):
+        """
+        Test that the endpoint returns a 200 successfully retrieves clinic
+         details when a valid clinic_code is contains a dash.
+        """
+        response = self.api_client.get(self.url, {"clinic_code": "123-456"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["code"], self.clinic.value)
         self.assertEqual(response.data["name"], self.clinic.name)

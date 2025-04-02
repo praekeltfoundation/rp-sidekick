@@ -36,7 +36,7 @@ To set up and run ``rp-sidekick`` locally, do the following::
     $ virtualenv ve
     $ source ve/bin/activate
     $ pip install -e .
-    $ pip install -r requirements-dev.txt
+    $ uv sync
     $ pre-commit install
 
 RP-Sidekick does not work with SQLite because it uses `JSONFields`_.
@@ -44,6 +44,11 @@ This means that you will need to set up PostgreSQL locally. You can spin up a
 local db with docker, using the following command::
 
     $ docker run -d -p 5432:5432 --name=sidekick_db -e POSTGRES_DB=rp_sidekick postgres:9.6
+
+-----
+To run tests
+-----
+    $ uv run pytest
 
 -----
 Tools

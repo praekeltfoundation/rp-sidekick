@@ -2,7 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from .models import Clinic
-from .utils import validate_clinic_code
+from .utils import clean_clinic_code, validate_clinic_code
 
 
 class ClinicDetailsView(generics.RetrieveAPIView):
@@ -13,6 +13,8 @@ class ClinicDetailsView(generics.RetrieveAPIView):
             return Response(
                 {"error": "missing clinic code"}, status.HTTP_400_BAD_REQUEST
             )
+
+        clinic_code = clean_clinic_code(clinic_code)
 
         if not validate_clinic_code(clinic_code):
             return Response({"error": "invalid"}, status.HTTP_400_BAD_REQUEST)
