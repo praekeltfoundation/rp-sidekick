@@ -33,11 +33,7 @@ To set up and run ``rp-sidekick`` locally, do the following::
 
     $ git clone git@github.com:praekeltfoundation/rp-sidekick.git
     $ cd rp-sidekick
-    $ virtualenv ve
-    $ source ve/bin/activate
-    $ pip install -e .
     $ uv sync
-    $ pre-commit install
 
 RP-Sidekick does not work with SQLite because it uses `JSONFields`_.
 This means that you will need to set up PostgreSQL locally. You can spin up a
