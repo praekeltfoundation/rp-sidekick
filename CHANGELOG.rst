@@ -5,6 +5,11 @@ Next Release
 ------------
 1.14.0
 ------------
+Momconnect: Add more validation for the clinic code to allow more options.
+
+------------
+1.14.0
+------------
 Momconnect: Add new app to handle momconnect specific functionality like clinic lookup.
 1.13.3
 ------------
