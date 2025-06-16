@@ -61,4 +61,9 @@ urlpatterns = [
         views.RapidproContactView.as_view(),
         name="rapidpro-contact",
     ),
+    path(
+        "api/v2/turn-context-contact-fields",
+        views.TurnContextContactFieldsView.as_view(),
+        name="turn-context-contact-fields",
+    ),
 ]

@@ -417,3 +417,60 @@ class RapidproContactView(GenericAPIView):
                 contact["fields"] = new_fields
 
         return JsonResponse(contact_data, status=response.status_code)
+
+
+class TurnContextContactFieldsView(GenericAPIView):
+    """
+    Returns the contact fields that are available in the Turn API for the given
+    organization.
+    """
+
+    def post(self, request):
+        # TODO: Add signature validation PER ORG, include org in url
+        # self.validate_signature(request)
+        org = Organization.objects.get(id=1)
+
+        if "handshake" in request.data:
+            response = {
+                "version": "1.0.0-alpha",
+                "capabilities": {
+                    "actions": False,
+                    "suggested_responses": False,
+                    "context_objects": [
+                        {
+                            "title": "RP Contact Details",
+                            "code": "contact_details",
+                            "type": "table",
+                        }
+                    ],
+                },
+            }
+            return Response(response, status=status.HTTP_200_OK)
+
+        # TODO: add serializer for request data validation
+
+        client = org.get_rapidpro_client()
+        urn = request.data["chat"]["owner"].replace("+", "whatsapp:")
+        contact = client.get_contacts(urn=urn).first()
+
+        # TODO: Filter fields to only show those relevant to helpdesk staff
+        # This could be done by checking the org's filter_rapidpro_fields setting
+        # TODO: Format dates properly
+
+        context = {
+            "contact_details": {
+                "EDD": contact.fields.get("edd", "edd missing"),
+                "Facility code": contact.fields.get(
+                    "facility_code", "facility_code missing"
+                ),
+                "Groups": ", ".join([g.name for g in contact.groups]),
+            }
+        }
+
+        return Response(
+            {
+                "version": "1.0.0-alpha",
+                "context_objects": context,
+                "actions": {},
+            }
+        )
