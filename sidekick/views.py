@@ -23,6 +23,7 @@ from .serializers import (
     ArchiveTurnConversationSerializer,
     LabelTurnConversationSerializer,
     RapidProFlowWebhookSerializer,
+    TurnContextContactFieldsSerializer,
 )
 from .tasks import (
     add_label_to_turn_conversation,
@@ -425,12 +426,16 @@ class TurnContextContactFieldsView(GenericAPIView):
     organization.
     """
 
-    def post(self, request):
+    def post(self, request, org_id):
         # TODO: Add signature validation PER ORG, include org in url
-        # self.validate_signature(request)
-        org = Organization.objects.get(id=1)
+        # self.validate_signature(request, org_id) turn_secret_id ?
 
-        if "handshake" in request.data:
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return Response(status.HTTP_400_BAD_REQUEST)
+
+        if "handshake" in request.data: # ?
             response = {
                 "version": "1.0.0-alpha",
                 "capabilities": {
@@ -448,14 +453,25 @@ class TurnContextContactFieldsView(GenericAPIView):
             return Response(response, status=status.HTTP_200_OK)
 
         # TODO: add serializer for request data validation
+        TurnContextContactFieldsSerializer(data=request.data).is_valid(raise_exception=True)
 
         client = org.get_rapidpro_client()
+        print("RP: ", client)
         urn = request.data["chat"]["owner"].replace("+", "whatsapp:")
         contact = client.get_contacts(urn=urn).first()
 
-        # TODO: Filter fields to only show those relevant to helpdesk staff
+        print("RP contact: ", contact)
+
+        # TODO: Filter fields to only show those relevant to helpdesk staff ?
+
         # This could be done by checking the org's filter_rapidpro_fields setting
-        # TODO: Format dates properly
+        if org.filter_rapidpro_fields:
+            # Iterate through given field to get them from RP contact fields
+            pass
+        else:
+            pass
+
+        # TODO: Format dates properly ? What date are we formating here ?
 
         context = {
             "contact_details": {
