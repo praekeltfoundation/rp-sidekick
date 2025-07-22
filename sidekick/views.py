@@ -427,7 +427,6 @@ class TurnContextContactFieldsView(GenericAPIView):
     """
 
     def post(self, request, org_id):
-
         try:
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
@@ -451,7 +450,9 @@ class TurnContextContactFieldsView(GenericAPIView):
             return Response(response, status=status.HTTP_200_OK)
 
         # Serializer for request data validation
-        TurnContextContactFieldsSerializer(data=request.data).is_valid(raise_exception=True)
+        TurnContextContactFieldsSerializer(data=request.data).is_valid(
+            raise_exception=True
+        )
 
         client = org.get_rapidpro_client()
         urn = request.data["chat"]["owner"].replace("+", "whatsapp:")
@@ -473,14 +474,18 @@ class TurnContextContactFieldsView(GenericAPIView):
                         new_fields[field] = value
 
                 context["contact_details"] = new_fields
-                context["contact_details"]["groups"] = ", ".join([g.name for g in contact.groups])
+                context["contact_details"]["groups"] = ", ".join(
+                    [g.name for g in contact.groups]
+                )
             else:
                 new_fields = {}
                 for field, value in contact.fields.items():
                     new_fields[field] = value
 
                 context["contact_details"] = new_fields
-                context["contact_details"]["groups"] = ", ".join([g.name for g in contact.groups])
+                context["contact_details"]["groups"] = ", ".join(
+                    [g.name for g in contact.groups]
+                )
 
         return Response(
             {

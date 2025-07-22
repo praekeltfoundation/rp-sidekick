@@ -32,10 +32,8 @@ class ArchiveTurnConversationSerializer(serializers.Serializer):
 
     reason = serializers.CharField()
 
+
 class TurnContextContactFieldsSerializer(serializers.Serializer):
     id = serializers.CharField(required=True)
-    chat = serializers.DictField(
-        child=serializers.CharField(), required=True
-    )
+    chat = serializers.DictField(child=serializers.CharField(), required=True)
     handshake = serializers.BooleanField(required=False)
-    
