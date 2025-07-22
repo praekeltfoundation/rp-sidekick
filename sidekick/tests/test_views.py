@@ -1081,61 +1081,105 @@ class RapidproContactViewTests(SidekickAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json(), {"error": "Organization not found"})
 
-# # class TurnContextContactFieldsViewTests(APITestCase):
+class TurnContextContactFieldsViewTests(APITestCase):
+    def setUp(self):
+        self.api_client = APIClient()
+        self.user = User.objects.create_user(
+            "testuser", "testuser@example.com", "password"
+        )
+        token = Token.objects.get(user=self.user)
+        self.api_client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.org = Organization.objects.create(id=1, name="Test Org")
+        self.url = reverse("turn-context-contact-fields", args=[self.org.id])
 
-#     def setUp(self):
-#         self.api_client = APIClient()
-#         self.user = User.objects.create_user(
-#             "testuser", "testuser@example.com", "password"
-#         )
-#         token = Token.objects.get(user=self.user)
-#         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
-#         self.org = Organization.objects.create(id=1, name="Test Org")
-#         self.url = reverse("turn-context-contact-fields", args=[self.org.id])
+    def test_handshake_response(self):
+        response = self.api_client.post(self.url, {"handshake": True}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("version", response.data)
+        self.assertIn("capabilities", response.data)
+        self.assertIn("context_objects", response.data["capabilities"])
 
-#     def test_handshake_response(self):
-#         response = self.api_client.post(self.url, {"handshake": True}, format="json")
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         self.assertIn("version", response.data)
-#         self.assertIn("capabilities", response.data)
-#         self.assertIn("context_objects", response.data["capabilities"])
+    def test_organization_does_not_exist(self):
+        url = reverse("turn-context-contact-fields", args=[999])
+        with patch("sidekick.views.Organization.objects.get") as mock_get:
+            mock_get.side_effect = Organization.DoesNotExist
+            response = self.api_client.post(url, {"handshake": True}, format="json")
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-#     def test_organization_does_not_exist(self):
-#         url = reverse("turn-context-contact-fields", args=[999])
-#         with patch("sidekick.views.Organization.objects.get") as mock_get:
-#             mock_get.side_effect = Organization.DoesNotExist
-#             response = self.api_client.post(url, {"handshake": True}, format="json")
-#             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    @patch("sidekick.views.Organization.objects.get")
+    @patch("sidekick.views.TurnContextContactFieldsSerializer")
+    def test_valid_contact_fields_response(self, mock_serializer, mock_org_get):
+        mock_org_get.return_value = self.org
+        mock_serializer.return_value.is_valid.return_value = True
 
-#     @patch("sidekick.views.Organization.objects.get")
-#     @patch("sidekick.views.TurnContextContactFieldsSerializer")
-#     def test_valid_contact_fields_response(self, mock_serializer, mock_org_get):
-#         mock_org_get.return_value = self.org
-#         mock_serializer.return_value.is_valid.return_value = True
+        # Mock RapidPro client and contact
+        mock_client = MagicMock()
+        mock_contact = MagicMock()
+        mock_contact.fields = {
+            "edd": "2024-12-01",
+            "facility_code": "FAC123",
+        }
+        mock_group = MagicMock()
+        mock_group.name = "GroupA"
+        mock_contact.groups = [mock_group]
+        mock_client.get_contacts.return_value.first.return_value = mock_contact
 
-#         # Mock RapidPro client and contact
-#         mock_client = MagicMock()
-#         mock_contact = MagicMock()
-#         mock_contact.fields = {
-#             "edd": "2024-12-01",
-#             "facility_code": "FAC123",
-#         }
-#         mock_group = MagicMock()
-#         mock_group.name = "GroupA"
-#         mock_contact.groups = [mock_group]
-#         mock_client.get_contacts.return_value.first.return_value = mock_contact
+        with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
+            data = {
+                "chat": {"owner": "+1234567890"},
+            }
+            response = self.api_client.post(self.url, data, format="json")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn("version", response.data)
+            self.assertIn("context_objects", response.data)
+            self.assertIn("contact_details", response.data["context_objects"])
+            contact_details = response.data["context_objects"]["contact_details"]
+            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["facility_code"], "FAC123")
+            self.assertEqual(contact_details["groups"], "GroupA")
 
-#         with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
-#             data = {
-#                 "chat": {"owner": "+1234567890"},
-#             }
-#             response = self.api_client.post(self.url, data, format="json")
-#             self.assertEqual(response.status_code, status.HTTP_200_OK)
-#             self.assertIn("version", response.data)
-#             self.assertIn("context_objects", response.data)
-#             self.assertIn("contact_details", response.data["context_objects"])
-#             contact_details = response.data["context_objects"]["contact_details"]
-#             self.assertEqual(contact_details["EDD"], "2024-12-01")
-#             self.assertEqual(contact_details["Facility code"], "FAC123")
-#             self.assertEqual(contact_details["Groups"], "GroupA")
+    @patch("sidekick.views.Organization.objects.get")
+    @patch("sidekick.views.TurnContextContactFieldsSerializer")
+    def test_serializer_validation_error(self, mock_serializer, mock_org_get):
+        mock_org_get.return_value = self.org
+        mock_serializer.return_value.is_valid.side_effect = Exception("Invalid data")
+        data = {"chat": {"owner": "+1234567890"}}
+        with self.assertRaises(Exception):
+            self.api_client.post(self.url, data, format="json")
 
+    @patch("sidekick.views.Organization.objects.get")
+    @patch("sidekick.views.TurnContextContactFieldsSerializer")
+    def test_contact_fields_with_filter_rapidpro_fields(self, mock_serializer, mock_org_get):
+        """
+        Should only return fields specified in filter_rapidpro_fields
+        """
+        mock_org_get.return_value = self.org
+        self.org.filter_rapidpro_fields = "edd,facility_code"
+        self.org.save()
+        mock_serializer.return_value.is_valid.return_value = True
+
+        # Mock RapidPro client and contact
+        mock_client = MagicMock()
+        mock_contact = MagicMock()
+        mock_contact.fields = {
+            "edd": "2024-12-01",
+            "facility_code": "FAC123",
+            "extra_field": "should_not_appear",
+        }
+        mock_group = MagicMock()
+        mock_group.name = "GroupA"
+        mock_contact.groups = [mock_group]
+        mock_client.get_contacts.return_value.first.return_value = mock_contact
+
+        with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
+            data = {
+                "chat": {"owner": "+1234567890"},
+            }
+            response = self.api_client.post(self.url, data, format="json")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn("context_objects", response.data)
+            contact_details = response.data["context_objects"]["contact_details"]
+            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["facility_code"], "FAC123")
+            self.assertNotIn("extra_field", contact_details)
+            self.assertEqual(contact_details["groups"], "GroupA")
