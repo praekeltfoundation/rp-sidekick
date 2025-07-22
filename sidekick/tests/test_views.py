@@ -1,4 +1,7 @@
 import json
+import base64
+import hmac
+from hashlib import sha256
 from os import environ
 from unittest.mock import MagicMock, Mock, patch
 from urllib.parse import urlencode
@@ -18,6 +21,8 @@ from rest_framework.test import APIClient, APITestCase
 from temba_client.exceptions import TembaConnectionError
 
 from sidekick.models import Consent, Organization
+from turn_alerts.models import TurnSecret
+from rest_framework.renderers import JSONRenderer
 
 from .utils import create_org
 
@@ -1090,8 +1095,14 @@ class TurnContextContactFieldsViewTests(APITestCase):
         token = Token.objects.get(user=self.user)
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
         self.org = Organization.objects.create(id=1, name="Test Org")
-        self.url = reverse("turn-context-contact-fields", args=[self.org.id])
+        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")
+        self.url = reverse("turn-context-contact-fields", args=[self.org.id, self.turn_secret.id])
 
+    def generate_hmac_signature(self, data, key):
+        data = JSONRenderer().render(data)
+        h = hmac.new(key.encode(), data, sha256)
+        return base64.b64encode(h.digest()).decode()
+    
     def test_handshake_response(self):
         response = self.api_client.post(self.url, {"handshake": True}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1113,7 +1124,10 @@ class TurnContextContactFieldsViewTests(APITestCase):
             data = {
                 "chat": {"owner": "+1234567890"},
             }
-            response = self.api_client.post(self.url, data, format="json")
+            response = self.api_client.post(self.url, data, format="json",HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                data, self.turn_secret.secret
+            ),
+            HTTP_X_TURN_HOOK_SUBSCRIPTION="whatsapp")
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("version", response.data)
             self.assertIn("context_objects", response.data)
@@ -1122,10 +1136,8 @@ class TurnContextContactFieldsViewTests(APITestCase):
             self.assertEqual(contact_details["edd"], "2024-12-01")
             self.assertEqual(contact_details["facility_code"], "FAC123")
             self.assertEqual(contact_details["groups"], "GroupA")
-
-    def test_contact_fields_with_filter_rapidpro_fields(
-        self
-    ):
+    
+    def test_contact_fields_with_filter_rapidpro_fields(self):
         """
         Should only return fields specified in filter_rapidpro_fields
         """
