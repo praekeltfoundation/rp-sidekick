@@ -62,7 +62,7 @@ urlpatterns = [
         name="rapidpro-contact",
     ),
     path(
-        "api/v2/turn-context-contact-fields/<int:org_id>/",
+        "api/v2/turn-context-contact-fields/<int:org_id>/<int:turn_secret_id>/",
         views.TurnContextContactFieldsView.as_view(),
         name="turn-context-contact-fields",
     ),

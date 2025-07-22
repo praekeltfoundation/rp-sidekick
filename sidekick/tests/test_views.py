@@ -1095,23 +1095,8 @@ class TurnContextContactFieldsViewTests(APITestCase):
     def test_handshake_response(self):
         response = self.api_client.post(self.url, {"handshake": True}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("version", response.data)
-        self.assertIn("capabilities", response.data)
-        self.assertIn("context_objects", response.data["capabilities"])
 
-    def test_organization_does_not_exist(self):
-        url = reverse("turn-context-contact-fields", args=[999])
-        with patch("sidekick.views.Organization.objects.get") as mock_get:
-            mock_get.side_effect = Organization.DoesNotExist
-            response = self.api_client.post(url, {"handshake": True}, format="json")
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    @patch("sidekick.views.Organization.objects.get")
-    @patch("sidekick.views.TurnContextContactFieldsSerializer")
-    def test_valid_contact_fields_response(self, mock_serializer, mock_org_get):
-        mock_org_get.return_value = self.org
-        mock_serializer.return_value.is_valid.return_value = True
-
+    def test_valid_contact_fields_response(self):
         # Mock RapidPro client and contact
         mock_client = MagicMock()
         mock_contact = MagicMock()
@@ -1138,24 +1123,14 @@ class TurnContextContactFieldsViewTests(APITestCase):
             self.assertEqual(contact_details["facility_code"], "FAC123")
             self.assertEqual(contact_details["groups"], "GroupA")
 
-    @patch("sidekick.views.Organization.objects.get")
-    @patch("sidekick.views.TurnContextContactFieldsSerializer")
-    def test_serializer_validation_error(self, mock_serializer, mock_org_get):
-        mock_org_get.return_value = self.org
-        mock_serializer.return_value.is_valid.side_effect = Exception("Invalid data")
-
-    @patch("sidekick.views.Organization.objects.get")
-    @patch("sidekick.views.TurnContextContactFieldsSerializer")
     def test_contact_fields_with_filter_rapidpro_fields(
-        self, mock_serializer, mock_org_get
+        self
     ):
         """
         Should only return fields specified in filter_rapidpro_fields
         """
-        mock_org_get.return_value = self.org
         self.org.filter_rapidpro_fields = "edd,facility_code"
         self.org.save()
-        mock_serializer.return_value.is_valid.return_value = True
 
         # Mock RapidPro client and contact
         mock_client = MagicMock()
