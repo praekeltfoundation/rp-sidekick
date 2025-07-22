@@ -20,6 +20,7 @@ from temba_client.exceptions import TembaConnectionError
 from sidekick.models import Consent, Organization
 
 from .utils import create_org
+from django.contrib.auth.models import User
 
 FAKE_ENGAGE_URL = "http://localhost:8005"
 
@@ -1079,3 +1080,62 @@ class RapidproContactViewTests(SidekickAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json(), {"error": "Organization not found"})
+
+# # class TurnContextContactFieldsViewTests(APITestCase):
+
+#     def setUp(self):
+#         self.api_client = APIClient()
+#         self.user = User.objects.create_user(
+#             "testuser", "testuser@example.com", "password"
+#         )
+#         token = Token.objects.get(user=self.user)
+#         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+#         self.org = Organization.objects.create(id=1, name="Test Org")
+#         self.url = reverse("turn-context-contact-fields", args=[self.org.id])
+
+#     def test_handshake_response(self):
+#         response = self.api_client.post(self.url, {"handshake": True}, format="json")
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertIn("version", response.data)
+#         self.assertIn("capabilities", response.data)
+#         self.assertIn("context_objects", response.data["capabilities"])
+
+#     def test_organization_does_not_exist(self):
+#         url = reverse("turn-context-contact-fields", args=[999])
+#         with patch("sidekick.views.Organization.objects.get") as mock_get:
+#             mock_get.side_effect = Organization.DoesNotExist
+#             response = self.api_client.post(url, {"handshake": True}, format="json")
+#             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+#     @patch("sidekick.views.Organization.objects.get")
+#     @patch("sidekick.views.TurnContextContactFieldsSerializer")
+#     def test_valid_contact_fields_response(self, mock_serializer, mock_org_get):
+#         mock_org_get.return_value = self.org
+#         mock_serializer.return_value.is_valid.return_value = True
+
+#         # Mock RapidPro client and contact
+#         mock_client = MagicMock()
+#         mock_contact = MagicMock()
+#         mock_contact.fields = {
+#             "edd": "2024-12-01",
+#             "facility_code": "FAC123",
+#         }
+#         mock_group = MagicMock()
+#         mock_group.name = "GroupA"
+#         mock_contact.groups = [mock_group]
+#         mock_client.get_contacts.return_value.first.return_value = mock_contact
+
+#         with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
+#             data = {
+#                 "chat": {"owner": "+1234567890"},
+#             }
+#             response = self.api_client.post(self.url, data, format="json")
+#             self.assertEqual(response.status_code, status.HTTP_200_OK)
+#             self.assertIn("version", response.data)
+#             self.assertIn("context_objects", response.data)
+#             self.assertIn("contact_details", response.data["context_objects"])
+#             contact_details = response.data["context_objects"]["contact_details"]
+#             self.assertEqual(contact_details["EDD"], "2024-12-01")
+#             self.assertEqual(contact_details["Facility code"], "FAC123")
+#             self.assertEqual(contact_details["Groups"], "GroupA")
+

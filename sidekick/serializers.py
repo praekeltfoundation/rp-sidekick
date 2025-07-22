@@ -34,13 +34,8 @@ class ArchiveTurnConversationSerializer(serializers.Serializer):
 
 class TurnContextContactFieldsSerializer(serializers.Serializer):
     id = serializers.CharField(required=True)
-    name = serializers.CharField()
-    url = serializers.CharField()
-    token = serializers.CharField()
-    engage_url = serializers.URLField()
-    engage_token = serializers.CharField()
-    point_of_contact = serializers.EmailField()
-    filter_rapidpro_fields = serializers.CharField()
-    contentrepo_url = serializers.URLField()
-    contentrepo_token = serializers.CharField()
+    chat = serializers.DictField(
+        child=serializers.CharField(), required=True
+    )
+    handshake = serializers.BooleanField(required=False)
     

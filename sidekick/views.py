@@ -429,13 +429,12 @@ class TurnContextContactFieldsView(GenericAPIView):
     def post(self, request, org_id):
         # TODO: Add signature validation PER ORG, include org in url
         # self.validate_signature(request, org_id) turn_secret_id ?
-
         try:
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
-            return Response(status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        if "handshake" in request.data: # ?
+        if "handshake" in request.data:
             response = {
                 "version": "1.0.0-alpha",
                 "capabilities": {
@@ -453,36 +452,47 @@ class TurnContextContactFieldsView(GenericAPIView):
             return Response(response, status=status.HTTP_200_OK)
 
         # TODO: add serializer for request data validation
-        TurnContextContactFieldsSerializer(data=request.data).is_valid(raise_exception=True)
+        # TurnContextContactFieldsSerializer(data=request.data).is_valid(raise_exception=True)
 
         client = org.get_rapidpro_client()
         print("RP: ", client)
         urn = request.data["chat"]["owner"].replace("+", "whatsapp:")
         contact = client.get_contacts(urn=urn).first()
 
-        print("RP contact: ", contact)
+        print("RP contact...: ", type(contact))
 
-        # TODO: Filter fields to only show those relevant to helpdesk staff ?
+        # TODO: Filter fields to only show those relevant to helpdesk staff 
 
         # This could be done by checking the org's filter_rapidpro_fields setting
-        if org.filter_rapidpro_fields:
-            # Iterate through given field to get them from RP contact fields
-            pass
-        else:
-            pass
+        context = {}
+        if contact:
+            if org.filter_rapidpro_fields:
+                # Iterate through given field to get them from RP contact fields
+                filter_fields = org.filter_rapidpro_fields.split(",")
+                new_fields = {}
+                for field, value in contact.fields.items():
+                    print("Field: ", field, "Value: ", value)
+                    # Only include fields that are in the filter_rapidpro_fields
+                    # setting of the organization
+                    if field in filter_fields:
+                        new_fields[field] = value
+                context["contact_details"] = new_fields
+                print("Contact details: ", context["contact_details"])
+                context["contact_details"]["groups"] = ", ".join([g.name for g in contact.groups])
+            else:
+                new_fields = {}
+                for field, value in contact.fields.items():
+                    new_fields[field] = value
+                context["contact_details"] = new_fields
+                print("Contact details 2: ", context["contact_details"])
+                context["contact_details"]["groups"] = ", ".join([g.name for g in contact.groups])
 
-        # TODO: Format dates properly ? What date are we formating here ?
+        print("Context>>>2>>1 : ", context)
 
-        context = {
-            "contact_details": {
-                "EDD": contact.fields.get("edd", "edd missing"),
-                "Facility code": contact.fields.get(
-                    "facility_code", "facility_code missing"
-                ),
-                "Groups": ", ".join([g.name for g in contact.groups]),
-            }
-        }
-
+        
+        
+        # TODO: Format dates properly ? we dont have to format dates here
+      
         return Response(
             {
                 "version": "1.0.0-alpha",
