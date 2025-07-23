@@ -18,13 +18,13 @@ from rest_framework.views import APIView
 from temba_client.exceptions import TembaConnectionError, TembaRateExceededError
 
 from turn_alerts.utils import validate_signature
+
 from .models import Consent, Organization
 from .serializers import (
     URN_REGEX,
     ArchiveTurnConversationSerializer,
     LabelTurnConversationSerializer,
     RapidProFlowWebhookSerializer,
-    TurnContextContactFieldsSerializer,
 )
 from .tasks import (
     add_label_to_turn_conversation,
@@ -429,20 +429,17 @@ class TurnContextContactFieldsView(GenericAPIView):
 
     def post(self, request, **kwargs):
         org_id = kwargs["org_id"]
-        turn_secret_id = kwargs["turn_secret_id"]        
+        turn_secret_id = kwargs["turn_secret_id"]
         print(f"org_id...: {org_id}, turn_secret_id...: {turn_secret_id}")
-        # Serializer for request data validation
-        TurnContextContactFieldsSerializer(data=request.data).is_valid(
-            raise_exception=True
-        )
-        print(f"Request data: {request.data}")
+
         validate_signature(request, org_id, turn_secret_id)
-        print(f"Signature validated for org_id: {org_id}, turn_secret_id: {turn_secret_id}")    
+
         try:
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         print(f"Organization found: {org.name}")
+
         if "handshake" in request.data:
             response = {
                 "version": "1.0.0-alpha",
@@ -459,7 +456,7 @@ class TurnContextContactFieldsView(GenericAPIView):
                 },
             }
             return Response(response, status=status.HTTP_200_OK)
-        print(f"Retrieving contact details")
+        print("Retrieving contact details")
         client = org.get_rapidpro_client()
         urn = request.data["chat"]["owner"].replace("+", "whatsapp:")
         contact = client.get_contacts(urn=urn).first()
