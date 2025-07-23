@@ -429,20 +429,20 @@ class TurnContextContactFieldsView(GenericAPIView):
 
     def post(self, request, **kwargs):
         org_id = kwargs["org_id"]
-        turn_secret_id = kwargs["turn_secret_id"]
-
-        validate_signature(request, org_id, turn_secret_id)
-
+        turn_secret_id = kwargs["turn_secret_id"]        
+        print(f"org_id...: {org_id}, turn_secret_id...: {turn_secret_id}")
         # Serializer for request data validation
         TurnContextContactFieldsSerializer(data=request.data).is_valid(
             raise_exception=True
         )
-
+        print(f"Request data: {request.data}")
+        validate_signature(request, org_id, turn_secret_id)
+        print(f"Signature validated for org_id: {org_id}, turn_secret_id: {turn_secret_id}")    
         try:
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-
+        print(f"Organization found: {org.name}")
         if "handshake" in request.data:
             response = {
                 "version": "1.0.0-alpha",
@@ -459,11 +459,11 @@ class TurnContextContactFieldsView(GenericAPIView):
                 },
             }
             return Response(response, status=status.HTTP_200_OK)
-
+        print(f"Retrieving contact details")
         client = org.get_rapidpro_client()
         urn = request.data["chat"]["owner"].replace("+", "whatsapp:")
         contact = client.get_contacts(urn=urn).first()
-
+        print(f"Contact found: {contact.uuid if contact else 'None'}")
         # Filter fields to only show those relevant to helpdesk staff
 
         # Get org's filter_rapidpro_fields setting
@@ -487,7 +487,7 @@ class TurnContextContactFieldsView(GenericAPIView):
             context["contact_details"]["groups"] = ", ".join(
                 [g.name for g in contact.groups]
             )
-
+        print(f"Context >>>>: {context}")
         return Response(
             {
                 "version": "1.0.0-alpha",
