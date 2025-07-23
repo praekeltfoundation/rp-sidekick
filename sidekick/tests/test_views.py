@@ -1096,7 +1096,7 @@ class TurnContextContactFieldsViewTests(APITestCase):
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
         self.org = Organization.objects.create(id=1, name="Test Org")
         self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")
-        self.url = reverse("turn-context-contact-fields", args=[self.org.id, self.turn_secret.id])
+        self.url = reverse("turn-context-contact-fields", kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id})
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
