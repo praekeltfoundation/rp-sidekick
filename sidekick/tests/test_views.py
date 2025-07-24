@@ -1094,8 +1094,8 @@ class TurnContextContactFieldsViewTests(APITestCase):
         )
         token = Token.objects.get(user=self.user)
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
-        # self.org = Organization.objects.create(id=1, name="Test Org")
-        self.org = Organization.objects.create(id=1, name="Test Org", url="test-url", token="test-token")  # noqa: S106 - Fake token for test purposes
+        self.org = Organization.objects.create(id=1, name="Test Org")
+        # self.org = Organization.objects.create(id=1, name="Test Org", url="test-url", token="test-token")
         self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret") # noqa: S106 - Fake password/token for test purposes
         self.url = reverse("turn-context-contact-fields", kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id})
 
@@ -1108,7 +1108,12 @@ class TurnContextContactFieldsViewTests(APITestCase):
         response = self.api_client.post(self.url, {"handshake": True}, format="json", HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature({"handshake": True}, self.turn_secret.secret))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_valid_contact_fields_response(self):
+    @patch("sidekick.views.Organization.objects.get")
+    def test_valid_contact_fields_response(self, mock_org_get):
+        """ Should return contact fields from RapidPro
+        """
+        mock_org_get.return_value = self.org
+
         # Mock RapidPro client and contact
         mock_client = MagicMock()
         mock_contact = MagicMock()
@@ -1127,15 +1132,21 @@ class TurnContextContactFieldsViewTests(APITestCase):
             }
             response = self.api_client.post(self.url, data, format="json", HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, self.turn_secret.secret))
             self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn("version", response.data)
+            self.assertIn("context_objects", response.data)
+            self.assertIn("contact_details", response.data["context_objects"])
             contact_details = response.data["context_objects"]["contact_details"]
             self.assertEqual(contact_details["edd"], "2024-12-01")
             self.assertEqual(contact_details["facility_code"], "FAC123")
             self.assertEqual(contact_details["groups"], "GroupA")
 
-    def test_contact_fields_with_filter_rapidpro_fields(self):
+
+    @patch("sidekick.views.Organization.objects.get")
+    def test_contact_fields_with_filter_rapidpro_fields(self, mock_org_get):
         """
         Should only return fields specified in filter_rapidpro_fields
         """
+        mock_org_get.return_value = self.org
         self.org.filter_rapidpro_fields = "edd,facility_code"
         self.org.save()
 
@@ -1156,7 +1167,7 @@ class TurnContextContactFieldsViewTests(APITestCase):
             data = {
                 "chat": {"owner": "+1234567890"},
             }
-            response = self.api_client.post(self.url, data, format="json")
+            response = self.api_client.post(self.url, data, format="json", HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, self.turn_secret.secret))
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("context_objects", response.data)
             contact_details = response.data["context_objects"]["contact_details"]
@@ -1173,10 +1184,13 @@ class TurnContextContactFieldsViewTests(APITestCase):
         response = self.api_client.post(self.url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_valid_signature(self):
+    @patch("sidekick.views.Organization.objects.get")
+    def test_valid_signature(self, mock_org_get):
         """
         Should return 200 OK if the signature header is valid
         """
+        mock_org_get.return_value = self.org
+
         # Mock RapidPro client and contact
         mock_client = MagicMock()
         mock_contact = MagicMock()
@@ -1200,6 +1214,38 @@ class TurnContextContactFieldsViewTests(APITestCase):
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("context_objects", response.data)
+            contact_details = response.data["context_objects"]["contact_details"]
+            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["facility_code"], "FAC123")
+            self.assertEqual(contact_details["groups"], "GroupA")
+
+    # def test_valid_contact_fields_response(self):
+        """
+        Should return 200 OK if the signature header is valid
+        """
+        # Mock RapidPro client and contact
+        mock_client = MagicMock()
+        mock_contact = MagicMock()
+        mock_contact.fields = {
+            "edd": "2024-12-01",
+            "facility_code": "FAC123",
+        }
+        mock_group = MagicMock()
+        mock_group.name = "GroupA"
+        mock_contact.groups = [mock_group]
+        mock_client.get_contacts.return_value.first.return_value = mock_contact
+
+        # Patch get_rapidpro_client on the org instance
+        with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
+            data = {"chat": {"owner": "+1234567890"}}
+            signature = self.generate_hmac_signature(data, self.turn_secret.secret)
+            response = self.api_client.post(
+                self.url,
+                data,
+                format="json",
+                HTTP_X_TURN_HOOK_SIGNATURE=signature,
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             contact_details = response.data["context_objects"]["contact_details"]
             self.assertEqual(contact_details["edd"], "2024-12-01")
             self.assertEqual(contact_details["facility_code"], "FAC123")

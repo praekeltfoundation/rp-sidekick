@@ -430,7 +430,6 @@ class TurnContextContactFieldsView(GenericAPIView):
     def post(self, request, **kwargs):
         org_id = kwargs["org_id"]
         turn_secret_id = kwargs["turn_secret_id"]
-        print(f"org_id...: {org_id}, turn_secret_id...: {turn_secret_id}")
 
         validate_signature(request, org_id, turn_secret_id)
 
@@ -438,7 +437,6 @@ class TurnContextContactFieldsView(GenericAPIView):
             org = Organization.objects.get(id=org_id)
         except Organization.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        print(f"Organization found: {org.name}")
 
         if "handshake" in request.data:
             response = {
@@ -456,20 +454,21 @@ class TurnContextContactFieldsView(GenericAPIView):
                 },
             }
             return Response(response, status=status.HTTP_200_OK)
-        print("Retrieving contact details")
+
         client = org.get_rapidpro_client()
         urn = request.data["chat"]["owner"].replace("+", "whatsapp:")
         contact = client.get_contacts(urn=urn).first()
-        print(f"Contact found: {contact.uuid if contact else 'None'}")
+
         # Filter fields to only show those relevant to helpdesk staff
 
         # Get org's filter_rapidpro_fields setting
         context = {}
+        new_fields = {}
         if contact:
             if org.filter_rapidpro_fields:
                 # Iterate through given field to get them from RP contact fields
                 filter_fields = org.filter_rapidpro_fields.split(",")
-                new_fields = {}
+
                 for field, value in contact.fields.items():
                     # Only include fields that are in the filter_rapidpro_fields
                     # setting of the organization
@@ -484,7 +483,7 @@ class TurnContextContactFieldsView(GenericAPIView):
             context["contact_details"]["groups"] = ", ".join(
                 [g.name for g in contact.groups]
             )
-        print(f"Context >>>>: {context}")
+
         return Response(
             {
                 "version": "1.0.0-alpha",
