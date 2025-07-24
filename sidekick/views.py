@@ -480,9 +480,10 @@ class TurnContextContactFieldsView(GenericAPIView):
                     new_fields[field] = value
 
             context["contact_details"] = new_fields
-            context["contact_details"]["groups"] = ", ".join(
-                [g.name for g in contact.groups]
-            )
+            if contact.groups:
+                context["contact_details"]["groups"] = ", ".join(
+                    [g.name for g in contact.groups]
+                )
 
         return Response(
             {
