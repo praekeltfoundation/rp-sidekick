@@ -1096,8 +1096,11 @@ class TurnContextContactFieldsViewTests(APITestCase):
         self.api_client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
         self.org = Organization.objects.create(id=1, name="Test Org")
         # self.org = Organization.objects.create(id=1, name="Test Org", url="test-url", token="test-token")
-        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret") # noqa: S106 - Fake password/token for test purposes
-        self.url = reverse("turn-context-contact-fields", kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id})
+        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")  # noqa: S106 - Fake password/token for test purposes
+        self.url = reverse(
+            "turn-context-contact-fields",
+            kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+        )
 
     def generate_hmac_signature(self, data, key):
         data = JSONRenderer().render(data)
@@ -1105,13 +1108,19 @@ class TurnContextContactFieldsViewTests(APITestCase):
         return base64.b64encode(h.digest()).decode()
 
     def test_handshake_response(self):
-        response = self.api_client.post(self.url, {"handshake": True}, format="json", HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature({"handshake": True}, self.turn_secret.secret))
+        response = self.api_client.post(
+            self.url,
+            {"handshake": True},
+            format="json",
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                {"handshake": True}, self.turn_secret.secret
+            ),
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     @patch("sidekick.views.Organization.objects.get")
     def test_valid_contact_fields_response(self, mock_org_get):
-        """ Should return contact fields from RapidPro
-        """
+        """Should return contact fields from RapidPro"""
         mock_org_get.return_value = self.org
 
         # Mock RapidPro client and contact
@@ -1130,7 +1139,14 @@ class TurnContextContactFieldsViewTests(APITestCase):
             data = {
                 "chat": {"owner": "+1234567890"},
             }
-            response = self.api_client.post(self.url, data, format="json", HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, self.turn_secret.secret))
+            response = self.api_client.post(
+                self.url,
+                data,
+                format="json",
+                HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                    data, self.turn_secret.secret
+                ),
+            )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("version", response.data)
             self.assertIn("context_objects", response.data)
@@ -1139,7 +1155,6 @@ class TurnContextContactFieldsViewTests(APITestCase):
             self.assertEqual(contact_details["edd"], "2024-12-01")
             self.assertEqual(contact_details["facility_code"], "FAC123")
             self.assertEqual(contact_details["groups"], "GroupA")
-
 
     @patch("sidekick.views.Organization.objects.get")
     def test_contact_fields_with_filter_rapidpro_fields(self, mock_org_get):
@@ -1167,7 +1182,14 @@ class TurnContextContactFieldsViewTests(APITestCase):
             data = {
                 "chat": {"owner": "+1234567890"},
             }
-            response = self.api_client.post(self.url, data, format="json", HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(data, self.turn_secret.secret))
+            response = self.api_client.post(
+                self.url,
+                data,
+                format="json",
+                HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                    data, self.turn_secret.secret
+                ),
+            )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("context_objects", response.data)
             contact_details = response.data["context_objects"]["contact_details"]
@@ -1219,7 +1241,7 @@ class TurnContextContactFieldsViewTests(APITestCase):
             self.assertEqual(contact_details["facility_code"], "FAC123")
             self.assertEqual(contact_details["groups"], "GroupA")
 
-    # def test_valid_contact_fields_response(self):
+        # def test_valid_contact_fields_response(self):
         """
         Should return 200 OK if the signature header is valid
         """

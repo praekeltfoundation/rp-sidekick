@@ -31,4 +31,3 @@ class ArchiveTurnConversationSerializer(serializers.Serializer):
     """
 
     reason = serializers.CharField()
-
