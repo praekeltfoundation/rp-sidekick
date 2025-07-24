@@ -1116,7 +1116,18 @@ class TurnContextContactFieldsViewTests(APITestCase):
                 {"handshake": True}, self.turn_secret.secret
             ),
         )
+        response_body = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response_body["capabilities"]["context_objects"],
+            [
+                {
+                    "code": "contact_details",
+                    "title": "RP Contact Details",
+                    "type": "table",
+                }
+            ],
+        )
 
     @patch("sidekick.views.Organization.objects.get")
     def test_valid_contact_fields_response(self, mock_org_get):
@@ -1236,38 +1247,6 @@ class TurnContextContactFieldsViewTests(APITestCase):
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("context_objects", response.data)
-            contact_details = response.data["context_objects"]["contact_details"]
-            self.assertEqual(contact_details["edd"], "2024-12-01")
-            self.assertEqual(contact_details["facility_code"], "FAC123")
-            self.assertEqual(contact_details["groups"], "GroupA")
-
-        # def test_valid_contact_fields_response(self):
-        """
-        Should return 200 OK if the signature header is valid
-        """
-        # Mock RapidPro client and contact
-        mock_client = MagicMock()
-        mock_contact = MagicMock()
-        mock_contact.fields = {
-            "edd": "2024-12-01",
-            "facility_code": "FAC123",
-        }
-        mock_group = MagicMock()
-        mock_group.name = "GroupA"
-        mock_contact.groups = [mock_group]
-        mock_client.get_contacts.return_value.first.return_value = mock_contact
-
-        # Patch get_rapidpro_client on the org instance
-        with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
-            data = {"chat": {"owner": "+1234567890"}}
-            signature = self.generate_hmac_signature(data, self.turn_secret.secret)
-            response = self.api_client.post(
-                self.url,
-                data,
-                format="json",
-                HTTP_X_TURN_HOOK_SIGNATURE=signature,
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
             contact_details = response.data["context_objects"]["contact_details"]
             self.assertEqual(contact_details["edd"], "2024-12-01")
             self.assertEqual(contact_details["facility_code"], "FAC123")
