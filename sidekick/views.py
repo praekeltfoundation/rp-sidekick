@@ -17,6 +17,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from temba_client.exceptions import TembaConnectionError, TembaRateExceededError
 
+from turn_alerts.utils import validate_signature
+
 from .models import Consent, Organization
 from .serializers import (
     URN_REGEX,
@@ -417,3 +419,76 @@ class RapidproContactView(GenericAPIView):
                 contact["fields"] = new_fields
 
         return JsonResponse(contact_data, status=response.status_code)
+
+
+class TurnContextContactFieldsView(GenericAPIView):
+    """
+    Returns the contact fields that are available in the Turn API for the given
+    organization.
+    """
+
+    def post(self, request, **kwargs):
+        org_id = kwargs["org_id"]
+        turn_secret_id = kwargs["turn_secret_id"]
+
+        validate_signature(request, org_id, turn_secret_id)
+
+        try:
+            org = Organization.objects.get(id=org_id)
+        except Organization.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if "handshake" in request.data:
+            response = {
+                "version": "1.0.0-alpha",
+                "capabilities": {
+                    "actions": False,
+                    "suggested_responses": False,
+                    "context_objects": [
+                        {
+                            "title": "RP Contact Details",
+                            "code": "contact_details",
+                            "type": "table",
+                        }
+                    ],
+                },
+            }
+            return Response(response, status=status.HTTP_200_OK)
+
+        client = org.get_rapidpro_client()
+        urn = request.data["chat"]["owner"].replace("+", "whatsapp:")
+        contact = client.get_contacts(urn=urn).first()
+
+        # Filter fields to only show those relevant to helpdesk staff
+
+        # Get org's filter_rapidpro_fields setting
+        context = {}
+        new_fields = {}
+        if contact:
+            if org.filter_rapidpro_fields:
+                # Iterate through given field to get them from RP contact fields
+                filter_fields = org.filter_rapidpro_fields.split(",")
+
+                for field, value in contact.fields.items():
+                    # Only include fields that are in the filter_rapidpro_fields
+                    # setting of the organization
+                    if field in filter_fields:
+                        new_fields[field] = value
+            else:
+                new_fields = {}
+                for field, value in contact.fields.items():
+                    new_fields[field] = value
+
+            context["contact_details"] = new_fields
+            if contact.groups:
+                context["contact_details"]["groups"] = ", ".join(
+                    [g.name for g in contact.groups]
+                )
+
+        return Response(
+            {
+                "version": "1.0.0-alpha",
+                "context_objects": context,
+                "actions": {},
+            }
+        )

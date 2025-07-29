@@ -1,4 +1,7 @@
+import base64
+import hmac
 import json
+from hashlib import sha256
 from os import environ
 from unittest.mock import MagicMock, Mock, patch
 from urllib.parse import urlencode
@@ -7,17 +10,19 @@ from uuid import uuid4
 import responses
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, User
 from django.db.utils import OperationalError
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APIClient, APITestCase
 from temba_client.exceptions import TembaConnectionError
 
 from sidekick.models import Consent, Organization
+from turn_alerts.models import TurnSecret
 
 from .utils import create_org
 
@@ -1079,3 +1084,170 @@ class RapidproContactViewTests(SidekickAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json(), {"error": "Organization not found"})
+
+
+class TurnContextContactFieldsViewTests(APITestCase):
+    def setUp(self):
+        self.api_client = APIClient()
+        self.user = User.objects.create_user(
+            "testuser", "testuser@example.com", "password"
+        )
+        token = Token.objects.get(user=self.user)
+        self.api_client.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+        self.org = Organization.objects.create(id=1, name="Test Org")
+        # self.org = Organization.objects.create(id=1, name="Test Org", url="test-url", token="test-token")
+        self.turn_secret = TurnSecret.objects.create(org=self.org, secret="test-secret")  # noqa: S106 - Fake password/token for test purposes
+        self.url = reverse(
+            "turn-context-contact-fields",
+            kwargs={"org_id": self.org.id, "turn_secret_id": self.turn_secret.id},
+        )
+
+    def generate_hmac_signature(self, data, key):
+        data = JSONRenderer().render(data)
+        h = hmac.new(key.encode(), data, sha256)
+        return base64.b64encode(h.digest()).decode()
+
+    def test_handshake_response(self):
+        response = self.api_client.post(
+            self.url,
+            {"handshake": True},
+            format="json",
+            HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                {"handshake": True}, self.turn_secret.secret
+            ),
+        )
+        response_body = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response_body["capabilities"]["context_objects"],
+            [
+                {
+                    "code": "contact_details",
+                    "title": "RP Contact Details",
+                    "type": "table",
+                }
+            ],
+        )
+
+    @patch("sidekick.views.Organization.objects.get")
+    def test_valid_contact_fields_response(self, mock_org_get):
+        """Should return contact fields from RapidPro"""
+        mock_org_get.return_value = self.org
+
+        # Mock RapidPro client and contact
+        mock_client = MagicMock()
+        mock_contact = MagicMock()
+        mock_contact.fields = {
+            "edd": "2024-12-01",
+            "facility_code": "FAC123",
+        }
+        mock_group = MagicMock()
+        mock_group.name = "GroupA"
+        mock_contact.groups = [mock_group]
+        mock_client.get_contacts.return_value.first.return_value = mock_contact
+
+        with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
+            data = {
+                "chat": {"owner": "+1234567890"},
+            }
+            response = self.api_client.post(
+                self.url,
+                data,
+                format="json",
+                HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                    data, self.turn_secret.secret
+                ),
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn("version", response.data)
+            self.assertIn("context_objects", response.data)
+            self.assertIn("contact_details", response.data["context_objects"])
+            contact_details = response.data["context_objects"]["contact_details"]
+            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["facility_code"], "FAC123")
+            self.assertEqual(contact_details["groups"], "GroupA")
+
+    @patch("sidekick.views.Organization.objects.get")
+    def test_contact_fields_with_filter_rapidpro_fields(self, mock_org_get):
+        """
+        Should only return fields specified in filter_rapidpro_fields
+        """
+        mock_org_get.return_value = self.org
+        self.org.filter_rapidpro_fields = "edd,facility_code"
+        self.org.save()
+
+        # Mock RapidPro client and contact
+        mock_client = MagicMock()
+        mock_contact = MagicMock()
+        mock_contact.fields = {
+            "edd": "2024-12-01",
+            "facility_code": "FAC123",
+            "extra_field": "should_not_appear",
+        }
+        mock_group = MagicMock()
+        mock_group.name = "GroupA"
+        mock_contact.groups = [mock_group]
+        mock_client.get_contacts.return_value.first.return_value = mock_contact
+
+        with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
+            data = {
+                "chat": {"owner": "+1234567890"},
+            }
+            response = self.api_client.post(
+                self.url,
+                data,
+                format="json",
+                HTTP_X_TURN_HOOK_SIGNATURE=self.generate_hmac_signature(
+                    data, self.turn_secret.secret
+                ),
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn("context_objects", response.data)
+            contact_details = response.data["context_objects"]["contact_details"]
+            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["facility_code"], "FAC123")
+            self.assertNotIn("extra_field", contact_details)
+            self.assertEqual(contact_details["groups"], "GroupA")
+
+    def test_missing_signature_returns_unauthorized(self):
+        """
+        Should return 401 if signature header is missing
+        """
+        data = {"chat": {"owner": "+1234567890"}}
+        response = self.api_client.post(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    @patch("sidekick.views.Organization.objects.get")
+    def test_valid_signature(self, mock_org_get):
+        """
+        Should return 200 OK if the signature header is valid
+        """
+        mock_org_get.return_value = self.org
+
+        # Mock RapidPro client and contact
+        mock_client = MagicMock()
+        mock_contact = MagicMock()
+        mock_contact.fields = {
+            "edd": "2024-12-01",
+            "facility_code": "FAC123",
+        }
+        mock_group = MagicMock()
+        mock_group.name = "GroupA"
+        mock_contact.groups = [mock_group]
+        mock_client.get_contacts.return_value.first.return_value = mock_contact
+
+        with patch.object(self.org, "get_rapidpro_client", return_value=mock_client):
+            data = {"chat": {"owner": "+1234567890"}}
+            signature = self.generate_hmac_signature(data, self.turn_secret.secret)
+            response = self.api_client.post(
+                self.url,
+                data,
+                format="json",
+                HTTP_X_TURN_HOOK_SIGNATURE=signature,
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn("context_objects", response.data)
+            contact_details = response.data["context_objects"]["contact_details"]
+            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["facility_code"], "FAC123")
+            self.assertEqual(contact_details["groups"], "GroupA")
