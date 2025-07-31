@@ -1138,7 +1138,7 @@ class TurnContextContactFieldsViewTests(APITestCase):
         mock_client = MagicMock()
         mock_contact = MagicMock()
         mock_contact.fields = {
-            "edd": "2024-12-01",
+            "edd": "2023-06-01T00:00:00.000000+02:00",
             "facility_code": "FAC123",
         }
         mock_group = MagicMock()
@@ -1163,7 +1163,7 @@ class TurnContextContactFieldsViewTests(APITestCase):
             self.assertIn("context_objects", response.data)
             self.assertIn("contact_details", response.data["context_objects"])
             contact_details = response.data["context_objects"]["contact_details"]
-            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["edd"], "2023-06-01 00:00")
             self.assertEqual(contact_details["facility_code"], "FAC123")
             self.assertEqual(contact_details["groups"], "GroupA")
 
@@ -1180,7 +1180,7 @@ class TurnContextContactFieldsViewTests(APITestCase):
         mock_client = MagicMock()
         mock_contact = MagicMock()
         mock_contact.fields = {
-            "edd": "2024-12-01",
+            "edd": "2023-06-01T00:00:00.000000+02:00",
             "facility_code": "FAC123",
             "extra_field": "should_not_appear",
         }
@@ -1204,7 +1204,7 @@ class TurnContextContactFieldsViewTests(APITestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("context_objects", response.data)
             contact_details = response.data["context_objects"]["contact_details"]
-            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["edd"], "2023-06-01 00:00")
             self.assertEqual(contact_details["facility_code"], "FAC123")
             self.assertNotIn("extra_field", contact_details)
             self.assertEqual(contact_details["groups"], "GroupA")
@@ -1228,7 +1228,7 @@ class TurnContextContactFieldsViewTests(APITestCase):
         mock_client = MagicMock()
         mock_contact = MagicMock()
         mock_contact.fields = {
-            "edd": "2024-12-01",
+            "edd": "2023-06-01T00:00:00.000000+02:00",
             "facility_code": "FAC123",
         }
         mock_group = MagicMock()
@@ -1248,6 +1248,6 @@ class TurnContextContactFieldsViewTests(APITestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertIn("context_objects", response.data)
             contact_details = response.data["context_objects"]["contact_details"]
-            self.assertEqual(contact_details["edd"], "2024-12-01")
+            self.assertEqual(contact_details["edd"], "2023-06-01 00:00")
             self.assertEqual(contact_details["facility_code"], "FAC123")
             self.assertEqual(contact_details["groups"], "GroupA")

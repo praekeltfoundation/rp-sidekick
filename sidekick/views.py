@@ -1,4 +1,6 @@
+import contextlib
 import json
+from datetime import datetime
 from os import environ
 from urllib.parse import urljoin
 
@@ -461,6 +463,13 @@ class TurnContextContactFieldsView(GenericAPIView):
 
         # Filter fields to only show those relevant to helpdesk staff
 
+        def format_field_value(value):
+            with contextlib.suppress(ValueError):
+                temp_date = datetime.fromisoformat(value)
+                return temp_date.strftime("%Y-%m-%d %H:%M")
+
+            return value
+
         # Get org's filter_rapidpro_fields setting
         context = {}
         new_fields = {}
@@ -473,11 +482,11 @@ class TurnContextContactFieldsView(GenericAPIView):
                     # Only include fields that are in the filter_rapidpro_fields
                     # setting of the organization
                     if field in filter_fields:
-                        new_fields[field] = value
+                        new_fields[field] = format_field_value(value)
             else:
                 new_fields = {}
                 for field, value in contact.fields.items():
-                    new_fields[field] = value
+                    new_fields[field] = format_field_value(value)
 
             context["contact_details"] = new_fields
             if contact.groups:
