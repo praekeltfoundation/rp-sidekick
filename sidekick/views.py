@@ -462,7 +462,6 @@ class TurnContextContactFieldsView(GenericAPIView):
         contact = client.get_contacts(urn=urn).first()
 
         # Filter fields to only show those relevant to helpdesk staff
-        @staticmethod
         def format_field_value(value):
             if isinstance(value, str):
                 with contextlib.suppress(ValueError):
